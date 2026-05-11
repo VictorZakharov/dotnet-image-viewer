@@ -1,0 +1,151 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ImageViewer.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             x:Class="ImageViewer.Views.BrowserView"
+             x:DataType="vm:BrowserViewModel"
+             Background="#1a1a1a">
+
+  <DockPanel>
+    <!-- Toolbar (full-width) -->
+    <Border DockPanel.Dock="Top" Background="#252525" Height="44">
+      <Grid Margin="14,0">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Content="Open folder..." Click="OnOpenFolderClicked" Padding="12,4"/>
+          <TextBlock Text="{Binding CurrentFolder}" Foreground="#bbb" FontSize="12"
+                     VerticalAlignment="Center"
+                     TextTrimming="CharacterEllipsis"
+                     IsVisible="{Binding HasFolder}"/>
+          <TextBlock Text="·" Foreground="#555" VerticalAlignment="Center"
+                     IsVisible="{Binding HasFolder}"/>
+          <TextBlock Text="{Binding ItemsSummary}" Foreground="#999" FontSize="12"
+                     VerticalAlignment="Center"
+                     IsVisible="{Binding HasFolder}"/>
+          <Border Width="1" Height="20" Background="#404040" Margin="6,0"
+                  IsVisible="{Binding HasFilter}"/>
+          <TextBlock Text="Filter:" Foreground="#888" FontSize="12"
+                     VerticalAlignment="Center"
+                     IsVisible="{Binding HasFilter}"/>
+          <Border Background="#0a0a0a" Padding="8,3" CornerRadius="3"
+                  IsVisible="{Binding HasFilter}">
+            <TextBlock Text="{Binding FilterText}" Foreground="#ffffff" FontSize="12"/>
+          </Border>
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
+                    VerticalAlignment="Center"
+                    IsVisible="{Binding HasFolder}">
+          <Button Content="{Binding SortLabelName}" Command="{Binding SortByNameCommand}" Padding="12,4"/>
+          <Button Content="{Binding SortLabelDate}" Command="{Binding SortByDateCommand}" Padding="12,4"/>
+          <Button Content="{Binding SortLabelSize}" Command="{Binding SortBySizeCommand}" Padding="12,4"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Tree pane | Splitter | Content -->
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="240" MinWidth="160"/>
+        <ColumnDefinition Width="4"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+
+      <!-- Folder tree -->
+      <Border Grid.Column="0" Background="#202020">
+        <TreeView ItemsSource="{Binding DriveTree}"
+                  SelectedItem="{Binding SelectedTreeItem, Mode=TwoWay}"
+                  Background="Transparent"
+                  BorderThickness="0"
+                  Padding="4">
+          <TreeView.Styles>
+            <Style Selector="TreeViewItem">
+              <Setter Property="IsExpanded" Value="{ReflectionBinding IsExpanded, Mode=TwoWay}"/>
+            </Style>
+          </TreeView.Styles>
+          <TreeView.ItemTemplate>
+            <TreeDataTemplate ItemsSource="{Binding Children}" x:DataType="vm:FolderTreeItem">
+              <TextBlock Text="{Binding Name}" FontSize="12" Padding="2,3"/>
+            </TreeDataTemplate>
+          </TreeView.ItemTemplate>
+        </TreeView>
+      </Border>
+
+      <GridSplitter Grid.Column="1"
+                    Background="#1a1a1a"
+                    ResizeDirection="Columns"
+                    HorizontalAlignment="Stretch"/>
+
+      <!-- Thumbnail grid + empty state -->
+      <Grid Grid.Column="2">
+        <ListBox x:Name="ThumbList"
+                 ItemsSource="{Binding FilteredItems}"
+                 SelectedIndex="{Binding SelectedIndex, Mode=TwoWay}"
+                 DoubleTapped="OnThumbDoubleTapped"
+                 IsVisible="{Binding !ShowEmptyState}"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 Background="Transparent"
+                 BorderThickness="0"
+                 Padding="8">
+          <ListBox.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel/>
+            </ItemsPanelTemplate>
+          </ListBox.ItemsPanel>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:ThumbnailItem">
+              <Border Width="200" Height="220" Margin="4"
+                      Background="#252525" CornerRadius="4">
+                <DockPanel>
+                  <TextBlock DockPanel.Dock="Bottom"
+                             Text="{Binding FileName}"
+                             Foreground="#cccccc"
+                             FontSize="11"
+                             TextTrimming="CharacterEllipsis"
+                             HorizontalAlignment="Center"
+                             Margin="6,2,6,6"/>
+                  <Border Background="#0a0a0a" Margin="6,6,6,2">
+                    <Image Source="{Binding Thumbnail}" Stretch="Uniform"/>
+                  </Border>
+                </DockPanel>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Panel IsVisible="{Binding ShowEmptyState}" Background="#1a1a1a">
+          <StackPanel Spacing="14"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      Margin="40">
+            <TextBlock Text="No images to show"
+                       FontSize="20" Foreground="#888"
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="{Binding EmptyStateHint}"
+                       FontSize="13" Foreground="#666"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap" TextAlignment="Center"
+                       MaxWidth="420"/>
+            <Button Content="Open folder..."
+                    Click="OnOpenFolderClicked"
+                    HorizontalAlignment="Center"
+                    Padding="24,8"
+                    Margin="0,12,0,0"
+                    FontSize="13"/>
+            <TextBlock FontSize="11" Foreground="#555"
+                       HorizontalAlignment="Center" TextAlignment="Center"
+                       TextWrapping="Wrap" MaxWidth="420">
+              Tip: pick a folder from the tree on the left, drag one onto the window, or press Ctrl+O.
+            </TextBlock>
+          </StackPanel>
+        </Panel>
+      </Grid>
+    </Grid>
+  </DockPanel>
+</UserControl>

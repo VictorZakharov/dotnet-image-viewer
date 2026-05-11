@@ -1,0 +1,44 @@
+## .NET / Visual Studio
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+
+## IDEs
+.idea/
+.vscode/
+*.swp
+
+## Build output
+[Dd]ebug/
+[Rr]elease/
+[Bb]uild/
+publish/
+artifacts/
+
+## Rider / ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+project.lock.json
+project.fragment.lock.json
+
+## OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+## Misc
+*.log
+*.tmp
+
+## Claude Code local settings
+.claude/settings.local.json

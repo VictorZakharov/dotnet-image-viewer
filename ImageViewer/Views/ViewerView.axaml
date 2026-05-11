@@ -1,0 +1,64 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ImageViewer.ViewModels"
+             xmlns:controls="using:ImageViewer.Controls"
+             xmlns:models="using:ImageViewer.Models"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             x:Class="ImageViewer.Views.ViewerView"
+             x:DataType="vm:ViewerViewModel"
+             Background="#0a0a0a">
+
+  <Grid>
+    <controls:ZoomPanImage Source="{Binding Bitmap}"
+                           Rotation="{Binding Rotation}"/>
+
+    <!-- Status bar -->
+    <Border Background="#90000000"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Bottom"
+            Height="32"
+            IsHitTestVisible="False">
+      <Grid Margin="14,0">
+        <TextBlock Text="{Binding StatusText}"
+                   Foreground="#dddddd"
+                   VerticalAlignment="Center"
+                   FontSize="12"/>
+        <TextBlock Text="{Binding SlideshowStatus}"
+                   Foreground="#bbbbbb"
+                   HorizontalAlignment="Right"
+                   VerticalAlignment="Center"
+                   FontSize="12"/>
+      </Grid>
+    </Border>
+
+    <!-- EXIF overlay -->
+    <Border IsVisible="{Binding ShowExifOverlay}"
+            Background="#dd0e0e0e"
+            Width="320"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Stretch"
+            Padding="22,24,22,48">
+      <ScrollViewer>
+        <StackPanel DataContext="{Binding Metadata}"
+                    x:DataType="models:ImageMetadata"
+                    Spacing="6">
+          <TextBlock Text="EXIF"
+                     Foreground="#ffffff"
+                     FontWeight="Bold"
+                     FontSize="13"
+                     Margin="0,0,0,8"/>
+          <TextBlock Text="{Binding CameraMake}" Foreground="#cccccc" FontSize="12"/>
+          <TextBlock Text="{Binding CameraModel}" Foreground="#cccccc" FontSize="12"/>
+          <TextBlock Text="{Binding Lens}" Foreground="#cccccc" FontSize="12"/>
+          <Border Height="1" Background="#333" Margin="0,8"/>
+          <TextBlock Text="{Binding ExposureSummary}" Foreground="#cccccc" FontSize="12"/>
+          <TextBlock Text="{Binding DimensionsSummary}" Foreground="#aaaaaa" FontSize="12"/>
+          <TextBlock Text="{Binding TakenAtSummary}" Foreground="#aaaaaa" FontSize="12"/>
+          <TextBlock Text="{Binding FileSizeSummary}" Foreground="#999999" FontSize="12"/>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+  </Grid>
+</UserControl>
