@@ -1,10 +1,13 @@
 using System;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using ImageViewer.ViewModels;
 
 namespace ImageViewer.Views;
@@ -40,6 +43,40 @@ public partial class MainWindow : Window
 
         _trackedVm = vm;
         vm.ViewerVM.PropertyChanged += OnViewerVmPropertyChanged;
+        vm.PropertyChanged += OnMainVmPropertyChanged;
+    }
+
+    private void OnMainVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(MainWindowViewModel.IsViewerMode)) return;
+        // After a mode switch (double-click thumbnail, Enter, etc.) keyboard
+        // focus stays on whichever element had it before — typically the hidden
+        // ListBox after entering viewer mode, which then swallows arrow keys via
+        // its selection class handler so the viewer never sees them. Move focus
+        // to the appropriate live element.
+        Dispatcher.UIThread.Post(FocusActiveView, DispatcherPriority.Loaded);
+    }
+
+    private void FocusActiveView()
+    {
+        if (DataContext is not MainWindowViewModel vm) return;
+        if (vm.IsViewerMode)
+        {
+            // Window itself isn't Focusable in Avalonia, so Focus() on `this`
+            // is a no-op. ZoomPanImage sets Focusable = true and is the natural
+            // recipient for arrow keys in viewer mode.
+            var zoomPan = this.GetVisualDescendants()
+                .OfType<Controls.ZoomPanImage>()
+                .FirstOrDefault();
+            if (zoomPan is not null) zoomPan.Focus();
+        }
+        else
+        {
+            var thumbList = this.GetVisualDescendants()
+                .OfType<ListBox>()
+                .FirstOrDefault(lb => lb.Name == "ThumbList");
+            thumbList?.Focus();
+        }
     }
 
     private void OnClosing(object? sender, WindowClosingEventArgs e)
@@ -48,7 +85,10 @@ public partial class MainWindow : Window
 
         vm.ViewerVM.StopSlideshow();
         if (_trackedVm is not null)
+        {
             _trackedVm.ViewerVM.PropertyChanged -= OnViewerVmPropertyChanged;
+            _trackedVm.PropertyChanged -= OnMainVmPropertyChanged;
+        }
 
         var s = vm.Settings;
         s.WindowMaximized = WindowState == WindowState.Maximized;
@@ -91,10 +131,10 @@ public partial class MainWindow : Window
             case Key.Escape:
                 if (viewer.IsFullscreen)
                     viewer.ToggleFullscreenCommand.Execute(null);
-                else if (!vm.IsViewerMode && !string.IsNullOrEmpty(browser.FilterText))
+                else if (vm.IsViewerMode)
+                    vm.ToggleModeCommand.Execute(null);
+                else if (!string.IsNullOrEmpty(browser.FilterText))
                     browser.FilterText = "";
-                else
-                    Close();
                 e.Handled = true;
                 return;
 
@@ -114,10 +154,12 @@ public partial class MainWindow : Window
             switch (e.Key)
             {
                 case Key.Left:
+                case Key.Up:
                     viewer.PreviousCommand.Execute(null);
                     e.Handled = true;
                     break;
                 case Key.Right:
+                case Key.Down:
                     viewer.NextCommand.Execute(null);
                     e.Handled = true;
                     break;
@@ -149,6 +191,10 @@ public partial class MainWindow : Window
                 browser.DeleteSelectedCommand.Execute(null);
                 e.Handled = true;
                 break;
+            case Key.F2:
+                browser.BeginRenameSelected();
+                e.Handled = true;
+                break;
             case Key.Back:
                 if (!string.IsNullOrEmpty(browser.FilterText))
                 {
@@ -177,6 +223,10 @@ public partial class MainWindow : Window
         if (vm.IsViewerMode) return;
         if (string.IsNullOrEmpty(e.Text)) return;
         if (e.Text.Length == 1 && char.IsControl(e.Text[0])) return;
+        // If a thumbnail is being renamed, the TextBox owns text input — don't
+        // siphon characters into the filter when focus didn't land cleanly.
+        foreach (var item in vm.BrowserVM.FilteredItems)
+            if (item.IsRenaming) return;
 
         vm.BrowserVM.FilterText += e.Text;
         e.Handled = true;

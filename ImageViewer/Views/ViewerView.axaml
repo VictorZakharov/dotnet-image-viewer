@@ -8,25 +8,31 @@
              mc:Ignorable="d"
              x:Class="ImageViewer.Views.ViewerView"
              x:DataType="vm:ViewerViewModel"
-             Background="#0a0a0a">
+             Background="#070b16">
 
   <Grid>
+    <Grid.ContextFlyout>
+      <MenuFlyout>
+        <MenuItem Header="Properties" Click="OnPropertiesClicked"/>
+      </MenuFlyout>
+    </Grid.ContextFlyout>
+
     <controls:ZoomPanImage Source="{Binding Bitmap}"
                            Rotation="{Binding Rotation}"/>
 
     <!-- Status bar -->
-    <Border Background="#90000000"
+    <Border Background="#cc0a1226"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Bottom"
             Height="32"
             IsHitTestVisible="False">
       <Grid Margin="14,0">
         <TextBlock Text="{Binding StatusText}"
-                   Foreground="#dddddd"
+                   Foreground="#dde6f5"
                    VerticalAlignment="Center"
                    FontSize="12"/>
         <TextBlock Text="{Binding SlideshowStatus}"
-                   Foreground="#bbbbbb"
+                   Foreground="#b3c1dd"
                    HorizontalAlignment="Right"
                    VerticalAlignment="Center"
                    FontSize="12"/>
@@ -35,30 +41,84 @@
 
     <!-- EXIF overlay -->
     <Border IsVisible="{Binding ShowExifOverlay}"
-            Background="#dd0e0e0e"
+            Background="#ee0e1830"
             Width="320"
             HorizontalAlignment="Right"
             VerticalAlignment="Stretch"
-            Padding="22,24,22,48">
+            Padding="22,56,22,48">
       <ScrollViewer>
-        <StackPanel DataContext="{Binding Metadata}"
-                    x:DataType="models:ImageMetadata"
-                    Spacing="6">
-          <TextBlock Text="EXIF"
-                     Foreground="#ffffff"
-                     FontWeight="Bold"
-                     FontSize="13"
-                     Margin="0,0,0,8"/>
-          <TextBlock Text="{Binding CameraMake}" Foreground="#cccccc" FontSize="12"/>
-          <TextBlock Text="{Binding CameraModel}" Foreground="#cccccc" FontSize="12"/>
-          <TextBlock Text="{Binding Lens}" Foreground="#cccccc" FontSize="12"/>
-          <Border Height="1" Background="#333" Margin="0,8"/>
-          <TextBlock Text="{Binding ExposureSummary}" Foreground="#cccccc" FontSize="12"/>
-          <TextBlock Text="{Binding DimensionsSummary}" Foreground="#aaaaaa" FontSize="12"/>
-          <TextBlock Text="{Binding TakenAtSummary}" Foreground="#aaaaaa" FontSize="12"/>
-          <TextBlock Text="{Binding FileSizeSummary}" Foreground="#999999" FontSize="12"/>
+        <StackPanel Spacing="6">
+          <TextBlock Text="{Binding FileNameDisplay}"
+                     Foreground="#e7eef9" FontSize="14" FontWeight="SemiBold"
+                     TextWrapping="Wrap"/>
+          <TextBlock Text="{Binding FolderDisplay}"
+                     Foreground="#8fa1c0" FontSize="11"
+                     TextWrapping="Wrap"/>
+
+          <Border Height="1" Background="#2a3858" Margin="0,10"/>
+
+          <Grid IsVisible="{Binding Metadata.DimensionsSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="Dimensions" Foreground="#8fa1c0" FontSize="11" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding Metadata.DimensionsSummary}"
+                       Foreground="#dde6f5" FontSize="12" HorizontalAlignment="Right"/>
+          </Grid>
+          <Grid IsVisible="{Binding Metadata.FileSizeSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="Size" Foreground="#8fa1c0" FontSize="11" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding Metadata.FileSizeSummary}"
+                       Foreground="#dde6f5" FontSize="12" HorizontalAlignment="Right"/>
+          </Grid>
+
+          <Border Height="1" Background="#2a3858" Margin="0,10"
+                  IsVisible="{Binding HasAnyExifData}"/>
+
+          <StackPanel Spacing="4" IsVisible="{Binding HasAnyExifData}">
+            <TextBlock Text="{Binding Metadata.CameraSummary}"
+                       Foreground="#dde6f5" FontSize="13" FontWeight="SemiBold"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding Metadata.CameraSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            <TextBlock Text="{Binding Metadata.Lens}"
+                       Foreground="#b3c1dd" FontSize="11"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding Metadata.Lens, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            <TextBlock Text="{Binding Metadata.ExposureSummary}"
+                       Foreground="#dde6f5" FontSize="12" Margin="0,4,0,0"
+                       IsVisible="{Binding Metadata.ExposureSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            <TextBlock Text="{Binding Metadata.TakenAtSummary}"
+                       Foreground="#b3c1dd" FontSize="11"
+                       IsVisible="{Binding Metadata.TakenAtSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+          </StackPanel>
+
+          <TextBlock Text="No camera metadata"
+                     Foreground="#5f7494" FontSize="11" FontStyle="Italic"
+                     Margin="0,8,0,0"
+                     IsVisible="{Binding !HasAnyExifData}"/>
         </StackPanel>
       </ScrollViewer>
+    </Border>
+
+    <!-- EXIF pill toggle (top-right, last child so it's on top of overlay) -->
+    <Border HorizontalAlignment="Right" VerticalAlignment="Top"
+            Margin="0,14,14,0"
+            Classes.active="{Binding ShowExifOverlay}"
+            BorderThickness="1"
+            CornerRadius="3"
+            Padding="10,4"
+            Cursor="Hand"
+            PointerPressed="OnExifPillClicked">
+      <Border.Styles>
+        <Style Selector="Border">
+          <Setter Property="Background" Value="#cc0a1226"/>
+          <Setter Property="BorderBrush" Value="#445573"/>
+        </Style>
+        <Style Selector="Border.active">
+          <Setter Property="Background" Value="#cc1a2c4a"/>
+          <Setter Property="BorderBrush" Value="#5bc78a"/>
+        </Style>
+        <Style Selector="Border.active TextBlock">
+          <Setter Property="Foreground" Value="#5bc78a"/>
+        </Style>
+      </Border.Styles>
+      <TextBlock Text="EXIF" FontSize="11" FontWeight="SemiBold" Foreground="#b3c1dd"/>
     </Border>
   </Grid>
 </UserControl>

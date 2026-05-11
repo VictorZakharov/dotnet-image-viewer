@@ -44,6 +44,50 @@ public partial class BrowserViewModel : ObservableObject
     [ObservableProperty] private string _itemsSummary = "";
     [ObservableProperty] private bool _showEmptyState = true;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ThumbnailHeight))]
+    private int _thumbnailWidth = 200;
+
+    public int ThumbnailHeight => (int)(ThumbnailWidth * 0.78) + 18;
+
+    public const int MinThumbnailSize = 96;
+    public const int MaxThumbnailSize = 512;
+
+    private static readonly int[] CacheTiers = { 128, 192, 256, 384, 512 };
+
+    private static int RoundToCacheTier(int dim)
+    {
+        foreach (var t in CacheTiers) if (dim <= t) return t;
+        return CacheTiers[^1];
+    }
+
+    private int _activeCacheTier;
+    private bool _suppressTreeSelectionLoad;
+    private ThumbnailItem? _renamingItem;
+
+    [ObservableProperty] private bool _isEditingPath;
+    [ObservableProperty] private string _pathEditText = "";
+    [ObservableProperty] private bool _pathEditHasError;
+    [ObservableProperty] private string _pathEditErrorMessage = "";
+
+    [ObservableProperty] private bool _showExifPane;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasAnyExifData))]
+    private Models.ImageMetadata? _exifMetadata;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasExifPaneData))]
+    private string? _exifFileName;
+
+    [ObservableProperty] private string? _exifFolder;
+
+    public bool HasExifPaneData => !string.IsNullOrEmpty(ExifFileName);
+    public bool HasAnyExifData => ExifMetadata?.HasAnyExif == true;
+
+    public event Action<FolderTreeItem>? TreeNodeFocused;
+    public event Action<ThumbnailItem>? RenameRequested;
+
     public bool HasFilter => !string.IsNullOrEmpty(FilterText);
     public bool HasFolder => !string.IsNullOrEmpty(CurrentFolder);
     public string SortLabelName => SortMode == SortMode.Name ? (SortDescending ? "Name ↓" : "Name ↑") : "Name";
@@ -72,7 +116,55 @@ public partial class BrowserViewModel : ObservableObject
         Settings = settings;
         if (Enum.TryParse(settings.SortMode, true, out SortMode sm)) SortMode = sm;
         SortDescending = settings.SortDescending;
+        ThumbnailWidth = Math.Clamp(settings.ThumbnailSize, MinThumbnailSize, MaxThumbnailSize);
+        _activeCacheTier = RoundToCacheTier(ThumbnailWidth);
+        ShowExifPane = settings.ShowExifPane;
         LoadDrives();
+    }
+
+    partial void OnShowExifPaneChanged(bool value)
+    {
+        Settings.ShowExifPane = value;
+        if (value) LoadCurrentExif();
+        else ExifMetadata = null;
+    }
+
+    [RelayCommand]
+    private void ToggleExifPane() => ShowExifPane = !ShowExifPane;
+
+    private void LoadCurrentExif()
+    {
+        var path = SelectedPath;
+        if (path is null)
+        {
+            ExifMetadata = null;
+            ExifFileName = null;
+            ExifFolder = null;
+            return;
+        }
+        ExifFileName = Path.GetFileName(path);
+        ExifFolder = Path.GetDirectoryName(path);
+        try { ExifMetadata = ExifReader.Read(path); }
+        catch { ExifMetadata = null; }
+    }
+
+    partial void OnThumbnailWidthChanged(int value)
+    {
+        Settings.ThumbnailSize = value;
+        SettingsStore.Save(Settings);
+        var tier = RoundToCacheTier(value);
+        if (tier != _activeCacheTier)
+        {
+            _activeCacheTier = tier;
+            _ = ReloadThumbnailsAsync();
+        }
+    }
+
+    private async Task ReloadThumbnailsAsync()
+    {
+        _loadCts?.Cancel();
+        _loadCts = new CancellationTokenSource();
+        await LoadThumbnailsAsync(_loadCts.Token, force: true);
     }
 
     private void LoadDrives()
@@ -102,9 +194,51 @@ public partial class BrowserViewModel : ObservableObject
 
     partial void OnSelectedTreeItemChanged(object? value)
     {
+        if (_suppressTreeSelectionLoad) return;
         if (value is FolderTreeItem item && !string.IsNullOrEmpty(item.Path))
             _ = LoadFolderAsync(item.Path);
     }
+
+    public void SyncTreeSelection(string folder)
+    {
+        if (string.IsNullOrEmpty(folder)) return;
+
+        var chain = new List<string>();
+        try
+        {
+            var cursor = new DirectoryInfo(folder);
+            while (cursor is not null)
+            {
+                chain.Add(cursor.FullName);
+                cursor = cursor.Parent;
+            }
+        }
+        catch { return; }
+
+        if (chain.Count == 0) return;
+        chain.Reverse();
+
+        var drive = DriveTree.FirstOrDefault(d =>
+            string.Equals(NormalizeRoot(d.Path), NormalizeRoot(chain[0]), StringComparison.OrdinalIgnoreCase));
+        if (drive is null) return;
+
+        FolderTreeItem? current = drive;
+        for (int i = 1; i < chain.Count && current is not null; i++)
+        {
+            if (!current.IsExpanded) current.IsExpanded = true;
+            current = current.Children.FirstOrDefault(c =>
+                string.Equals(c.Path, chain[i], StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (current is null) return;
+
+        _suppressTreeSelectionLoad = true;
+        try { SelectedTreeItem = current; }
+        finally { _suppressTreeSelectionLoad = false; }
+        TreeNodeFocused?.Invoke(current);
+    }
+
+    private static string NormalizeRoot(string p) => p.TrimEnd('\\', '/');
 
     public string? SelectedPath =>
         SelectedIndex >= 0 && SelectedIndex < FilteredItems.Count
@@ -114,7 +248,10 @@ public partial class BrowserViewModel : ObservableObject
     public async Task LoadFolderAsync(string folder)
     {
         if (string.Equals(CurrentFolder, folder, StringComparison.OrdinalIgnoreCase) && Items.Count > 0)
+        {
+            SyncTreeSelection(folder);
             return;
+        }
 
         _loadCts?.Cancel();
         _loadCts = new CancellationTokenSource();
@@ -145,20 +282,22 @@ public partial class BrowserViewModel : ObservableObject
         finally
         {
             IsLoading = false;
+            SyncTreeSelection(folder);
         }
     }
 
-    private async Task LoadThumbnailsAsync(CancellationToken ct)
+    private async Task LoadThumbnailsAsync(CancellationToken ct, bool force = false)
     {
         var snapshot = Items.ToList();
+        var tier = _activeCacheTier;
         foreach (var item in snapshot)
         {
             if (ct.IsCancellationRequested) break;
-            if (item.Thumbnail is not null) continue;
+            if (!force && item.Thumbnail is not null) continue;
 
             try
             {
-                var thumb = await _cache.GetOrCreateAsync(item.Path, 256, ct);
+                var thumb = await _cache.GetOrCreateAsync(item.Path, tier, ct);
                 if (thumb is not null)
                 {
                     await Dispatcher.UIThread.InvokeAsync(() => item.Thumbnail = thumb);
@@ -273,6 +412,106 @@ public partial class BrowserViewModel : ObservableObject
     {
         if (SelectedPath is { } p)
             OpenRequested?.Invoke(p);
+    }
+
+    public void BeginRenameSelected()
+    {
+        if (SelectedIndex < 0 || SelectedIndex >= FilteredItems.Count) return;
+        var target = FilteredItems[SelectedIndex];
+
+        if (_renamingItem is not null && !ReferenceEquals(_renamingItem, target) && _renamingItem.IsRenaming)
+        {
+            var prev = _renamingItem;
+            _renamingItem = null;
+            if (prev.TryCommitRename(out _)) ResortItems();
+        }
+
+        _renamingItem = target;
+        target.BeginRename();
+        RenameRequested?.Invoke(target);
+    }
+
+    public void CommitRename(ThumbnailItem item)
+    {
+        var committed = item.TryCommitRename(out _);
+        if (ReferenceEquals(_renamingItem, item)) _renamingItem = null;
+        if (committed) ResortItems();
+    }
+
+    public void CancelRename(ThumbnailItem item)
+    {
+        item.CancelRename();
+        if (ReferenceEquals(_renamingItem, item)) _renamingItem = null;
+    }
+
+    partial void OnSelectedIndexChanged(int value)
+    {
+        if (_renamingItem is not null)
+        {
+            var newItem = (value >= 0 && value < FilteredItems.Count) ? FilteredItems[value] : null;
+            if (!ReferenceEquals(_renamingItem, newItem))
+            {
+                var prev = _renamingItem;
+                _renamingItem = null;
+                Dispatcher.UIThread.Post(() =>
+                {
+                    if (!prev.IsRenaming) return;
+                    if (prev.TryCommitRename(out _)) ResortItems();
+                });
+            }
+        }
+
+        if (ShowExifPane) LoadCurrentExif();
+    }
+
+    public void BeginEditPath()
+    {
+        PathEditText = CurrentFolder ?? "";
+        PathEditHasError = false;
+        PathEditErrorMessage = "";
+        IsEditingPath = true;
+    }
+
+    public void TryCommitPathEdit()
+    {
+        var p = (PathEditText ?? "").Trim();
+        if (p.Length >= 2 && p[0] == '"' && p[^1] == '"') p = p[1..^1].Trim();
+        if (string.IsNullOrEmpty(p))
+        {
+            PathEditHasError = true;
+            PathEditErrorMessage = "Path is empty.";
+            return;
+        }
+        try
+        {
+            if (!Directory.Exists(p))
+            {
+                PathEditHasError = true;
+                PathEditErrorMessage = "Folder not found.";
+                return;
+            }
+        }
+        catch
+        {
+            PathEditHasError = true;
+            PathEditErrorMessage = "Path is not valid.";
+            return;
+        }
+        PathEditHasError = false;
+        IsEditingPath = false;
+        OpenRequested?.Invoke(p);
+    }
+
+    public void CancelPathEdit()
+    {
+        IsEditingPath = false;
+        PathEditHasError = false;
+        PathEditErrorMessage = "";
+    }
+
+    public void ResizeThumbnailsBy(int delta)
+    {
+        ThumbnailWidth = Math.Clamp(ThumbnailWidth + delta, MinThumbnailSize, MaxThumbnailSize);
     }
 
     [RelayCommand]

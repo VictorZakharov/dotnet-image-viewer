@@ -167,9 +167,8 @@ public class ZoomPanImage : Control
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
-        if (Source is null) return;
         var pt = e.GetCurrentPoint(this);
-        if (pt.Properties.IsLeftButtonPressed)
+        if (Source is not null && pt.Properties.IsLeftButtonPressed)
         {
             EnsureManualMode();
             _panning = true;
@@ -178,7 +177,9 @@ public class ZoomPanImage : Control
             Cursor = new Cursor(StandardCursorType.SizeAll);
             e.Pointer.Capture(this);
             e.Handled = true;
+            return;
         }
+        base.OnPointerPressed(e);
     }
 
     protected override void OnPointerMoved(PointerEventArgs e)

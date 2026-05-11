@@ -42,3 +42,18 @@ Desktop.ini
 
 ## Claude Code local settings
 .claude/settings.local.json
+
+## ait local logs and metrics (terminal-output reducer)
+.ait/
+
+## Sample images dropped at repo root for local testing
+/*.JPG
+/*.jpg
+/*.jpeg
+/*.png
+/*.gif
+/*.NEF
+/*.CR2
+/*.CR3
+/*.ARW
+/*.DNG
