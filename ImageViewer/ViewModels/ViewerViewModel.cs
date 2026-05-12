@@ -17,17 +17,34 @@ public partial class ViewerViewModel : ObservableObject
     public AppSettings Settings { get; }
 
     [ObservableProperty] private Bitmap? _bitmap;
-    [ObservableProperty] private string? _filePath;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FileNameDisplay), nameof(FolderDisplay))]
+    private string? _filePath;
+
     [ObservableProperty] private int _rotation;
     [ObservableProperty] private bool _isFullscreen;
     [ObservableProperty] private bool _showExifOverlay;
+
+    public string? FileNameDisplay => FilePath is { } p ? Path.GetFileName(p) : null;
+    public string? FolderDisplay => FilePath is { } p ? Path.GetDirectoryName(p) : null;
+
+    partial void OnShowExifOverlayChanged(bool value)
+    {
+        Settings.ShowExifOverlay = value;
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SlideshowStatus))]
     private bool _isSlideshowRunning;
 
     [ObservableProperty] private string? _statusText;
-    [ObservableProperty] private ImageMetadata? _metadata;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasAnyExifData))]
+    private ImageMetadata? _metadata;
+
+    public bool HasAnyExifData => Metadata?.HasAnyExif == true;
 
     public string? SlideshowStatus => IsSlideshowRunning ? "▶ Slideshow" : null;
 
@@ -111,11 +128,7 @@ public partial class ViewerViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ToggleExifOverlay()
-    {
-        ShowExifOverlay = !ShowExifOverlay;
-        Settings.ShowExifOverlay = ShowExifOverlay;
-    }
+    private void ToggleExifOverlay() => ShowExifOverlay = !ShowExifOverlay;
 
     [RelayCommand]
     private void ToggleSlideshow()

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ImageViewer.Services;
 
@@ -17,6 +18,7 @@ public sealed class AppSettings
     public bool SortDescending { get; set; }
     public int SlideshowDelaySeconds { get; set; } = 5;
     public bool ShowExifOverlay { get; set; }
+    public bool ShowExifPane { get; set; }
 }
 
 public static class SettingsStore
@@ -30,7 +32,10 @@ public static class SettingsStore
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        // WindowX/Y default to double.NaN as "unset" sentinels; without this
+        // System.Text.Json throws on NaN and the whole save silently fails.
+        NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals
     };
 
     public static AppSettings Load()

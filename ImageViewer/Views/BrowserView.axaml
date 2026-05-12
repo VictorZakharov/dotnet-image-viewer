@@ -1,16 +1,18 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ImageViewer.ViewModels"
+             xmlns:models="using:ImageViewer.Models"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              x:Class="ImageViewer.Views.BrowserView"
              x:DataType="vm:BrowserViewModel"
-             Background="#1a1a1a">
+             x:Name="Root"
+             Background="#0f1729">
 
   <DockPanel>
     <!-- Toolbar (full-width) -->
-    <Border DockPanel.Dock="Top" Background="#252525" Height="44">
+    <Border DockPanel.Dock="Top" Background="#1a2440" Height="44">
       <Grid Margin="14,0">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="*"/>
@@ -19,23 +21,56 @@
 
         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
           <Button Content="Open folder..." Click="OnOpenFolderClicked" Padding="12,4"/>
-          <TextBlock Text="{Binding CurrentFolder}" Foreground="#bbb" FontSize="12"
+
+          <!-- Path: clickable display vs. editable TextBox -->
+          <Grid IsVisible="{Binding HasFolder}" VerticalAlignment="Center" MinWidth="160">
+            <Border IsVisible="{Binding !IsEditingPath}"
+                    Background="Transparent"
+                    CornerRadius="3"
+                    Padding="6,3"
+                    Cursor="Hand"
+                    PointerPressed="OnPathClicked"
+                    ToolTip.Tip="Click to edit path">
+              <Border.Styles>
+                <Style Selector="Border:pointerover">
+                  <Setter Property="Background" Value="#243049"/>
+                </Style>
+              </Border.Styles>
+              <TextBlock Text="{Binding CurrentFolder}"
+                         Foreground="#b3c1dd" FontSize="12"
+                         VerticalAlignment="Center"
+                         TextTrimming="CharacterEllipsis"
+                         MaxWidth="520"/>
+            </Border>
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        IsVisible="{Binding IsEditingPath}"
+                        VerticalAlignment="Center">
+              <TextBox x:Name="PathEditBox"
+                       Text="{Binding PathEditText, Mode=TwoWay}"
+                       FontSize="12" Padding="6,2" MinHeight="0" MinWidth="380"
+                       KeyDown="OnPathEditKeyDown"
+                       LostFocus="OnPathEditLostFocus"
+                       AttachedToVisualTree="OnPathEditAttached"/>
+              <TextBlock Text="{Binding PathEditErrorMessage}"
+                         Foreground="#ff8a8a" FontSize="11"
+                         VerticalAlignment="Center"
+                         IsVisible="{Binding PathEditHasError}"/>
+            </StackPanel>
+          </Grid>
+
+          <TextBlock Text="·" Foreground="#445573" VerticalAlignment="Center"
+                     IsVisible="{Binding HasFolder}"/>
+          <TextBlock Text="{Binding ItemsSummary}" Foreground="#8fa1c0" FontSize="12"
                      VerticalAlignment="Center"
-                     TextTrimming="CharacterEllipsis"
                      IsVisible="{Binding HasFolder}"/>
-          <TextBlock Text="·" Foreground="#555" VerticalAlignment="Center"
-                     IsVisible="{Binding HasFolder}"/>
-          <TextBlock Text="{Binding ItemsSummary}" Foreground="#999" FontSize="12"
-                     VerticalAlignment="Center"
-                     IsVisible="{Binding HasFolder}"/>
-          <Border Width="1" Height="20" Background="#404040" Margin="6,0"
+          <Border Width="1" Height="20" Background="#2a3858" Margin="6,0"
                   IsVisible="{Binding HasFilter}"/>
-          <TextBlock Text="Filter:" Foreground="#888" FontSize="12"
+          <TextBlock Text="Filter:" Foreground="#8fa1c0" FontSize="12"
                      VerticalAlignment="Center"
                      IsVisible="{Binding HasFilter}"/>
-          <Border Background="#0a0a0a" Padding="8,3" CornerRadius="3"
+          <Border Background="#0a0f1c" Padding="8,3" CornerRadius="3"
                   IsVisible="{Binding HasFilter}">
-            <TextBlock Text="{Binding FilterText}" Foreground="#ffffff" FontSize="12"/>
+            <TextBlock Text="{Binding FilterText}" Foreground="#e7eef9" FontSize="12"/>
           </Border>
         </StackPanel>
 
@@ -49,103 +84,220 @@
       </Grid>
     </Border>
 
-    <!-- Tree pane | Splitter | Content -->
-    <Grid>
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="240" MinWidth="160"/>
-        <ColumnDefinition Width="4"/>
-        <ColumnDefinition Width="*"/>
-      </Grid.ColumnDefinitions>
+    <!-- Body: tree pane | splitter | thumbnails | EXIF pane (right, optional) -->
+    <DockPanel>
+      <!-- EXIF pane -->
+      <Border DockPanel.Dock="Right"
+              Width="320"
+              Background="#162038"
+              BorderBrush="#2a3858"
+              BorderThickness="1,0,0,0"
+              IsVisible="{Binding ShowExifPane}">
+        <ScrollViewer>
+          <StackPanel Margin="20,18" Spacing="6">
+            <Grid Margin="0,0,0,12">
+              <TextBlock Text="Properties"
+                         Foreground="#e7eef9"
+                         FontWeight="Bold"
+                         FontSize="13"
+                         VerticalAlignment="Center"/>
+              <Button HorizontalAlignment="Right"
+                      Padding="6,2" MinHeight="0"
+                      FontSize="11"
+                      Content="✕"
+                      Click="OnCloseExifPaneClicked"/>
+            </Grid>
 
-      <!-- Folder tree -->
-      <Border Grid.Column="0" Background="#202020">
-        <TreeView ItemsSource="{Binding DriveTree}"
-                  SelectedItem="{Binding SelectedTreeItem, Mode=TwoWay}"
-                  Background="Transparent"
-                  BorderThickness="0"
-                  Padding="4">
-          <TreeView.Styles>
-            <Style Selector="TreeViewItem">
-              <Setter Property="IsExpanded" Value="{ReflectionBinding IsExpanded, Mode=TwoWay}"/>
-            </Style>
-          </TreeView.Styles>
-          <TreeView.ItemTemplate>
-            <TreeDataTemplate ItemsSource="{Binding Children}" x:DataType="vm:FolderTreeItem">
-              <TextBlock Text="{Binding Name}" FontSize="12" Padding="2,3"/>
-            </TreeDataTemplate>
-          </TreeView.ItemTemplate>
-        </TreeView>
+            <TextBlock Text="Select an image to view its properties"
+                       Foreground="#5f7494" FontSize="11" FontStyle="Italic"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding !HasExifPaneData}"/>
+
+            <StackPanel Spacing="6" IsVisible="{Binding HasExifPaneData}">
+              <TextBlock Text="{Binding ExifFileName}"
+                         Foreground="#e7eef9" FontSize="14" FontWeight="SemiBold"
+                         TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding ExifFolder}"
+                         Foreground="#8fa1c0" FontSize="11"
+                         TextWrapping="Wrap"/>
+
+              <Border Height="1" Background="#2a3858" Margin="0,10"/>
+
+              <Grid IsVisible="{Binding ExifMetadata.DimensionsSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="Dimensions" Foreground="#8fa1c0" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding ExifMetadata.DimensionsSummary}"
+                           Foreground="#dde6f5" FontSize="12" HorizontalAlignment="Right"/>
+              </Grid>
+              <Grid IsVisible="{Binding ExifMetadata.FileSizeSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="Size" Foreground="#8fa1c0" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding ExifMetadata.FileSizeSummary}"
+                           Foreground="#dde6f5" FontSize="12" HorizontalAlignment="Right"/>
+              </Grid>
+
+              <Border Height="1" Background="#2a3858" Margin="0,10"
+                      IsVisible="{Binding HasAnyExifData}"/>
+
+              <StackPanel Spacing="4" IsVisible="{Binding HasAnyExifData}">
+                <TextBlock Text="{Binding ExifMetadata.CameraSummary}"
+                           Foreground="#dde6f5" FontSize="13" FontWeight="SemiBold"
+                           TextWrapping="Wrap"
+                           IsVisible="{Binding ExifMetadata.CameraSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <TextBlock Text="{Binding ExifMetadata.Lens}"
+                           Foreground="#b3c1dd" FontSize="11"
+                           TextWrapping="Wrap"
+                           IsVisible="{Binding ExifMetadata.Lens, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <TextBlock Text="{Binding ExifMetadata.ExposureSummary}"
+                           Foreground="#dde6f5" FontSize="12" Margin="0,4,0,0"
+                           IsVisible="{Binding ExifMetadata.ExposureSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <TextBlock Text="{Binding ExifMetadata.TakenAtSummary}"
+                           Foreground="#b3c1dd" FontSize="11"
+                           IsVisible="{Binding ExifMetadata.TakenAtSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+              </StackPanel>
+
+              <TextBlock Text="No camera metadata"
+                         Foreground="#5f7494" FontSize="11" FontStyle="Italic"
+                         Margin="0,8,0,0"
+                         IsVisible="{Binding !HasAnyExifData}"/>
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
       </Border>
 
-      <GridSplitter Grid.Column="1"
-                    Background="#1a1a1a"
-                    ResizeDirection="Columns"
-                    HorizontalAlignment="Stretch"/>
+      <!-- Tree pane | Splitter | Content -->
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="240" MinWidth="160"/>
+          <ColumnDefinition Width="4"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-      <!-- Thumbnail grid + empty state -->
-      <Grid Grid.Column="2">
-        <ListBox x:Name="ThumbList"
-                 ItemsSource="{Binding FilteredItems}"
-                 SelectedIndex="{Binding SelectedIndex, Mode=TwoWay}"
-                 DoubleTapped="OnThumbDoubleTapped"
-                 IsVisible="{Binding !ShowEmptyState}"
-                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                 Background="Transparent"
-                 BorderThickness="0"
-                 Padding="8">
-          <ListBox.ItemsPanel>
-            <ItemsPanelTemplate>
-              <WrapPanel/>
-            </ItemsPanelTemplate>
-          </ListBox.ItemsPanel>
-          <ListBox.ItemTemplate>
-            <DataTemplate x:DataType="vm:ThumbnailItem">
-              <Border Width="200" Height="220" Margin="4"
-                      Background="#252525" CornerRadius="4">
-                <DockPanel>
-                  <TextBlock DockPanel.Dock="Bottom"
-                             Text="{Binding FileName}"
-                             Foreground="#cccccc"
-                             FontSize="11"
-                             TextTrimming="CharacterEllipsis"
-                             HorizontalAlignment="Center"
-                             Margin="6,2,6,6"/>
-                  <Border Background="#0a0a0a" Margin="6,6,6,2">
-                    <Image Source="{Binding Thumbnail}" Stretch="Uniform"/>
-                  </Border>
-                </DockPanel>
-              </Border>
-            </DataTemplate>
-          </ListBox.ItemTemplate>
-        </ListBox>
+        <!-- Folder tree -->
+        <Border Grid.Column="0" Background="#131c33">
+          <TreeView x:Name="FolderTree"
+                    ItemsSource="{Binding DriveTree}"
+                    SelectedItem="{Binding SelectedTreeItem, Mode=TwoWay}"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                    Padding="4">
+            <TreeView.Styles>
+              <Style Selector="TreeViewItem">
+                <Setter Property="IsExpanded" Value="{ReflectionBinding IsExpanded, Mode=TwoWay}"/>
+              </Style>
+            </TreeView.Styles>
+            <TreeView.ItemTemplate>
+              <TreeDataTemplate ItemsSource="{Binding Children}" x:DataType="vm:FolderTreeItem">
+                <TextBlock Text="{Binding Name}"
+                           FontSize="12" Padding="2,3"
+                           TextTrimming="CharacterEllipsis"
+                           ToolTip.Tip="{Binding Name}"/>
+              </TreeDataTemplate>
+            </TreeView.ItemTemplate>
+          </TreeView>
+        </Border>
 
-        <Panel IsVisible="{Binding ShowEmptyState}" Background="#1a1a1a">
-          <StackPanel Spacing="14"
+        <GridSplitter Grid.Column="1"
+                      Background="#0f1729"
+                      ResizeDirection="Columns"
+                      HorizontalAlignment="Stretch"/>
+
+        <!-- Thumbnail grid + empty state -->
+        <Grid Grid.Column="2">
+          <ListBox x:Name="ThumbList"
+                   ItemsSource="{Binding FilteredItems}"
+                   SelectedIndex="{Binding SelectedIndex, Mode=TwoWay}"
+                   DoubleTapped="OnThumbDoubleTapped"
+                   IsVisible="{Binding !ShowEmptyState}"
+                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                   Background="Transparent"
+                   BorderThickness="0"
+                   Padding="4">
+            <ListBox.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel/>
+              </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:ThumbnailItem">
+                <Border Width="{ReflectionBinding #Root.DataContext.ThumbnailWidth}"
+                        Height="{ReflectionBinding #Root.DataContext.ThumbnailHeight}"
+                        Margin="2"
+                        Background="#1a2440" CornerRadius="4">
+                  <Border.ContextFlyout>
+                    <MenuFlyout>
+                      <MenuItem Header="Properties" Click="OnThumbPropertiesClicked"/>
+                    </MenuFlyout>
+                  </Border.ContextFlyout>
+                  <Grid>
+                    <DockPanel>
+                      <Grid DockPanel.Dock="Bottom" Margin="3,1,3,3">
+                        <TextBlock Text="{Binding FileName}"
+                                   Foreground="#dde6f5"
+                                   FontSize="11"
+                                   TextTrimming="CharacterEllipsis"
+                                   HorizontalAlignment="Center"
+                                   IsVisible="{Binding !IsRenaming}"/>
+                        <TextBox Text="{Binding RenameText, Mode=TwoWay}"
+                                 FontSize="11"
+                                 Padding="3,1"
+                                 MinHeight="0"
+                                 IsVisible="{Binding IsRenaming}"
+                                 LostFocus="OnRenameLostFocus"
+                                 AttachedToVisualTree="OnRenameTextBoxAttached"/>
+                      </Grid>
+                      <Border Background="#070b16" Margin="3,3,3,1">
+                        <Image Source="{Binding Thumbnail}" Stretch="Uniform"/>
+                      </Border>
+                    </DockPanel>
+                    <!-- Extension pill -->
+                    <Border HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Margin="0,8,8,0"
+                            Background="#cc0a1226"
+                            BorderBrush="{Binding ExtensionBrush}"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            Padding="6,2"
+                            IsHitTestVisible="False"
+                            IsVisible="{Binding !IsRenaming}">
+                      <TextBlock Text="{Binding ExtensionLabel}"
+                                 FontSize="9"
+                                 FontWeight="SemiBold"
+                                 Foreground="{Binding ExtensionBrush}"/>
+                    </Border>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <Panel IsVisible="{Binding ShowEmptyState}" Background="#0f1729">
+            <StackPanel Spacing="14"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Margin="40">
+              <TextBlock Text="No images to show"
+                         FontSize="20" Foreground="#8fa1c0"
+                         HorizontalAlignment="Center"/>
+              <TextBlock Text="{Binding EmptyStateHint}"
+                         FontSize="13" Foreground="#5f7494"
+                         HorizontalAlignment="Center"
+                         TextWrapping="Wrap" TextAlignment="Center"
+                         MaxWidth="420"/>
+              <Button Content="Open folder..."
+                      Click="OnOpenFolderClicked"
                       HorizontalAlignment="Center"
-                      VerticalAlignment="Center"
-                      Margin="40">
-            <TextBlock Text="No images to show"
-                       FontSize="20" Foreground="#888"
-                       HorizontalAlignment="Center"/>
-            <TextBlock Text="{Binding EmptyStateHint}"
-                       FontSize="13" Foreground="#666"
-                       HorizontalAlignment="Center"
-                       TextWrapping="Wrap" TextAlignment="Center"
-                       MaxWidth="420"/>
-            <Button Content="Open folder..."
-                    Click="OnOpenFolderClicked"
-                    HorizontalAlignment="Center"
-                    Padding="24,8"
-                    Margin="0,12,0,0"
-                    FontSize="13"/>
-            <TextBlock FontSize="11" Foreground="#555"
-                       HorizontalAlignment="Center" TextAlignment="Center"
-                       TextWrapping="Wrap" MaxWidth="420">
-              Tip: pick a folder from the tree on the left, drag one onto the window, or press Ctrl+O.
-            </TextBlock>
-          </StackPanel>
-        </Panel>
+                      Padding="24,8"
+                      Margin="0,12,0,0"
+                      FontSize="13"/>
+              <TextBlock FontSize="11" Foreground="#445573"
+                         HorizontalAlignment="Center" TextAlignment="Center"
+                         TextWrapping="Wrap" MaxWidth="420">
+                Tip: pick a folder from the tree on the left, drag one onto the window, or press Ctrl+O.
+              </TextBlock>
+            </StackPanel>
+          </Panel>
+        </Grid>
       </Grid>
-    </Grid>
+    </DockPanel>
   </DockPanel>
 </UserControl>

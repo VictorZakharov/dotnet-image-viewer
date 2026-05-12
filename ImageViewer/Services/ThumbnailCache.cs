@@ -14,7 +14,6 @@ public sealed class ThumbnailCache
 {
     private readonly string _cacheDir;
     private readonly SemaphoreSlim _semaphore;
-    private const int ThumbnailMaxDim = 256;
 
     public ThumbnailCache(string? customDir = null)
     {
@@ -32,7 +31,8 @@ public sealed class ThumbnailCache
         catch { return null; }
         if (!fi.Exists) return null;
 
-        string key = ComputeKey(imagePath, fi.LastWriteTimeUtc, fi.Length);
+        var dim = Math.Max(64, requestedDim);
+        string key = ComputeKey(imagePath, fi.LastWriteTimeUtc, fi.Length, dim);
         string thumbPath = Path.Combine(_cacheDir, key + ".jpg");
 
         if (File.Exists(thumbPath))
@@ -59,7 +59,7 @@ public sealed class ThumbnailCache
                     using var img = new MagickImage(imagePath);
                     ct.ThrowIfCancellationRequested();
                     img.AutoOrient();
-                    img.Thumbnail((uint)ThumbnailMaxDim, (uint)ThumbnailMaxDim);
+                    img.Thumbnail((uint)dim, (uint)dim);
                     img.Quality = 85;
 
                     using var ms = new MemoryStream();
@@ -106,9 +106,9 @@ public sealed class ThumbnailCache
         catch { /* cleanup is best-effort */ }
     }
 
-    private static string ComputeKey(string path, DateTime mtime, long size)
+    private static string ComputeKey(string path, DateTime mtime, long size, int dim)
     {
-        var input = $"{path.ToLowerInvariant()}|{mtime.Ticks}|{size}";
+        var input = $"{path.ToLowerInvariant()}|{mtime.Ticks}|{size}|{dim}";
         var bytes = Encoding.UTF8.GetBytes(input);
         var hash = SHA1.HashData(bytes);
         return Convert.ToHexString(hash).ToLowerInvariant();

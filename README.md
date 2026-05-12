@@ -10,7 +10,7 @@ A lightweight, ACDSee-style image viewer for Windows. Built on .NET 10 and Avalo
 - Mouse-wheel zoom centered on the cursor
 - Click and drag to pan when zoomed in
 - Double-click toggles **Fit-to-window** ↔ **Actual size (100%)**
-- `←` / `→` navigate to the previous / next image in the folder
+- `←` / `→` (or `↑` / `↓`) navigate to the previous / next image in the folder
 - `R` rotates the display (per session; doesn't modify the file)
 - `F` or `F11` fullscreen
 - `I` toggles an EXIF metadata overlay (camera, lens, exposure, dimensions, file size)
@@ -22,7 +22,13 @@ A lightweight, ACDSee-style image viewer for Windows. Built on .NET 10 and Avalo
 - Thumbnail grid with disk-cached thumbnails (256 px max, JPEG; cache lives under `%LOCALAPPDATA%`)
 - Sort by name, date, or size — click the sort buttons or press `Ctrl+1` / `Ctrl+2` / `Ctrl+3`; click again to toggle direction
 - Type any text to filter by filename — `Backspace` edits, `Esc` clears
+- Click the current path in the toolbar to edit it Explorer-style; press Enter to navigate or Esc to revert (invalid paths surface an inline error)
 - `Del` moves the selected image to the Recycle Bin
+- `F2` renames the selected file inline; only the stem is edited so the extension can't be lost. Enter commits, Esc cancels, click-away commits, and starting another rename commits the pending one
+- `Ctrl+wheel` resizes thumbnails (96–512 px). The cache regenerates at the new tier so larger thumbnails stay sharp; the size persists between launches
+- Each thumbnail shows its file extension as a coloured pill in the top-right corner (JPG amber, PNG green, GIF magenta, BMP gold, WEBP cyan, TIFF violet, RAW red)
+- Right-click any thumbnail (or image in the viewer) → **Properties** opens an EXIF side-pane; in the viewer the "EXIF" pill toggles the same panel
+- The folder tree expands and centers on the active folder when one is opened from the viewer, drag-drop, or CLI; long names truncate with a tooltip
 - `Enter` or double-click opens the selected image in the viewer
 - Drag-and-drop a file or folder anywhere on the window
 
@@ -54,9 +60,9 @@ Or launch `ImageViewer\bin\Debug\net10.0\ImageViewer.exe` directly. With no argu
 | Scope   | Key                       | Action                                            |
 |---------|---------------------------|---------------------------------------------------|
 | Global  | `Enter`                   | Toggle viewer ↔ browser                           |
-| Global  | `Esc`                     | Exit fullscreen, clear filter, or close window    |
+| Global  | `Esc`                     | Exit fullscreen → return to browser → clear filter (never closes) |
 | Global  | `Ctrl+O`                  | Open folder picker                                |
-| Viewer  | `←` `→`                   | Previous / next image                             |
+| Viewer  | `←` `→` `↑` `↓`           | Previous / next image                             |
 | Viewer  | `R`                       | Rotate display                                    |
 | Viewer  | `F` / `F11`               | Fullscreen                                        |
 | Viewer  | `I`                       | EXIF overlay                                      |
@@ -65,10 +71,15 @@ Or launch `ImageViewer\bin\Debug\net10.0\ImageViewer.exe` directly. With no argu
 | Viewer  | click + drag              | Pan when zoomed                                   |
 | Viewer  | double-click              | Fit ↔ 100%                                        |
 | Browser | `Del`                     | Move to Recycle Bin                               |
+| Browser | `F2`                      | Rename selected file (Enter commits, Esc cancels) |
+| Browser | `Ctrl` + wheel            | Resize thumbnails                                 |
 | Browser | `Backspace`               | Edit filter text                                  |
 | Browser | `Ctrl+1` `Ctrl+2` `Ctrl+3`| Sort by name / date / size                        |
 | Browser | (typing)                  | Filter by filename                                |
-| Browser | arrows                    | Move selection                                    |
+| Browser | arrows                    | 2D grid navigation (Up/Down by row)               |
+| Browser | `PageUp` / `PageDown`     | Page through thumbnails                           |
+| Browser | `Home` / `End`            | First / last thumbnail                            |
+| Browser | right-click               | Properties → EXIF pane                            |
 | Browser | `Enter` / double-click    | Open selected image                               |
 
 ## Tech stack
@@ -98,12 +109,9 @@ ImageViewer\
 ## Roadmap
 
 Known polish gaps, in rough priority order:
-- **F2 inline rename** in the browser
-- **Ctrl+wheel** to resize thumbnails
 - **Default-viewer file association** (`--register` / `--unregister` CLI flags are no-op stubs)
 - **Lossless rotate-and-save** (`R` is display-only at the moment)
 - **Thumbnail-grid virtualization** for folders with 1000+ images
-- **Tree-pane highlight** of the currently displayed folder
 
 ## Development notes
 

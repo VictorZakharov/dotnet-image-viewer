@@ -24,6 +24,23 @@ public sealed class ImageMetadata
         TakenAt is { } dt ? dt.ToString("yyyy-MM-dd HH:mm") : null;
     public string? FileSizeSummary => FileSizeBytes > 0 ? FormatBytes(FileSizeBytes) : null;
 
+    public string? CameraSummary
+    {
+        get
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrEmpty(CameraMake)) parts.Add(CameraMake!);
+            if (!string.IsNullOrEmpty(CameraModel)) parts.Add(CameraModel!);
+            return parts.Count == 0 ? null : string.Join(" ", parts);
+        }
+    }
+
+    public bool HasAnyExif =>
+        CameraSummary is not null
+        || !string.IsNullOrEmpty(Lens)
+        || ExposureSummary is not null
+        || TakenAtSummary is not null;
+
     private string? BuildExposure()
     {
         var parts = new List<string>();

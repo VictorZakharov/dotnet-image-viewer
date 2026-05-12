@@ -10,7 +10,7 @@
         Title="Image Viewer"
         Width="1280" Height="800"
         MinWidth="640" MinHeight="480"
-        Background="#1a1a1a">
+        Background="#0f1729">
 
   <Grid>
     <Grid IsVisible="{Binding IsViewerMode}">
