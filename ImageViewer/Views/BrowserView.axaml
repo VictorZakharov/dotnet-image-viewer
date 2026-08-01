@@ -133,6 +133,21 @@
                 <TextBlock Text="{Binding ExifMetadata.FileSizeSummary}"
                            Foreground="#dde6f5" FontSize="12" HorizontalAlignment="Right"/>
               </Grid>
+              <Grid IsVisible="{Binding ExifMetadata.FileCreatedAtSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="Created" Foreground="#8fa1c0" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding ExifMetadata.FileCreatedAtSummary}"
+                           Foreground="#dde6f5" FontSize="11" HorizontalAlignment="Right"/>
+              </Grid>
+              <Grid IsVisible="{Binding ExifMetadata.FileModifiedAtSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="Modified" Foreground="#8fa1c0" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding ExifMetadata.FileModifiedAtSummary}"
+                           Foreground="#dde6f5" FontSize="11" HorizontalAlignment="Right"/>
+              </Grid>
+              <Grid IsVisible="{Binding ExifMetadata.FileAccessedAtSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="Accessed" Foreground="#8fa1c0" FontSize="11" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding ExifMetadata.FileAccessedAtSummary}"
+                           Foreground="#dde6f5" FontSize="11" HorizontalAlignment="Right"/>
+              </Grid>
 
               <Border Height="1" Background="#2a3858" Margin="0,10"
                       IsVisible="{Binding HasAnyExifData}"/>
@@ -149,9 +164,11 @@
                 <TextBlock Text="{Binding ExifMetadata.ExposureSummary}"
                            Foreground="#dde6f5" FontSize="12" Margin="0,4,0,0"
                            IsVisible="{Binding ExifMetadata.ExposureSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                <TextBlock Text="{Binding ExifMetadata.TakenAtSummary}"
-                           Foreground="#b3c1dd" FontSize="11"
-                           IsVisible="{Binding ExifMetadata.TakenAtSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <Grid IsVisible="{Binding ExifMetadata.TakenAtSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                  <TextBlock Text="Date taken" Foreground="#8fa1c0" FontSize="11" VerticalAlignment="Center"/>
+                  <TextBlock Text="{Binding ExifMetadata.TakenAtSummary}"
+                             Foreground="#dde6f5" FontSize="11" HorizontalAlignment="Right"/>
+                </Grid>
               </StackPanel>
 
               <TextBlock Text="No camera metadata"
@@ -179,16 +196,19 @@
                     Background="Transparent"
                     BorderThickness="0"
                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                    Padding="4">
+                    Padding="2">
             <TreeView.Styles>
               <Style Selector="TreeViewItem">
                 <Setter Property="IsExpanded" Value="{ReflectionBinding IsExpanded, Mode=TwoWay}"/>
+                <Setter Property="MinHeight" Value="20"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Margin" Value="0"/>
               </Style>
             </TreeView.Styles>
             <TreeView.ItemTemplate>
               <TreeDataTemplate ItemsSource="{Binding Children}" x:DataType="vm:FolderTreeItem">
                 <TextBlock Text="{Binding Name}"
-                           FontSize="12" Padding="2,3"
+                           FontSize="11" Padding="1,0"
                            TextTrimming="CharacterEllipsis"
                            ToolTip.Tip="{Binding Name}"/>
               </TreeDataTemplate>
@@ -225,30 +245,106 @@
                         Background="#1a2440" CornerRadius="4">
                   <Border.ContextFlyout>
                     <MenuFlyout>
-                      <MenuItem Header="Properties" Click="OnThumbPropertiesClicked"/>
+                      <MenuItem Header="Properties"
+                                Click="OnThumbPropertiesClicked"
+                                IsVisible="{Binding IsImage}"/>
                     </MenuFlyout>
                   </Border.ContextFlyout>
                   <Grid>
                     <DockPanel>
-                      <Grid DockPanel.Dock="Bottom" Margin="3,1,3,3">
-                        <TextBlock Text="{Binding FileName}"
-                                   Foreground="#dde6f5"
+                      <Grid DockPanel.Dock="Bottom" Margin="5,1,5,3">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*"/>
+                          <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid Grid.Column="0">
+                          <TextBlock Text="{Binding FileName}"
+                                     Foreground="#dde6f5"
+                                     FontSize="11"
+                                     TextTrimming="CharacterEllipsis"
+                                     HorizontalAlignment="Left"
+                                     Cursor="Hand"
+                                     PointerPressed="OnThumbnailTitlePressed"
+                                     IsVisible="{Binding ShowImageTitle}"/>
+                          <TextBlock Text="{Binding FileName}"
+                                     Foreground="#e8c786"
+                                     FontSize="11"
+                                     FontWeight="SemiBold"
+                                     TextTrimming="CharacterEllipsis"
+                                     HorizontalAlignment="Left"
+                                     IsVisible="{Binding IsFolder}"/>
+                          <TextBox Text="{Binding RenameText, Mode=TwoWay}"
                                    FontSize="11"
-                                   TextTrimming="CharacterEllipsis"
-                                   HorizontalAlignment="Center"
-                                   IsVisible="{Binding !IsRenaming}"/>
-                        <TextBox Text="{Binding RenameText, Mode=TwoWay}"
-                                 FontSize="11"
-                                 Padding="3,1"
-                                 MinHeight="0"
-                                 IsVisible="{Binding IsRenaming}"
-                                 LostFocus="OnRenameLostFocus"
-                                 AttachedToVisualTree="OnRenameTextBoxAttached"/>
+                                   Padding="3,1"
+                                   MinHeight="0"
+                                   IsVisible="{Binding IsRenaming}"
+                                   LostFocus="OnRenameLostFocus"
+                                   AttachedToVisualTree="OnRenameTextBoxAttached"/>
+                        </Grid>
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding DateLabel}"
+                                   ToolTip.Tip="{Binding DateToolTip}"
+                                   Foreground="#7f91af"
+                                   FontSize="9"
+                                   Margin="6,0,0,0"
+                                   VerticalAlignment="Center"/>
                       </Grid>
-                      <Border Background="#070b16" Margin="3,3,3,1">
-                        <Image Source="{Binding Thumbnail}" Stretch="Uniform"/>
-                      </Border>
+                      <Grid Margin="3,3,3,1">
+                        <Border Background="#070b16"
+                                IsVisible="{Binding IsImage}">
+                          <Image Source="{Binding Thumbnail}" Stretch="Uniform"/>
+                        </Border>
+                        <Border Background="#111a2d"
+                                BorderBrush="#9b753d"
+                                BorderThickness="1"
+                                CornerRadius="3"
+                                IsVisible="{Binding IsFolder}">
+                          <Grid Margin="3">
+                            <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="*"/>
+                              <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                              <RowDefinition Height="*"/>
+                              <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0" Grid.Column="0"
+                                    Background="#070b16" Margin="0,0,1,1"
+                                    CornerRadius="2" ClipToBounds="True">
+                              <Image Source="{Binding FolderThumbnail1}" Stretch="UniformToFill"/>
+                            </Border>
+                            <Border Grid.Row="0" Grid.Column="1"
+                                    Background="#070b16" Margin="1,0,0,1"
+                                    CornerRadius="2" ClipToBounds="True">
+                              <Image Source="{Binding FolderThumbnail2}" Stretch="UniformToFill"/>
+                            </Border>
+                            <Border Grid.Row="1" Grid.Column="0"
+                                    Background="#070b16" Margin="0,1,1,0"
+                                    CornerRadius="2" ClipToBounds="True">
+                              <Image Source="{Binding FolderThumbnail3}" Stretch="UniformToFill"/>
+                            </Border>
+                            <Border Grid.Row="1" Grid.Column="1"
+                                    Background="#070b16" Margin="1,1,0,0"
+                                    CornerRadius="2" ClipToBounds="True">
+                              <Image Source="{Binding FolderThumbnail4}" Stretch="UniformToFill"/>
+                            </Border>
+                          </Grid>
+                        </Border>
+                      </Grid>
                     </DockPanel>
+                    <!-- Folder badge -->
+                    <Border HorizontalAlignment="Left" VerticalAlignment="Top"
+                            Margin="8,8,0,0"
+                            Background="#e0a060"
+                            CornerRadius="3"
+                            Padding="6,2"
+                            IsHitTestVisible="False"
+                            IsVisible="{Binding IsFolder}">
+                      <TextBlock Text="FOLDER"
+                                 FontSize="9"
+                                 FontWeight="Bold"
+                                 Foreground="#1a2030"/>
+                    </Border>
                     <!-- Extension pill -->
                     <Border HorizontalAlignment="Right" VerticalAlignment="Top"
                             Margin="0,8,8,0"
@@ -258,7 +354,7 @@
                             CornerRadius="3"
                             Padding="6,2"
                             IsHitTestVisible="False"
-                            IsVisible="{Binding !IsRenaming}">
+                            IsVisible="{Binding ShowImageTitle}">
                       <TextBlock Text="{Binding ExtensionLabel}"
                                  FontSize="9"
                                  FontWeight="SemiBold"

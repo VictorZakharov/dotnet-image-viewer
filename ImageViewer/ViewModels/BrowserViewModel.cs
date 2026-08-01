@@ -101,8 +101,8 @@ public partial class BrowserViewModel : ObservableObject
             if (string.IsNullOrEmpty(CurrentFolder))
                 return "Click \"Open folder…\", press Ctrl+O, or drag a folder here.";
             if (HasFilter)
-                return $"No images match \"{FilterText}\".";
-            return "This folder contains no supported images.";
+                return $"No items match \"{FilterText}\".";
+            return "This folder contains no supported images or visible subfolders.";
         }
     }
 
@@ -134,14 +134,15 @@ public partial class BrowserViewModel : ObservableObject
 
     private void LoadCurrentExif()
     {
-        var path = SelectedPath;
-        if (path is null)
+        var item = SelectedItem;
+        if (item is null || item.IsFolder)
         {
             ExifMetadata = null;
             ExifFileName = null;
             ExifFolder = null;
             return;
         }
+        var path = item.Path;
         ExifFileName = Path.GetFileName(path);
         ExifFolder = Path.GetDirectoryName(path);
         try { ExifMetadata = ExifReader.Read(path); }
@@ -240,10 +241,12 @@ public partial class BrowserViewModel : ObservableObject
 
     private static string NormalizeRoot(string p) => p.TrimEnd('\\', '/');
 
-    public string? SelectedPath =>
+    public ThumbnailItem? SelectedItem =>
         SelectedIndex >= 0 && SelectedIndex < FilteredItems.Count
-            ? FilteredItems[SelectedIndex].Path
+            ? FilteredItems[SelectedIndex]
             : null;
+
+    public string? SelectedPath => SelectedItem?.Path;
 
     public async Task LoadFolderAsync(string folder)
     {
@@ -266,12 +269,15 @@ public partial class BrowserViewModel : ObservableObject
 
         try
         {
-            var files = await FolderScanner.ScanAsync(folder, ct);
-            var sorted = ApplySortToList(files);
-            foreach (var f in sorted)
+            var contents = await FolderScanner.ScanBrowserAsync(folder, ct);
+            var entries = contents.Folders
+                .Select(entry => ThumbnailItem.CreateFolder(entry.Path, entry.PreviewImages))
+                .Concat(contents.Images.Select(path => new ThumbnailItem(path)));
+
+            foreach (var entry in ApplySortToItems(entries))
             {
                 ct.ThrowIfCancellationRequested();
-                Items.Add(new ThumbnailItem(f));
+                Items.Add(entry);
             }
             ApplyFilter();
             UpdateItemsSummary();
@@ -290,17 +296,39 @@ public partial class BrowserViewModel : ObservableObject
     {
         var snapshot = Items.ToList();
         var tier = _activeCacheTier;
+        var folderPreviewTier = RoundToCacheTier(Math.Max(64, ThumbnailWidth / 2));
         foreach (var item in snapshot)
         {
             if (ct.IsCancellationRequested) break;
-            if (!force && item.Thumbnail is not null) continue;
 
             try
             {
-                var thumb = await _cache.GetOrCreateAsync(item.Path, tier, ct);
-                if (thumb is not null)
+                if (item.IsFolder)
                 {
-                    await Dispatcher.UIThread.InvokeAsync(() => item.Thumbnail = thumb);
+                    var previewCount = Math.Min(4, item.FolderPreviewPaths.Count);
+                    for (var index = 0; index < previewCount; index++)
+                    {
+                        if (!force && item.GetFolderThumbnail(index) is not null) continue;
+
+                        var preview = await _cache.GetOrCreateAsync(
+                            item.FolderPreviewPaths[index], folderPreviewTier, ct);
+                        if (preview is not null)
+                        {
+                            var previewIndex = index;
+                            await Dispatcher.UIThread.InvokeAsync(
+                                () => item.SetFolderThumbnail(previewIndex, preview));
+                        }
+                    }
+                }
+                else
+                {
+                    if (!force && item.Thumbnail is not null) continue;
+
+                    var thumbnail = await _cache.GetOrCreateAsync(item.Path, tier, ct);
+                    if (thumbnail is not null)
+                    {
+                        await Dispatcher.UIThread.InvokeAsync(() => item.Thumbnail = thumbnail);
+                    }
                 }
             }
             catch (OperationCanceledException) { break; }
@@ -308,15 +336,23 @@ public partial class BrowserViewModel : ObservableObject
         }
     }
 
-    private List<string> ApplySortToList(List<string> files)
+    private List<ThumbnailItem> ApplySortToItems(IEnumerable<ThumbnailItem> items)
     {
-        IEnumerable<string> sorted = SortMode switch
+        IEnumerable<ThumbnailItem> SortGroup(IEnumerable<ThumbnailItem> group)
         {
-            SortMode.Date => files.OrderBy(GetMtime),
-            SortMode.Size => files.OrderBy(GetSize),
-            _ => files.OrderBy(f => Path.GetFileName(f), StringComparer.OrdinalIgnoreCase)
-        };
-        return SortDescending ? sorted.Reverse().ToList() : sorted.ToList();
+            IEnumerable<ThumbnailItem> sorted = SortMode switch
+            {
+                SortMode.Date => group.OrderBy(item => GetMtime(item.Path)),
+                SortMode.Size => group.OrderBy(item => GetSize(item.Path)),
+                _ => group.OrderBy(item => item.FileName, StringComparer.OrdinalIgnoreCase)
+            };
+            return SortDescending ? sorted.Reverse() : sorted;
+        }
+
+        // Keep navigation folders grouped ahead of image files in every sort mode.
+        return SortGroup(items.Where(item => item.IsFolder))
+            .Concat(SortGroup(items.Where(item => !item.IsFolder)))
+            .ToList();
     }
 
     private static DateTime GetMtime(string p)
@@ -352,11 +388,10 @@ public partial class BrowserViewModel : ObservableObject
     private void ResortItems()
     {
         var current = SelectedPath;
-        var sorted = ApplySortToList(Items.Select(i => i.Path).ToList());
-        var byPath = Items.ToDictionary(i => i.Path, i => i);
+        var sorted = ApplySortToItems(Items);
         Items.Clear();
-        foreach (var p in sorted)
-            Items.Add(byPath.TryGetValue(p, out var existing) ? existing : new ThumbnailItem(p));
+        foreach (var item in sorted)
+            Items.Add(item);
         ApplyFilter();
         if (current is not null)
         {
@@ -397,10 +432,19 @@ public partial class BrowserViewModel : ObservableObject
 
     private void UpdateItemsSummary()
     {
+        var folderCount = Items.Count(item => item.IsFolder);
+        var imageCount = Items.Count - folderCount;
         ItemsSummary = FilteredItems.Count == Items.Count
-            ? $"{Items.Count} image{(Items.Count == 1 ? "" : "s")}"
-            : $"{FilteredItems.Count} of {Items.Count}";
+            ? FormatItemCounts(folderCount, imageCount)
+            : $"{FilteredItems.Count} of {Items.Count} items";
         ShowEmptyState = FilteredItems.Count == 0 && !IsLoading;
+    }
+
+    private static string FormatItemCounts(int folderCount, int imageCount)
+    {
+        var folders = $"{folderCount} folder{(folderCount == 1 ? "" : "s")}";
+        var images = $"{imageCount} image{(imageCount == 1 ? "" : "s")}";
+        return folderCount > 0 ? $"{folders}, {images}" : images;
     }
 
     partial void OnIsLoadingChanged(bool value)
@@ -418,6 +462,7 @@ public partial class BrowserViewModel : ObservableObject
     {
         if (SelectedIndex < 0 || SelectedIndex >= FilteredItems.Count) return;
         var target = FilteredItems[SelectedIndex];
+        if (target.IsFolder) return;
 
         if (_renamingItem is not null && !ReferenceEquals(_renamingItem, target) && _renamingItem.IsRenaming)
         {
@@ -517,8 +562,9 @@ public partial class BrowserViewModel : ObservableObject
     [RelayCommand]
     private void DeleteSelected()
     {
-        var path = SelectedPath;
-        if (path is null) return;
+        var selected = SelectedItem;
+        if (selected is null || selected.IsFolder) return;
+        var path = selected.Path;
         if (!FileOperations.DeleteToRecycleBin(path)) return;
 
         var item = FilteredItems[SelectedIndex];

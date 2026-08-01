@@ -123,8 +123,23 @@ public partial class BrowserView : UserControl
 
     private void OnThumbDoubleTapped(object? sender, TappedEventArgs e)
     {
-        if (DataContext is BrowserViewModel vm)
-            vm.OpenSelected();
+        if (DataContext is not BrowserViewModel vm) return;
+        if (vm.FilteredItems.Any(item => item.IsRenaming)) return;
+        vm.OpenSelected();
+    }
+
+    private void OnThumbnailTitlePressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+        if (sender is not TextBlock { DataContext: ThumbnailItem item }) return;
+        if (item.IsFolder || DataContext is not BrowserViewModel vm) return;
+
+        var index = vm.FilteredItems.IndexOf(item);
+        if (index < 0) return;
+
+        vm.SelectedIndex = index;
+        vm.BeginRenameSelected();
+        e.Handled = true;
     }
 
     private async void OnOpenFolderClicked(object? sender, RoutedEventArgs e)

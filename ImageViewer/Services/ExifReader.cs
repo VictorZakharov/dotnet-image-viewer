@@ -12,7 +12,18 @@ public static class ExifReader
     public static ImageMetadata Read(string path)
     {
         long fileSize = 0;
-        try { fileSize = new FileInfo(path).Length; } catch { /* ignored */ }
+        DateTime? fileCreatedAt = null;
+        DateTime? fileModifiedAt = null;
+        DateTime? fileAccessedAt = null;
+        try
+        {
+            var file = new FileInfo(path);
+            fileSize = file.Length;
+            fileCreatedAt = file.CreationTime;
+            fileModifiedAt = file.LastWriteTime;
+            fileAccessedAt = file.LastAccessTime;
+        }
+        catch { /* ignored */ }
 
         try
         {
@@ -39,6 +50,10 @@ public static class ExifReader
             DateTime? takenAt = null;
             if (sub is not null && sub.TryGetDateTime(ExifDirectoryBase.TagDateTimeOriginal, out var dt))
                 takenAt = dt;
+            else if (sub is not null && sub.TryGetDateTime(ExifDirectoryBase.TagDateTimeDigitized, out dt))
+                takenAt = dt;
+            else if (ifd0 is not null && ifd0.TryGetDateTime(ExifDirectoryBase.TagDateTime, out dt))
+                takenAt = dt;
 
             int? width = null;
             int? height = null;
@@ -60,12 +75,21 @@ public static class ExifReader
                 TakenAt = takenAt,
                 Width = width,
                 Height = height,
-                FileSizeBytes = fileSize
+                FileSizeBytes = fileSize,
+                FileCreatedAt = fileCreatedAt,
+                FileModifiedAt = fileModifiedAt,
+                FileAccessedAt = fileAccessedAt
             };
         }
         catch
         {
-            return new ImageMetadata { FileSizeBytes = fileSize };
+            return new ImageMetadata
+            {
+                FileSizeBytes = fileSize,
+                FileCreatedAt = fileCreatedAt,
+                FileModifiedAt = fileModifiedAt,
+                FileAccessedAt = fileAccessedAt
+            };
         }
     }
 }
