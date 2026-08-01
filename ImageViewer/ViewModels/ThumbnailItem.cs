@@ -9,6 +9,16 @@ namespace ImageViewer.ViewModels;
 
 public partial class ThumbnailItem : ObservableObject
 {
+    public bool IsFolder { get; }
+    public bool IsImage => !IsFolder;
+    public IReadOnlyList<string> FolderPreviewPaths { get; }
+    public DateTime? ModifiedAt { get; }
+    public string DateLabel => ModifiedAt?.ToString("yyyy-MM-dd") ?? "";
+    public string DateToolTip => ModifiedAt is { } date
+        ? $"Modified {date:yyyy-MM-dd HH:mm:ss}"
+        : "Modified date unavailable";
+    public bool ShowImageTitle => IsImage && !IsRenaming;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ExtensionLabel), nameof(ExtensionBrush))]
     private string _path;
@@ -18,13 +28,20 @@ public partial class ThumbnailItem : ObservableObject
     private string _fileName;
 
     [ObservableProperty] private Bitmap? _thumbnail;
-    [ObservableProperty] private bool _isRenaming;
+    [ObservableProperty] private Bitmap? _folderThumbnail1;
+    [ObservableProperty] private Bitmap? _folderThumbnail2;
+    [ObservableProperty] private Bitmap? _folderThumbnail3;
+    [ObservableProperty] private Bitmap? _folderThumbnail4;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowImageTitle))]
+    private bool _isRenaming;
     [ObservableProperty] private string _renameText = "";
 
     public string ExtensionLabel
     {
         get
         {
+            if (IsFolder) return "";
             var ext = System.IO.Path.GetExtension(FileName);
             return string.IsNullOrEmpty(ext) ? "" : ext.TrimStart('.').ToUpperInvariant();
         }
@@ -61,13 +78,58 @@ public partial class ThumbnailItem : ObservableObject
         ExtensionBrushes.TryGetValue(label, out var b) ? b : DefaultExtBrush;
 
     public ThumbnailItem(string path)
+        : this(path, isFolder: false, Array.Empty<string>())
     {
+    }
+
+    private ThumbnailItem(string path, bool isFolder, IReadOnlyList<string> folderPreviewPaths)
+    {
+        IsFolder = isFolder;
+        FolderPreviewPaths = folderPreviewPaths;
+        ModifiedAt = GetModifiedAt(path);
         _path = path;
         _fileName = System.IO.Path.GetFileName(path);
     }
 
+    public static ThumbnailItem CreateFolder(string path, IReadOnlyList<string> previewImagePaths) =>
+        new(path, isFolder: true, previewImagePaths);
+
+    private static DateTime? GetModifiedAt(string path)
+    {
+        try
+        {
+            var modifiedAt = File.GetLastWriteTime(path);
+            return modifiedAt == DateTime.MinValue ? null : modifiedAt;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public Bitmap? GetFolderThumbnail(int index) => index switch
+    {
+        0 => FolderThumbnail1,
+        1 => FolderThumbnail2,
+        2 => FolderThumbnail3,
+        3 => FolderThumbnail4,
+        _ => null
+    };
+
+    public void SetFolderThumbnail(int index, Bitmap? bitmap)
+    {
+        switch (index)
+        {
+            case 0: FolderThumbnail1 = bitmap; break;
+            case 1: FolderThumbnail2 = bitmap; break;
+            case 2: FolderThumbnail3 = bitmap; break;
+            case 3: FolderThumbnail4 = bitmap; break;
+        }
+    }
+
     public void BeginRename()
     {
+        if (IsFolder) return;
         RenameText = System.IO.Path.GetFileNameWithoutExtension(FileName);
         IsRenaming = true;
     }
@@ -77,6 +139,7 @@ public partial class ThumbnailItem : ObservableObject
     public bool TryCommitRename(out string? newPath)
     {
         newPath = null;
+        if (IsFolder) return false;
         var requestedStem = (RenameText ?? "").Trim();
         var oldStem = System.IO.Path.GetFileNameWithoutExtension(FileName);
         var ext = System.IO.Path.GetExtension(FileName);

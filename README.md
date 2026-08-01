@@ -2,7 +2,7 @@
 
 A lightweight, ACDSee-style image viewer for Windows. Built on .NET 10 and Avalonia 11.
 
-> **Status**: early MVP. The viewer and browser work; some polish features (rename, file association, virtualized grid) are deferred — see [Roadmap](#roadmap).
+> **Status**: early MVP. The viewer and browser work; file association and grid virtualization are deferred — see [Roadmap](#roadmap).
 
 ## Features
 
@@ -18,18 +18,18 @@ A lightweight, ACDSee-style image viewer for Windows. Built on .NET 10 and Avalo
 - Respects EXIF orientation on load
 
 ### Browser mode
-- Explorer-style folder tree with drives at the root, lazy-loaded subfolders, resizable splitter
-- Thumbnail grid with disk-cached thumbnails (256 px max, JPEG; cache lives under `%LOCALAPPDATA%`)
+- Explorer-style folder tree with drives at the root, compact rows, accurate leaf-folder chevrons, lazy-loaded subfolders, and a resizable splitter
+- Thumbnail grid with disk-cached thumbnails (tiered up to 512 px, JPEG; cache lives under `%LOCALAPPDATA%`); subfolders stay above images and show a 2x2 preview mosaic
 - Sort by name, date, or size — click the sort buttons or press `Ctrl+1` / `Ctrl+2` / `Ctrl+3`; click again to toggle direction
 - Type any text to filter by filename — `Backspace` edits, `Esc` clears
 - Click the current path in the toolbar to edit it Explorer-style; press Enter to navigate or Esc to revert (invalid paths surface an inline error)
 - `Del` moves the selected image to the Recycle Bin
-- `F2` renames the selected file inline; only the stem is edited so the extension can't be lost. Enter commits, Esc cancels, click-away commits, and starting another rename commits the pending one
+- Click an image title or press `F2` to rename it inline; only the stem is edited so the extension can't be lost. Enter commits, Esc cancels, click-away commits, and starting another rename commits the pending one
 - `Ctrl+wheel` resizes thumbnails (96–512 px). The cache regenerates at the new tier so larger thumbnails stay sharp; the size persists between launches
 - Each thumbnail shows its file extension as a coloured pill in the top-right corner (JPG amber, PNG green, GIF magenta, BMP gold, WEBP cyan, TIFF violet, RAW red)
-- Right-click any thumbnail (or image in the viewer) → **Properties** opens an EXIF side-pane; in the viewer the "EXIF" pill toggles the same panel
+- Right-click any thumbnail (or image in the viewer) → **Properties** opens a side-pane with EXIF date-taken data plus created, modified, and accessed file dates; in the viewer the "EXIF" pill toggles the same panel
 - The folder tree expands and centers on the active folder when one is opened from the viewer, drag-drop, or CLI; long names truncate with a tooltip
-- `Enter` or double-click opens the selected image in the viewer
+- `Enter` or double-click opens the selected image or navigates into the selected folder
 - Drag-and-drop a file or folder anywhere on the window
 
 ### Other
@@ -71,7 +71,7 @@ Or launch `ImageViewer\bin\Debug\net10.0\ImageViewer.exe` directly. With no argu
 | Viewer  | click + drag              | Pan when zoomed                                   |
 | Viewer  | double-click              | Fit ↔ 100%                                        |
 | Browser | `Del`                     | Move to Recycle Bin                               |
-| Browser | `F2`                      | Rename selected file (Enter commits, Esc cancels) |
+| Browser | `F2` / click image title  | Rename selected file (Enter commits, Esc cancels) |
 | Browser | `Ctrl` + wheel            | Resize thumbnails                                 |
 | Browser | `Backspace`               | Edit filter text                                  |
 | Browser | `Ctrl+1` `Ctrl+2` `Ctrl+3`| Sort by name / date / size                        |
@@ -80,7 +80,7 @@ Or launch `ImageViewer\bin\Debug\net10.0\ImageViewer.exe` directly. With no argu
 | Browser | `PageUp` / `PageDown`     | Page through thumbnails                           |
 | Browser | `Home` / `End`            | First / last thumbnail                            |
 | Browser | right-click               | Properties → EXIF pane                            |
-| Browser | `Enter` / double-click    | Open selected image                               |
+| Browser | `Enter` / double-click    | Open selected image or folder                     |
 
 ## Tech stack
 

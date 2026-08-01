@@ -16,12 +16,18 @@ public sealed class ImageMetadata
     public int? Width { get; init; }
     public int? Height { get; init; }
     public long FileSizeBytes { get; init; }
+    public DateTime? FileCreatedAt { get; init; }
+    public DateTime? FileModifiedAt { get; init; }
+    public DateTime? FileAccessedAt { get; init; }
 
     public string? ExposureSummary => BuildExposure();
     public string? DimensionsSummary =>
         Width is int w && Height is int h ? $"{w} × {h}" : null;
     public string? TakenAtSummary =>
-        TakenAt is { } dt ? dt.ToString("yyyy-MM-dd HH:mm") : null;
+        FormatDate(TakenAt);
+    public string? FileCreatedAtSummary => FormatDate(FileCreatedAt);
+    public string? FileModifiedAtSummary => FormatDate(FileModifiedAt);
+    public string? FileAccessedAtSummary => FormatDate(FileAccessedAt);
     public string? FileSizeSummary => FileSizeBytes > 0 ? FormatBytes(FileSizeBytes) : null;
 
     public string? CameraSummary
@@ -54,6 +60,9 @@ public sealed class ImageMetadata
         if (Iso is { } iso) parts.Add($"ISO {iso}");
         return parts.Count == 0 ? null : string.Join("  ", parts);
     }
+
+    private static string? FormatDate(DateTime? value) =>
+        value is { } date ? date.ToString("yyyy-MM-dd HH:mm:ss") : null;
 
     private static string FormatBytes(long bytes)
     {
