@@ -16,14 +16,18 @@ public partial class FolderTreeItem : ObservableObject
 
     [ObservableProperty] private bool _isExpanded;
 
-    public FolderTreeItem(string path, string name, bool addPlaceholder = true)
+    public FolderTreeItem(
+        string path,
+        string name,
+        bool addPlaceholder = true,
+        bool probeForChildren = true)
     {
         Path = path;
         Name = name;
 
         // TreeView decides whether to render its expander from the item count.
         // Probe one level so leaf folders never receive a misleading chevron.
-        if (addPlaceholder && HasVisibleSubfolder(path))
+        if (addPlaceholder && (!probeForChildren || HasVisibleSubfolder(path)))
             Children.Add(new FolderTreeItem("", "", addPlaceholder: false));
     }
 

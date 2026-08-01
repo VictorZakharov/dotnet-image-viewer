@@ -187,7 +187,12 @@ public partial class BrowserViewModel : ObservableObject
                 {
                     label = drive.Name;
                 }
-                DriveTree.Add(new FolderTreeItem(drive.RootDirectory.FullName, label));
+                // Never block initial window creation by enumerating drive roots.
+                // Expanding a drive replaces this hint with its actual children.
+                DriveTree.Add(new FolderTreeItem(
+                    drive.RootDirectory.FullName,
+                    label,
+                    probeForChildren: false));
             }
         }
         catch { /* drives inaccessible */ }
