@@ -63,6 +63,7 @@ public partial class BrowserViewModel : ObservableObject
 
     private int _activeCacheTier;
     private bool _suppressTreeSelectionLoad;
+    private int _treeSyncVersion;
     private ThumbnailItem? _renamingItem;
 
     [ObservableProperty] private bool _isEditingPath;
@@ -102,7 +103,7 @@ public partial class BrowserViewModel : ObservableObject
                 return "Click \"Open folder…\", press Ctrl+O, or drag a folder here.";
             if (HasFilter)
                 return $"No items match \"{FilterText}\".";
-            return "This folder contains no supported images or visible subfolders.";
+            return "This folder contains no supported images, videos, or visible subfolders.";
         }
     }
 
@@ -116,10 +117,13 @@ public partial class BrowserViewModel : ObservableObject
         Settings = settings;
         if (Enum.TryParse(settings.SortMode, true, out SortMode sm)) SortMode = sm;
         SortDescending = settings.SortDescending;
-        ThumbnailWidth = Math.Clamp(settings.ThumbnailSize, MinThumbnailSize, MaxThumbnailSize);
-        _activeCacheTier = RoundToCacheTier(ThumbnailWidth);
+        // Initialize the backing field directly. Going through the generated
+        // setter here would synchronously rewrite settings before the first
+        // window appears.
+        _thumbnailWidth = Math.Clamp(settings.ThumbnailSize, MinThumbnailSize, MaxThumbnailSize);
+        _activeCacheTier = RoundToCacheTier(_thumbnailWidth);
         ShowExifPane = settings.ShowExifPane;
-        LoadDrives();
+        _ = LoadDrivesAsync();
     }
 
     partial void OnShowExifPaneChanged(bool value)
@@ -168,32 +172,48 @@ public partial class BrowserViewModel : ObservableObject
         await LoadThumbnailsAsync(_loadCts.Token, force: true);
     }
 
-    private void LoadDrives()
+    private async Task LoadDrivesAsync()
     {
-        DriveTree.Clear();
         try
         {
-            foreach (var drive in DriveInfo.GetDrives())
+            var drives = await Task.Run(() =>
             {
-                if (!drive.IsReady) continue;
-                string label;
-                try
+                var result = new List<(string Path, string Label)>();
+                foreach (var drive in DriveInfo.GetDrives())
                 {
-                    label = string.IsNullOrEmpty(drive.VolumeLabel)
-                        ? drive.Name.TrimEnd('\\')
-                        : $"{drive.Name.TrimEnd('\\')} ({drive.VolumeLabel})";
+                    if (!drive.IsReady) continue;
+                    string label;
+                    try
+                    {
+                        label = string.IsNullOrEmpty(drive.VolumeLabel)
+                            ? drive.Name.TrimEnd('\\')
+                            : $"{drive.Name.TrimEnd('\\')} ({drive.VolumeLabel})";
+                    }
+                    catch
+                    {
+                        label = drive.Name;
+                    }
+                    result.Add((drive.RootDirectory.FullName, label));
                 }
-                catch
+                return result;
+            }).ConfigureAwait(false);
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                DriveTree.Clear();
+                foreach (var drive in drives)
                 {
-                    label = drive.Name;
+                    // Never block UI creation by enumerating drive roots.
+                    // Expanding a drive replaces this hint with actual children.
+                    DriveTree.Add(new FolderTreeItem(
+                        drive.Path,
+                        drive.Label,
+                        probeForChildren: false));
                 }
-                // Never block initial window creation by enumerating drive roots.
-                // Expanding a drive replaces this hint with its actual children.
-                DriveTree.Add(new FolderTreeItem(
-                    drive.RootDirectory.FullName,
-                    label,
-                    probeForChildren: false));
-            }
+
+                if (!string.IsNullOrEmpty(CurrentFolder))
+                    _ = SyncTreeSelectionAsync(CurrentFolder);
+            });
         }
         catch { /* drives inaccessible */ }
     }
@@ -205,9 +225,10 @@ public partial class BrowserViewModel : ObservableObject
             _ = LoadFolderAsync(item.Path);
     }
 
-    public void SyncTreeSelection(string folder)
+    public async Task SyncTreeSelectionAsync(string folder)
     {
         if (string.IsNullOrEmpty(folder)) return;
+        var syncVersion = ++_treeSyncVersion;
 
         var chain = new List<string>();
         try
@@ -232,6 +253,8 @@ public partial class BrowserViewModel : ObservableObject
         for (int i = 1; i < chain.Count && current is not null; i++)
         {
             if (!current.IsExpanded) current.IsExpanded = true;
+            await current.EnsureChildrenLoadedAsync();
+            if (syncVersion != _treeSyncVersion) return;
             current = current.Children.FirstOrDefault(c =>
                 string.Equals(c.Path, chain[i], StringComparison.OrdinalIgnoreCase));
         }
@@ -257,7 +280,7 @@ public partial class BrowserViewModel : ObservableObject
     {
         if (string.Equals(CurrentFolder, folder, StringComparison.OrdinalIgnoreCase) && Items.Count > 0)
         {
-            SyncTreeSelection(folder);
+            _ = SyncTreeSelectionAsync(folder);
             return;
         }
 
@@ -276,8 +299,10 @@ public partial class BrowserViewModel : ObservableObject
         {
             var contents = await FolderScanner.ScanBrowserAsync(folder, ct);
             var entries = contents.Folders
-                .Select(entry => ThumbnailItem.CreateFolder(entry.Path, entry.PreviewImages))
-                .Concat(contents.Images.Select(path => new ThumbnailItem(path)));
+                .Select(entry => ThumbnailItem.CreateFolder(entry.Path, entry.PreviewMedia))
+                .Concat(contents.Media.Select(entry => entry.IsVideo
+                    ? ThumbnailItem.CreateVideo(entry.Path)
+                    : new ThumbnailItem(entry.Path)));
 
             foreach (var entry in ApplySortToItems(entries))
             {
@@ -293,7 +318,7 @@ public partial class BrowserViewModel : ObservableObject
         finally
         {
             IsLoading = false;
-            SyncTreeSelection(folder);
+            _ = SyncTreeSelectionAsync(folder);
         }
     }
 
@@ -310,13 +335,14 @@ public partial class BrowserViewModel : ObservableObject
             {
                 if (item.IsFolder)
                 {
-                    var previewCount = Math.Min(4, item.FolderPreviewPaths.Count);
+                    var previewCount = Math.Min(4, item.FolderPreviewMedia.Count);
                     for (var index = 0; index < previewCount; index++)
                     {
                         if (!force && item.GetFolderThumbnail(index) is not null) continue;
 
+                        var media = item.FolderPreviewMedia[index];
                         var preview = await _cache.GetOrCreateAsync(
-                            item.FolderPreviewPaths[index], folderPreviewTier, ct);
+                            media.Path, folderPreviewTier, media.IsVideo, ct);
                         if (preview is not null)
                         {
                             var previewIndex = index;
@@ -329,7 +355,8 @@ public partial class BrowserViewModel : ObservableObject
                 {
                     if (!force && item.Thumbnail is not null) continue;
 
-                    var thumbnail = await _cache.GetOrCreateAsync(item.Path, tier, ct);
+                    var thumbnail = await _cache.GetOrCreateAsync(
+                        item.Path, tier, item.IsVideo, ct);
                     if (thumbnail is not null)
                     {
                         await Dispatcher.UIThread.InvokeAsync(() => item.Thumbnail = thumbnail);
@@ -354,7 +381,7 @@ public partial class BrowserViewModel : ObservableObject
             return SortDescending ? sorted.Reverse() : sorted;
         }
 
-        // Keep navigation folders grouped ahead of image files in every sort mode.
+        // Keep navigation folders grouped ahead of media files in every sort mode.
         return SortGroup(items.Where(item => item.IsFolder))
             .Concat(SortGroup(items.Where(item => !item.IsFolder)))
             .ToList();
@@ -438,18 +465,24 @@ public partial class BrowserViewModel : ObservableObject
     private void UpdateItemsSummary()
     {
         var folderCount = Items.Count(item => item.IsFolder);
-        var imageCount = Items.Count - folderCount;
+        var videoCount = Items.Count(item => item.IsVideo);
+        var imageCount = Items.Count(item => item.IsImage);
         ItemsSummary = FilteredItems.Count == Items.Count
-            ? FormatItemCounts(folderCount, imageCount)
+            ? FormatItemCounts(folderCount, imageCount, videoCount)
             : $"{FilteredItems.Count} of {Items.Count} items";
         ShowEmptyState = FilteredItems.Count == 0 && !IsLoading;
     }
 
-    private static string FormatItemCounts(int folderCount, int imageCount)
+    private static string FormatItemCounts(int folderCount, int imageCount, int videoCount)
     {
-        var folders = $"{folderCount} folder{(folderCount == 1 ? "" : "s")}";
-        var images = $"{imageCount} image{(imageCount == 1 ? "" : "s")}";
-        return folderCount > 0 ? $"{folders}, {images}" : images;
+        var parts = new List<string>();
+        if (folderCount > 0)
+            parts.Add($"{folderCount} folder{(folderCount == 1 ? "" : "s")}");
+        if (imageCount > 0 || parts.Count == 0)
+            parts.Add($"{imageCount} image{(imageCount == 1 ? "" : "s")}");
+        if (videoCount > 0)
+            parts.Add($"{videoCount} video{(videoCount == 1 ? "" : "s")}");
+        return string.Join(", ", parts);
     }
 
     partial void OnIsLoadingChanged(bool value)

@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace ImageViewer.ViewModels;
@@ -13,6 +16,7 @@ public partial class FolderTreeItem : ObservableObject
     public ObservableCollection<FolderTreeItem> Children { get; } = new();
 
     private bool _loaded;
+    private Task? _loadTask;
 
     [ObservableProperty] private bool _isExpanded;
 
@@ -34,27 +38,49 @@ public partial class FolderTreeItem : ObservableObject
     partial void OnIsExpandedChanged(bool value)
     {
         if (value && !_loaded)
-            LoadChildren();
+            _ = EnsureChildrenLoadedAsync();
     }
 
-    private void LoadChildren()
+    public Task EnsureChildrenLoadedAsync()
     {
-        _loaded = true;
-        Children.Clear();
-        if (string.IsNullOrEmpty(Path)) return;
+        if (_loaded || string.IsNullOrEmpty(Path))
+            return Task.CompletedTask;
 
+        return _loadTask ??= LoadChildrenAsync();
+    }
+
+    private async Task LoadChildrenAsync()
+    {
+        List<(string Path, string Name, bool HasChildren)> children;
         try
         {
-            var dirs = Directory.EnumerateDirectories(Path)
-                .Where(d => !IsHidden(d))
-                .OrderBy(d => System.IO.Path.GetFileName(d), StringComparer.OrdinalIgnoreCase);
-            foreach (var dir in dirs)
-                Children.Add(new FolderTreeItem(dir, System.IO.Path.GetFileName(dir)));
+            children = await Task.Run(() => Directory.EnumerateDirectories(Path)
+                .Where(directory => !IsHidden(directory))
+                .Select(directory => (
+                    Path: directory,
+                    Name: System.IO.Path.GetFileName(directory),
+                    HasChildren: HasVisibleSubfolder(directory)))
+                .OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList()).ConfigureAwait(false);
         }
         catch
         {
-            // Inaccessible folder - leave empty.
+            children = new List<(string Path, string Name, bool HasChildren)>();
         }
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            Children.Clear();
+            foreach (var child in children)
+            {
+                Children.Add(new FolderTreeItem(
+                    child.Path,
+                    child.Name,
+                    addPlaceholder: child.HasChildren,
+                    probeForChildren: false));
+            }
+            _loaded = true;
+        });
     }
 
     private static bool HasVisibleSubfolder(string path)

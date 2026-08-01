@@ -1,7 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:ImageViewer.ViewModels"
-        xmlns:views="using:ImageViewer.Views"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
@@ -12,13 +11,7 @@
         MinWidth="640" MinHeight="480"
         Background="#0f1729">
 
-  <Grid>
-    <Grid IsVisible="{Binding IsViewerMode}">
-      <views:ViewerView DataContext="{Binding ViewerVM}"/>
-    </Grid>
-
-    <Grid IsVisible="{Binding !IsViewerMode}">
-      <views:BrowserView DataContext="{Binding BrowserVM}"/>
-    </Grid>
-  </Grid>
+  <!-- The active view is attached after the native window opens. This keeps
+       browser/viewer construction off the time-to-first-window path. -->
+  <ContentControl x:Name="ModeHost"/>
 </Window>
