@@ -6,17 +6,19 @@ using System.Threading.Tasks;
 
 namespace ImageViewer.Services;
 
-public sealed record FolderScanEntry(string Path, IReadOnlyList<string> PreviewImages);
+public sealed record MediaScanEntry(string Path, bool IsVideo);
+
+public sealed record FolderScanEntry(string Path, IReadOnlyList<MediaScanEntry> PreviewMedia);
 
 public sealed record BrowserScanResult(
     IReadOnlyList<FolderScanEntry> Folders,
-    IReadOnlyList<string> Images);
+    IReadOnlyList<MediaScanEntry> Media);
 
 public static class FolderScanner
 {
-    public static async Task<List<string>> ScanAsync(string folder, CancellationToken ct = default)
+    public static async Task<List<MediaScanEntry>> ScanAsync(string folder, CancellationToken ct = default)
     {
-        return await Task.Run(() => ScanImages(folder, ct), ct).ConfigureAwait(false);
+        return await Task.Run(() => ScanMedia(folder, ct), ct).ConfigureAwait(false);
     }
 
     public static async Task<BrowserScanResult> ScanBrowserAsync(
@@ -33,8 +35,8 @@ public static class FolderScanner
                     ct.ThrowIfCancellationRequested();
                     if (IsHiddenOrSystem(directory)) continue;
 
-                    var previewImages = ScanImages(directory, ct, maxCount: 4);
-                    folders.Add(new FolderScanEntry(directory, previewImages));
+                    var previewMedia = ScanMedia(directory, ct, maxCount: 4);
+                    folders.Add(new FolderScanEntry(directory, previewMedia));
                 }
             }
             catch (OperationCanceledException) { throw; }
@@ -47,25 +49,25 @@ public static class FolderScanner
                 Path.GetFileName(left.Path),
                 Path.GetFileName(right.Path)));
 
-            var images = ScanImages(folder, ct);
-            return new BrowserScanResult(folders, images);
+            var media = ScanMedia(folder, ct);
+            return new BrowserScanResult(folders, media);
         }, ct).ConfigureAwait(false);
     }
 
-    private static List<string> ScanImages(
+    private static List<MediaScanEntry> ScanMedia(
         string folder,
         CancellationToken ct,
         int maxCount = int.MaxValue)
     {
-        var result = new List<string>();
+        var result = new List<MediaScanEntry>();
         try
         {
             foreach (var file in Directory.EnumerateFiles(folder))
             {
                 ct.ThrowIfCancellationRequested();
-                if (ImageLoader.IsSupportedExtension(Path.GetExtension(file)))
+                if (MediaFileTypes.IsSupported(file))
                 {
-                    result.Add(file);
+                    result.Add(new MediaScanEntry(file, MediaFileTypes.IsVideo(file)));
                     if (result.Count >= maxCount) break;
                 }
             }
@@ -76,7 +78,8 @@ public static class FolderScanner
             // Folder inaccessible - return what we have.
         }
 
-        result.Sort(StringComparer.OrdinalIgnoreCase);
+        result.Sort((left, right) =>
+            StringComparer.OrdinalIgnoreCase.Compare(left.Path, right.Path));
         return result;
     }
 

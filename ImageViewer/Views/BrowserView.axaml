@@ -108,7 +108,7 @@
                       Click="OnCloseExifPaneClicked"/>
             </Grid>
 
-            <TextBlock Text="Select an image to view its properties"
+            <TextBlock Text="Select a media file to view its properties"
                        Foreground="#5f7494" FontSize="11" FontStyle="Italic"
                        TextWrapping="Wrap"
                        IsVisible="{Binding !HasExifPaneData}"/>
@@ -247,7 +247,7 @@
                     <MenuFlyout>
                       <MenuItem Header="Properties"
                                 Click="OnThumbPropertiesClicked"
-                                IsVisible="{Binding IsImage}"/>
+                                IsVisible="{Binding IsFile}"/>
                     </MenuFlyout>
                   </Border.ContextFlyout>
                   <Grid>
@@ -265,7 +265,7 @@
                                      HorizontalAlignment="Left"
                                      Cursor="Hand"
                                      PointerPressed="OnThumbnailTitlePressed"
-                                     IsVisible="{Binding ShowImageTitle}"/>
+                                     IsVisible="{Binding ShowFileTitle}"/>
                           <TextBlock Text="{Binding FileName}"
                                      Foreground="#e8c786"
                                      FontSize="11"
@@ -291,8 +291,24 @@
                       </Grid>
                       <Grid Margin="3,3,3,1">
                         <Border Background="#070b16"
-                                IsVisible="{Binding IsImage}">
+                                IsVisible="{Binding IsFile}">
                           <Image Source="{Binding Thumbnail}" Stretch="Uniform"/>
+                        </Border>
+                        <Border Width="42" Height="42"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Background="#b30a1226"
+                                BorderBrush="#dde6f5"
+                                BorderThickness="1"
+                                CornerRadius="21"
+                                IsHitTestVisible="False"
+                                IsVisible="{Binding IsVideo}">
+                          <TextBlock Text="&#x25B6;"
+                                     Foreground="#ffffff"
+                                     FontSize="18"
+                                     Margin="3,0,0,0"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"/>
                         </Border>
                         <Border Background="#111a2d"
                                 BorderBrush="#9b753d"
@@ -311,22 +327,42 @@
                             <Border Grid.Row="0" Grid.Column="0"
                                     Background="#070b16" Margin="0,0,1,1"
                                     CornerRadius="2" ClipToBounds="True">
-                              <Image Source="{Binding FolderThumbnail1}" Stretch="UniformToFill"/>
+                              <Grid>
+                                <Image Source="{Binding FolderThumbnail1}" Stretch="UniformToFill"/>
+                                <TextBlock Text="&#x25B6;" Foreground="White" FontSize="12"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           IsVisible="{Binding FolderPreview1IsVideo}"/>
+                              </Grid>
                             </Border>
                             <Border Grid.Row="0" Grid.Column="1"
                                     Background="#070b16" Margin="1,0,0,1"
                                     CornerRadius="2" ClipToBounds="True">
-                              <Image Source="{Binding FolderThumbnail2}" Stretch="UniformToFill"/>
+                              <Grid>
+                                <Image Source="{Binding FolderThumbnail2}" Stretch="UniformToFill"/>
+                                <TextBlock Text="&#x25B6;" Foreground="White" FontSize="12"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           IsVisible="{Binding FolderPreview2IsVideo}"/>
+                              </Grid>
                             </Border>
                             <Border Grid.Row="1" Grid.Column="0"
                                     Background="#070b16" Margin="0,1,1,0"
                                     CornerRadius="2" ClipToBounds="True">
-                              <Image Source="{Binding FolderThumbnail3}" Stretch="UniformToFill"/>
+                              <Grid>
+                                <Image Source="{Binding FolderThumbnail3}" Stretch="UniformToFill"/>
+                                <TextBlock Text="&#x25B6;" Foreground="White" FontSize="12"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           IsVisible="{Binding FolderPreview3IsVideo}"/>
+                              </Grid>
                             </Border>
                             <Border Grid.Row="1" Grid.Column="1"
                                     Background="#070b16" Margin="1,1,0,0"
                                     CornerRadius="2" ClipToBounds="True">
-                              <Image Source="{Binding FolderThumbnail4}" Stretch="UniformToFill"/>
+                              <Grid>
+                                <Image Source="{Binding FolderThumbnail4}" Stretch="UniformToFill"/>
+                                <TextBlock Text="&#x25B6;" Foreground="White" FontSize="12"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           IsVisible="{Binding FolderPreview4IsVideo}"/>
+                              </Grid>
                             </Border>
                           </Grid>
                         </Border>
@@ -354,7 +390,7 @@
                             CornerRadius="3"
                             Padding="6,2"
                             IsHitTestVisible="False"
-                            IsVisible="{Binding ShowImageTitle}">
+                            IsVisible="{Binding ShowFileTitle}">
                       <TextBlock Text="{Binding ExtensionLabel}"
                                  FontSize="9"
                                  FontWeight="SemiBold"
@@ -371,7 +407,7 @@
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         Margin="40">
-              <TextBlock Text="No images to show"
+              <TextBlock Text="No media to show"
                          FontSize="20" Foreground="#8fa1c0"
                          HorizontalAlignment="Center"/>
               <TextBlock Text="{Binding EmptyStateHint}"

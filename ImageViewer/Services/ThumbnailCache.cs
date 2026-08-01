@@ -20,11 +20,17 @@ public sealed class ThumbnailCache
         _cacheDir = customDir ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "ImageViewer", "thumbs");
-        Directory.CreateDirectory(_cacheDir);
         _semaphore = new SemaphoreSlim(Math.Max(2, Environment.ProcessorCount / 2));
     }
 
     public async Task<Bitmap?> GetOrCreateAsync(string imagePath, int requestedDim, CancellationToken ct = default)
+        => await GetOrCreateAsync(imagePath, requestedDim, isVideo: false, ct).ConfigureAwait(false);
+
+    public async Task<Bitmap?> GetOrCreateAsync(
+        string imagePath,
+        int requestedDim,
+        bool isVideo,
+        CancellationToken ct = default)
     {
         FileInfo fi;
         try { fi = new FileInfo(imagePath); }
@@ -33,7 +39,7 @@ public sealed class ThumbnailCache
 
         var dim = Math.Max(64, requestedDim);
         string key = ComputeKey(imagePath, fi.LastWriteTimeUtc, fi.Length, dim);
-        string thumbPath = Path.Combine(_cacheDir, key + ".jpg");
+        string thumbPath = Path.Combine(_cacheDir, key + (isVideo ? ".png" : ".jpg"));
 
         if (File.Exists(thumbPath))
         {
@@ -56,6 +62,22 @@ public sealed class ThumbnailCache
                 try
                 {
                     ct.ThrowIfCancellationRequested();
+                    if (isVideo)
+                    {
+                        var thumbnail = ShellThumbnailProvider.TryGet(imagePath, dim);
+                        if (thumbnail is null) return null;
+
+                        try
+                        {
+                            Directory.CreateDirectory(_cacheDir);
+                            using var output = File.Create(thumbPath);
+                            thumbnail.Save(output);
+                        }
+                        catch { /* cache write failure is non-fatal */ }
+
+                        return thumbnail;
+                    }
+
                     using var img = new MagickImage(imagePath);
                     ct.ThrowIfCancellationRequested();
                     img.AutoOrient();
@@ -66,7 +88,11 @@ public sealed class ThumbnailCache
                     img.Write(ms, MagickFormat.Jpg);
                     ct.ThrowIfCancellationRequested();
 
-                    try { File.WriteAllBytes(thumbPath, ms.ToArray()); }
+                    try
+                    {
+                        Directory.CreateDirectory(_cacheDir);
+                        File.WriteAllBytes(thumbPath, ms.ToArray());
+                    }
                     catch { /* cache write failure is non-fatal */ }
 
                     ms.Position = 0;
@@ -86,7 +112,9 @@ public sealed class ThumbnailCache
     {
         try
         {
-            var files = Directory.EnumerateFiles(_cacheDir, "*.jpg")
+            var files = Directory.EnumerateFiles(_cacheDir)
+                .Where(f => f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+                            || f.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
                 .Select(f => new FileInfo(f))
                 .OrderBy(f => f.LastAccessTimeUtc)
                 .ToList();

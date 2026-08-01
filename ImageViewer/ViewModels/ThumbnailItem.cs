@@ -4,20 +4,27 @@ using System.IO;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
+using ImageViewer.Services;
 
 namespace ImageViewer.ViewModels;
 
 public partial class ThumbnailItem : ObservableObject
 {
     public bool IsFolder { get; }
-    public bool IsImage => !IsFolder;
-    public IReadOnlyList<string> FolderPreviewPaths { get; }
+    public bool IsVideo { get; }
+    public bool IsImage => !IsFolder && !IsVideo;
+    public bool IsFile => !IsFolder;
+    public IReadOnlyList<MediaScanEntry> FolderPreviewMedia { get; }
+    public bool FolderPreview1IsVideo => IsFolderPreviewVideo(0);
+    public bool FolderPreview2IsVideo => IsFolderPreviewVideo(1);
+    public bool FolderPreview3IsVideo => IsFolderPreviewVideo(2);
+    public bool FolderPreview4IsVideo => IsFolderPreviewVideo(3);
     public DateTime? ModifiedAt { get; }
     public string DateLabel => ModifiedAt?.ToString("yyyy-MM-dd") ?? "";
     public string DateToolTip => ModifiedAt is { } date
         ? $"Modified {date:yyyy-MM-dd HH:mm:ss}"
         : "Modified date unavailable";
-    public bool ShowImageTitle => IsImage && !IsRenaming;
+    public bool ShowFileTitle => IsFile && !IsRenaming;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ExtensionLabel), nameof(ExtensionBrush))]
@@ -33,7 +40,7 @@ public partial class ThumbnailItem : ObservableObject
     [ObservableProperty] private Bitmap? _folderThumbnail3;
     [ObservableProperty] private Bitmap? _folderThumbnail4;
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowImageTitle))]
+    [NotifyPropertyChangedFor(nameof(ShowFileTitle))]
     private bool _isRenaming;
     [ObservableProperty] private string _renameText = "";
 
@@ -72,27 +79,44 @@ public partial class ThumbnailItem : ObservableObject
         ["ORF"] = new SolidColorBrush(Color.Parse("#e76060")),
         ["PEF"] = new SolidColorBrush(Color.Parse("#e76060")),
         ["SRW"] = new SolidColorBrush(Color.Parse("#e76060")),
+        ["MP4"] = new SolidColorBrush(Color.Parse("#60a5fa")),
+        ["M4V"] = new SolidColorBrush(Color.Parse("#60a5fa")),
+        ["MOV"] = new SolidColorBrush(Color.Parse("#5bc0de")),
+        ["AVI"] = new SolidColorBrush(Color.Parse("#7dd3fc")),
+        ["MKV"] = new SolidColorBrush(Color.Parse("#818cf8")),
+        ["WEBM"] = new SolidColorBrush(Color.Parse("#4dc4d4")),
+        ["WMV"] = new SolidColorBrush(Color.Parse("#93c5fd")),
+        ["MPG"] = new SolidColorBrush(Color.Parse("#a5b4fc")),
+        ["MPEG"] = new SolidColorBrush(Color.Parse("#a5b4fc")),
     };
 
     private static IBrush GetBrushFor(string label) =>
         ExtensionBrushes.TryGetValue(label, out var b) ? b : DefaultExtBrush;
 
     public ThumbnailItem(string path)
-        : this(path, isFolder: false, Array.Empty<string>())
+        : this(path, isFolder: false, isVideo: false, Array.Empty<MediaScanEntry>())
     {
     }
 
-    private ThumbnailItem(string path, bool isFolder, IReadOnlyList<string> folderPreviewPaths)
+    private ThumbnailItem(
+        string path,
+        bool isFolder,
+        bool isVideo,
+        IReadOnlyList<MediaScanEntry> folderPreviewMedia)
     {
         IsFolder = isFolder;
-        FolderPreviewPaths = folderPreviewPaths;
+        IsVideo = isVideo;
+        FolderPreviewMedia = folderPreviewMedia;
         ModifiedAt = GetModifiedAt(path);
         _path = path;
         _fileName = System.IO.Path.GetFileName(path);
     }
 
-    public static ThumbnailItem CreateFolder(string path, IReadOnlyList<string> previewImagePaths) =>
-        new(path, isFolder: true, previewImagePaths);
+    public static ThumbnailItem CreateVideo(string path) =>
+        new(path, isFolder: false, isVideo: true, Array.Empty<MediaScanEntry>());
+
+    public static ThumbnailItem CreateFolder(string path, IReadOnlyList<MediaScanEntry> previewMedia) =>
+        new(path, isFolder: true, isVideo: false, previewMedia);
 
     private static DateTime? GetModifiedAt(string path)
     {
@@ -115,6 +139,9 @@ public partial class ThumbnailItem : ObservableObject
         3 => FolderThumbnail4,
         _ => null
     };
+
+    private bool IsFolderPreviewVideo(int index) =>
+        index >= 0 && index < FolderPreviewMedia.Count && FolderPreviewMedia[index].IsVideo;
 
     public void SetFolderThumbnail(int index, Bitmap? bitmap)
     {

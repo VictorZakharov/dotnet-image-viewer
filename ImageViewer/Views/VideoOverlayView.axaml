@@ -1,0 +1,150 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ImageViewer.ViewModels"
+             x:Class="ImageViewer.Views.VideoOverlayView"
+             x:DataType="vm:ViewerViewModel"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"
+             Background="Transparent">
+  <Grid>
+    <Border HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Background="#d90a1226"
+            CornerRadius="5"
+            Padding="18,10"
+            IsVisible="{Binding IsVideoLoading}"
+            IsHitTestVisible="False">
+      <TextBlock Text="Opening video..." Foreground="#dde6f5" FontSize="13"/>
+    </Border>
+
+    <Border HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Background="#e63c1420"
+            BorderBrush="#ff7b8e"
+            BorderThickness="1"
+            CornerRadius="5"
+            Padding="18,10"
+            IsVisible="{Binding PlaybackError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+            IsHitTestVisible="False">
+      <TextBlock Text="{Binding PlaybackError}"
+                 Foreground="#ffd7de" FontSize="13" TextWrapping="Wrap"
+                 MaxWidth="520"/>
+    </Border>
+
+    <Border IsVisible="{Binding ShowExifOverlay}"
+            Background="#ee0e1830"
+            Width="320"
+            Margin="0,0,0,78"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Stretch"
+            Padding="22,56,22,24">
+      <ScrollViewer>
+        <StackPanel Spacing="6">
+          <TextBlock Text="{Binding FileNameDisplay}"
+                     Foreground="#e7eef9" FontSize="14" FontWeight="SemiBold"
+                     TextWrapping="Wrap"/>
+          <TextBlock Text="{Binding FolderDisplay}"
+                     Foreground="#8fa1c0" FontSize="11"
+                     TextWrapping="Wrap"/>
+
+          <Border Height="1" Background="#2a3858" Margin="0,10"/>
+
+          <Grid>
+            <TextBlock Text="Duration" Foreground="#8fa1c0" FontSize="11" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding DurationLabel}"
+                       Foreground="#dde6f5" FontSize="12" HorizontalAlignment="Right"/>
+          </Grid>
+          <Grid IsVisible="{Binding Metadata.FileSizeSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="Size" Foreground="#8fa1c0" FontSize="11" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding Metadata.FileSizeSummary}"
+                       Foreground="#dde6f5" FontSize="12" HorizontalAlignment="Right"/>
+          </Grid>
+          <Grid IsVisible="{Binding Metadata.FileCreatedAtSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="Created" Foreground="#8fa1c0" FontSize="11" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding Metadata.FileCreatedAtSummary}"
+                       Foreground="#dde6f5" FontSize="11" HorizontalAlignment="Right"/>
+          </Grid>
+          <Grid IsVisible="{Binding Metadata.FileModifiedAtSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="Modified" Foreground="#8fa1c0" FontSize="11" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding Metadata.FileModifiedAtSummary}"
+                       Foreground="#dde6f5" FontSize="11" HorizontalAlignment="Right"/>
+          </Grid>
+          <Grid IsVisible="{Binding Metadata.FileAccessedAtSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="Accessed" Foreground="#8fa1c0" FontSize="11" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding Metadata.FileAccessedAtSummary}"
+                       Foreground="#dde6f5" FontSize="11" HorizontalAlignment="Right"/>
+          </Grid>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+    <Border HorizontalAlignment="Right" VerticalAlignment="Top"
+            Margin="0,14,14,0"
+            Classes.active="{Binding ShowExifOverlay}"
+            BorderThickness="1"
+            CornerRadius="3"
+            Padding="10,4"
+            Cursor="Hand"
+            PointerPressed="OnInfoPillClicked">
+      <Border.Styles>
+        <Style Selector="Border">
+          <Setter Property="Background" Value="#cc0a1226"/>
+          <Setter Property="BorderBrush" Value="#445573"/>
+        </Style>
+        <Style Selector="Border.active">
+          <Setter Property="Background" Value="#cc1a2c4a"/>
+          <Setter Property="BorderBrush" Value="#5bc78a"/>
+        </Style>
+        <Style Selector="Border.active TextBlock">
+          <Setter Property="Foreground" Value="#5bc78a"/>
+        </Style>
+      </Border.Styles>
+      <TextBlock Text="INFO" FontSize="11" FontWeight="SemiBold" Foreground="#b3c1dd"/>
+    </Border>
+
+    <Border Background="#f20a1226"
+            BorderBrush="#2a3858"
+            BorderThickness="0,1,0,0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Bottom"
+            Height="78">
+      <Grid Margin="14,8">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
+          <Button Grid.Column="0"
+                  Content="{Binding PlayPauseLabel}"
+                  Command="{Binding TogglePlaybackCommand}"
+                  MinWidth="64" Padding="10,4"/>
+          <TextBlock Grid.Column="1"
+                     Text="{Binding CurrentTimeLabel}"
+                     Foreground="#b3c1dd" FontSize="11"
+                     Margin="10,0" VerticalAlignment="Center"/>
+          <Slider Grid.Column="2"
+                  Minimum="0" Maximum="1"
+                  Value="{Binding PlaybackPosition, Mode=TwoWay}"
+                  VerticalAlignment="Center"/>
+          <TextBlock Grid.Column="3"
+                     Text="{Binding DurationLabel}"
+                     Foreground="#b3c1dd" FontSize="11"
+                     Margin="10,0" VerticalAlignment="Center"/>
+          <Button Grid.Column="4"
+                  Content="{Binding MuteLabel}"
+                  Command="{Binding ToggleMuteCommand}"
+                  MinWidth="60" Padding="10,4"/>
+          <Slider Grid.Column="5"
+                  Minimum="0" Maximum="100" Width="92"
+                  Value="{Binding Volume, Mode=TwoWay}"
+                  Margin="8,0,0,0" VerticalAlignment="Center"/>
+        </Grid>
+        <TextBlock Grid.Row="1"
+                   Text="{Binding StatusText}"
+                   Foreground="#8fa1c0" FontSize="11"
+                   Margin="0,6,0,0"
+                   TextTrimming="CharacterEllipsis"/>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

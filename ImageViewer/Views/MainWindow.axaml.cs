@@ -16,6 +16,8 @@ public partial class MainWindow : Window
 {
     private WindowState _preFullscreenState = WindowState.Normal;
     private MainWindowViewModel? _trackedVm;
+    private BrowserView? _browserView;
+    private ViewerView? _viewerView;
 
     public MainWindow()
     {
@@ -44,11 +46,27 @@ public partial class MainWindow : Window
         _trackedVm = vm;
         vm.ViewerVM.PropertyChanged += OnViewerVmPropertyChanged;
         vm.PropertyChanged += OnMainVmPropertyChanged;
+        ShowActiveView();
+
+        // Let the browser render before scanning the remembered folder. This
+        // avoids disk and thumbnail work competing with first-frame layout.
+        if (!vm.IsViewerMode
+            && !string.IsNullOrEmpty(vm.CurrentFolder)
+            && string.IsNullOrEmpty(vm.BrowserVM.CurrentFolder))
+        {
+            var initialFolder = vm.CurrentFolder;
+            Dispatcher.UIThread.Post(
+                () => _ = vm.BrowserVM.LoadFolderAsync(initialFolder),
+                DispatcherPriority.Background);
+        }
     }
 
     private void OnMainVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(MainWindowViewModel.IsViewerMode)) return;
+        if (DataContext is MainWindowViewModel vm && !vm.IsViewerMode)
+            vm.ViewerVM.Deactivate();
+        ShowActiveView();
         // After a mode switch (double-click thumbnail, Enter, etc.) keyboard
         // focus stays on whichever element had it before — typically the hidden
         // ListBox after entering viewer mode, which then swallows arrow keys via
@@ -57,11 +75,33 @@ public partial class MainWindow : Window
         Dispatcher.UIThread.Post(FocusActiveView, DispatcherPriority.Loaded);
     }
 
+    private void ShowActiveView()
+    {
+        if (DataContext is not MainWindowViewModel vm) return;
+
+        if (vm.IsViewerMode)
+        {
+            _viewerView ??= new ViewerView { DataContext = vm.ViewerVM };
+            ModeHost.Content = _viewerView;
+        }
+        else
+        {
+            _browserView ??= new BrowserView { DataContext = vm.BrowserVM };
+            ModeHost.Content = _browserView;
+        }
+    }
+
     private void FocusActiveView()
     {
         if (DataContext is not MainWindowViewModel vm) return;
         if (vm.IsViewerMode)
         {
+            if (vm.ViewerVM.IsVideo && _viewerView is not null)
+            {
+                _viewerView.Focus();
+                return;
+            }
+
             // Window itself isn't Focusable in Avalonia, so Focus() on `this`
             // is a no-op. ZoomPanImage sets Focusable = true and is the natural
             // recipient for arrow keys in viewer mode.
@@ -177,8 +217,12 @@ public partial class MainWindow : Window
                     e.Handled = true;
                     break;
                 case Key.Space:
+                    if (viewer.IsVideo) viewer.TogglePlaybackCommand.Execute(null);
+                    else viewer.ToggleSlideshowCommand.Execute(null);
+                    e.Handled = true;
+                    break;
                 case Key.F5:
-                    viewer.ToggleSlideshowCommand.Execute(null);
+                    if (!viewer.IsVideo) viewer.ToggleSlideshowCommand.Execute(null);
                     e.Handled = true;
                     break;
             }

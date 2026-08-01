@@ -48,13 +48,14 @@ public partial class MainWindowViewModel : ObservableObject
         {
             if (Directory.Exists(path))
             {
+                ViewerVM.Deactivate();
                 CurrentFolder = path;
                 Settings.LastFolder = path;
                 CurrentImagePath = null;
                 _ = BrowserVM.LoadFolderAsync(path);
                 IsViewerMode = false;
             }
-            else if (File.Exists(path))
+            else if (File.Exists(path) && MediaFileTypes.IsSupported(path))
             {
                 CurrentImagePath = path;
                 var dir = Path.GetDirectoryName(path);
@@ -78,6 +79,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (IsViewerMode && !string.IsNullOrEmpty(CurrentFolder))
         {
+            ViewerVM.Deactivate();
             _ = BrowserVM.LoadFolderAsync(CurrentFolder);
             IsViewerMode = false;
         }

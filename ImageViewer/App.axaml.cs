@@ -33,10 +33,6 @@ public partial class App : Application
             {
                 _vm.Open(Program.InitialPath);
             }
-            else if (!string.IsNullOrEmpty(_vm.CurrentFolder))
-            {
-                _ = _vm.BrowserVM.LoadFolderAsync(_vm.CurrentFolder);
-            }
 
             _instanceServer = new SingleInstanceServer(Program.PipeName);
             _instanceServer.PathReceived += OnPathReceived;
@@ -76,6 +72,9 @@ public partial class App : Application
     {
         _instanceServer?.Stop();
         if (_vm is not null)
+        {
+            _vm.ViewerVM.Dispose();
             SettingsStore.Save(_vm.Settings);
+        }
     }
 }
