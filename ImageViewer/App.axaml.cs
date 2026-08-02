@@ -73,7 +73,7 @@ public partial class App : Application
         _instanceServer?.Stop();
         if (_vm is not null)
         {
-            _vm.ViewerVM.Dispose();
+            _vm.Dispose();
             SettingsStore.Save(_vm.Settings);
         }
     }

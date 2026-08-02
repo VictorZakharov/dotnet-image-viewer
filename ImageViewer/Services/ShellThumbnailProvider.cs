@@ -11,32 +11,45 @@ namespace ImageViewer.Services;
 /// LibVLC out of folder scans and lets Explorer's codec providers do the work.
 /// Call only from a background thread: shell thumbnail extraction can block.
 /// </summary>
-internal static class ShellThumbnailProvider
+internal static partial class ShellThumbnailProvider
 {
     private const uint BiRgb = 0;
+    private const int IUnknownReleaseSlot = 2;
+    private const int GetImageSlot = 3;
 
-    public static Bitmap? TryGet(string path, int requestedSize)
+    public static unsafe Bitmap? TryGet(string path, int requestedSize)
     {
         if (!OperatingSystem.IsWindows()) return null;
 
-        IShellItemImageFactory? factory = null;
+        IntPtr factory = IntPtr.Zero;
         IntPtr bitmapHandle = IntPtr.Zero;
         try
         {
-            var iid = typeof(IShellItemImageFactory).GUID;
+            var iid = ShellItemImageFactoryId;
             var hr = SHCreateItemFromParsingName(path, IntPtr.Zero, ref iid, out factory);
-            if (hr < 0 || factory is null) return null;
+            if (hr < 0 || factory == IntPtr.Zero) return null;
 
             var size = new NativeSize
             {
                 Width = Math.Max(64, requestedSize),
                 Height = Math.Max(64, requestedSize)
             };
-            hr = factory.GetImage(
+            var vtable = *(IntPtr**)factory;
+            // Source-generated P/Invoke gives us the raw interface pointer.
+            // Calling its fixed IUnknown vtable keeps this bridge compatible
+            // with Native AOT, which cannot emit built-in COM wrappers.
+            var getImage = (delegate* unmanaged[Stdcall]<
+                IntPtr,
+                NativeSize,
+                ShellItemImageFactoryFlags,
+                IntPtr*,
+                int>)vtable[GetImageSlot];
+            hr = getImage(
+                factory,
                 size,
                 ShellItemImageFactoryFlags.ThumbnailOnly |
                 ShellItemImageFactoryFlags.BiggerSizeOk,
-                out bitmapHandle);
+                &bitmapHandle);
             return hr < 0 || bitmapHandle == IntPtr.Zero
                 ? null
                 : CopyBitmap(bitmapHandle);
@@ -48,10 +61,17 @@ internal static class ShellThumbnailProvider
         finally
         {
             if (bitmapHandle != IntPtr.Zero) DeleteObject(bitmapHandle);
-            if (factory is not null && Marshal.IsComObject(factory))
-                Marshal.FinalReleaseComObject(factory);
+            if (factory != IntPtr.Zero)
+            {
+                var vtable = *(IntPtr**)factory;
+                var release = (delegate* unmanaged[Stdcall]<IntPtr, uint>)vtable[IUnknownReleaseSlot];
+                _ = release(factory);
+            }
         }
     }
+
+    private static readonly Guid ShellItemImageFactoryId =
+        new("BCC18B79-BA16-442F-80C4-8A59C30C463B");
 
     private static Bitmap? CopyBitmap(IntPtr bitmapHandle)
     {
@@ -170,24 +190,12 @@ internal static class ShellThumbnailProvider
         public uint Colors;
     }
 
-    [ComImport]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    [Guid("BCC18B79-BA16-442F-80C4-8A59C30C463B")]
-    private interface IShellItemImageFactory
-    {
-        [PreserveSig]
-        int GetImage(
-            NativeSize size,
-            ShellItemImageFactoryFlags flags,
-            out IntPtr bitmapHandle);
-    }
-
-    [DllImport("shell32.dll", CharSet = CharSet.Unicode, PreserveSig = true)]
-    private static extern int SHCreateItemFromParsingName(
-        [MarshalAs(UnmanagedType.LPWStr)] string path,
+    [LibraryImport("shell32.dll", StringMarshalling = StringMarshalling.Utf16)]
+    private static partial int SHCreateItemFromParsingName(
+        string path,
         IntPtr bindContext,
         ref Guid requestedInterface,
-        [MarshalAs(UnmanagedType.Interface)] out IShellItemImageFactory? shellItem);
+        out IntPtr shellItem);
 
     [DllImport("gdi32.dll", CharSet = CharSet.Unicode)]
     private static extern int GetObject(

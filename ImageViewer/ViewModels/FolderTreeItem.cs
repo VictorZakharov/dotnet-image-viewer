@@ -68,19 +68,36 @@ public partial class FolderTreeItem : ObservableObject
             children = new List<(string Path, string Name, bool HasChildren)>();
         }
 
-        await Dispatcher.UIThread.InvokeAsync(() =>
+        if (children.Count == 0)
         {
-            Children.Clear();
-            foreach (var child in children)
+            await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                Children.Add(new FolderTreeItem(
-                    child.Path,
-                    child.Name,
-                    addPlaceholder: child.HasChildren,
-                    probeForChildren: false));
-            }
-            _loaded = true;
-        });
+                Children.Clear();
+                _loaded = true;
+            }, DispatcherPriority.Background);
+            return;
+        }
+
+        const int batchSize = 32;
+        for (var offset = 0; offset < children.Count; offset += batchSize)
+        {
+            var batchStart = offset;
+            var batchEnd = Math.Min(offset + batchSize, children.Count);
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (batchStart == 0) Children.Clear();
+                for (var index = batchStart; index < batchEnd; index++)
+                {
+                    var child = children[index];
+                    Children.Add(new FolderTreeItem(
+                        child.Path,
+                        child.Name,
+                        addPlaceholder: child.HasChildren,
+                        probeForChildren: false));
+                }
+                if (batchEnd == children.Count) _loaded = true;
+            }, DispatcherPriority.Background);
+        }
     }
 
     private static bool HasVisibleSubfolder(string path)

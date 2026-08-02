@@ -6,16 +6,17 @@ using ImageViewer.Services;
 
 namespace ImageViewer.ViewModels;
 
-public partial class MainWindowViewModel : ObservableObject
+public partial class MainWindowViewModel : ObservableObject, IDisposable
 {
     public AppSettings Settings { get; }
-    public ViewerViewModel ViewerVM { get; }
     public BrowserViewModel BrowserVM { get; }
+
+    private ViewerViewModel? _viewerVm;
+    public ViewerViewModel ViewerVM => _viewerVm ??= new ViewerViewModel(Settings);
 
     public MainWindowViewModel(AppSettings settings)
     {
         Settings = settings;
-        ViewerVM = new ViewerViewModel(settings);
         BrowserVM = new BrowserViewModel(settings);
         BrowserVM.OpenRequested += OnBrowserOpenRequested;
 
@@ -48,7 +49,7 @@ public partial class MainWindowViewModel : ObservableObject
         {
             if (Directory.Exists(path))
             {
-                ViewerVM.Deactivate();
+                _viewerVm?.Deactivate();
                 CurrentFolder = path;
                 Settings.LastFolder = path;
                 CurrentImagePath = null;
@@ -79,7 +80,7 @@ public partial class MainWindowViewModel : ObservableObject
     {
         if (IsViewerMode && !string.IsNullOrEmpty(CurrentFolder))
         {
-            ViewerVM.Deactivate();
+            _viewerVm?.Deactivate();
             _ = BrowserVM.LoadFolderAsync(CurrentFolder);
             IsViewerMode = false;
         }
@@ -92,4 +93,10 @@ public partial class MainWindowViewModel : ObservableObject
             IsViewerMode = true;
         }
     }
+
+    public void DeactivateViewer() => _viewerVm?.Deactivate();
+
+    public void StopViewerSlideshow() => _viewerVm?.StopSlideshow();
+
+    public void Dispose() => _viewerVm?.Dispose();
 }

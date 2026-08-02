@@ -6,7 +6,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <!-- The AOT-safe Windows shell thumbnail bridge calls one fixed COM vtable. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsAotCompatible>true</IsAotCompatible>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <RootNamespace>ImageViewer</RootNamespace>
@@ -14,6 +16,13 @@
     <ApplicationIcon></ApplicationIcon>
     <!-- Tmds.DBus.Protocol is a Linux-only transitive dep from Avalonia; we ship Windows-only for now. -->
     <NuGetAuditMode>direct</NuGetAuditMode>
+  </PropertyGroup>
+
+  <!-- A RID-specific Release publish is the fast-starting distribution build.
+       Normal Debug/Release builds stay framework-dependent for quick iteration. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' and '$(RuntimeIdentifier)' == 'win-x64'">
+    <PublishAot>true</PublishAot>
+    <SelfContained>true</SelfContained>
   </PropertyGroup>
 
   <ItemGroup>

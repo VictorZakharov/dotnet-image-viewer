@@ -29,15 +29,6 @@ public static class SettingsStore
 
     private static readonly string SettingsPath = Path.Combine(SettingsDir, "settings.json");
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true,
-        PropertyNameCaseInsensitive = true,
-        // WindowX/Y default to double.NaN as "unset" sentinels; without this
-        // System.Text.Json throws on NaN and the whole save silently fails.
-        NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals
-    };
-
     public static AppSettings Load()
     {
         try
@@ -45,7 +36,8 @@ public static class SettingsStore
             if (File.Exists(SettingsPath))
             {
                 var json = File.ReadAllText(SettingsPath);
-                return JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings();
+                return JsonSerializer.Deserialize(json, SettingsJsonContext.Default.AppSettings)
+                       ?? new AppSettings();
             }
         }
         catch
@@ -60,7 +52,7 @@ public static class SettingsStore
         try
         {
             Directory.CreateDirectory(SettingsDir);
-            var json = JsonSerializer.Serialize(settings, JsonOptions);
+            var json = JsonSerializer.Serialize(settings, SettingsJsonContext.Default.AppSettings);
             File.WriteAllText(SettingsPath, json);
         }
         catch
@@ -68,4 +60,14 @@ public static class SettingsStore
             // Best-effort persistence.
         }
     }
+}
+
+[JsonSourceGenerationOptions(
+    WriteIndented = true,
+    PropertyNameCaseInsensitive = true,
+    // WindowX/Y use double.NaN as "unset" sentinels.
+    NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals)]
+[JsonSerializable(typeof(AppSettings))]
+internal partial class SettingsJsonContext : JsonSerializerContext
+{
 }

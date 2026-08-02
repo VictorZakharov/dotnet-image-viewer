@@ -28,6 +28,7 @@ A lightweight, ACDSee-style image and video viewer for Windows. Built on .NET 10
 - `Del` moves the selected media file to the Recycle Bin
 - Click a file title or press `F2` to rename it inline; only the stem is edited so the extension can't be lost. Enter commits, Esc cancels, click-away commits, and starting another rename commits the pending one
 - `Ctrl+wheel` resizes thumbnails (96–512 px). The cache regenerates at the new tier so larger thumbnails stay sharp; the size persists between launches
+- Folder/tree scans stay off the UI thread; grid items arrive in batches, a top progress strip covers thumbnail work, and folder tiles show spinners while their 2×2 previews load
 - Each thumbnail shows its file extension as a coloured pill in the top-right corner (JPG amber, PNG green, GIF magenta, BMP gold, WEBP cyan, TIFF violet, RAW red)
 - Right-click any media thumbnail (or media in the viewer) → **Properties** opens a side-pane with EXIF date-taken data where available plus created, modified, and accessed file dates
 - The folder tree expands and centers on the active folder when one is opened from the viewer, drag-drop, or CLI; long names truncate with a tooltip
@@ -57,6 +58,15 @@ dotnet run --project ImageViewer -- "C:\Pictures\photo.jpg"
 ```
 
 Or launch `ImageViewer\bin\Debug\net10.0\ImageViewer.exe` directly. With no argument the app opens its browser at your last folder, falling back to `%USERPROFILE%\Pictures` on first launch.
+
+For the fastest startup, publish the Avalonia 12 Native AOT build:
+
+```powershell
+dotnet publish ImageViewer\ImageViewer.csproj -c Release -r win-x64
+ImageViewer\bin\Release\net10.0\win-x64\publish\ImageViewer.exe
+```
+
+Native AOT is self-contained and needs the Windows C++ build tools when publishing.
 
 ## Keyboard shortcuts
 

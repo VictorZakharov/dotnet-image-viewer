@@ -40,7 +40,16 @@ public partial class BrowserViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(SortLabelName), nameof(SortLabelDate), nameof(SortLabelSize))]
     private bool _sortDescending;
 
-    [ObservableProperty] private bool _isLoading;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsGridLoading))]
+    private bool _isLoading;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsGridLoading))]
+    private bool _isThumbnailLoading;
+
+    public bool IsGridLoading => IsLoading || IsThumbnailLoading;
+
     [ObservableProperty] private string _itemsSummary = "";
     [ObservableProperty] private bool _showEmptyState = true;
 
@@ -52,6 +61,8 @@ public partial class BrowserViewModel : ObservableObject
 
     public const int MinThumbnailSize = 96;
     public const int MaxThumbnailSize = 512;
+    private const int ItemPublishBatchSize = 32;
+    private const int ThumbnailLoadBatchSize = 8;
 
     private static readonly int[] CacheTiers = { 128, 192, 256, 384, 512 };
 
@@ -64,6 +75,8 @@ public partial class BrowserViewModel : ObservableObject
     private int _activeCacheTier;
     private bool _suppressTreeSelectionLoad;
     private int _treeSyncVersion;
+    private int _folderLoadVersion;
+    private int _thumbnailLoadVersion;
     private ThumbnailItem? _renamingItem;
 
     [ObservableProperty] private bool _isEditingPath;
@@ -111,6 +124,7 @@ public partial class BrowserViewModel : ObservableObject
 
     private readonly ThumbnailCache _cache = new();
     private CancellationTokenSource? _loadCts;
+    private Task? _loadDrivesTask;
 
     public BrowserViewModel(AppSettings settings)
     {
@@ -123,8 +137,10 @@ public partial class BrowserViewModel : ObservableObject
         _thumbnailWidth = Math.Clamp(settings.ThumbnailSize, MinThumbnailSize, MaxThumbnailSize);
         _activeCacheTier = RoundToCacheTier(_thumbnailWidth);
         ShowExifPane = settings.ShowExifPane;
-        _ = LoadDrivesAsync();
     }
+
+    public Task EnsureDrivesLoadedAsync() =>
+        _loadDrivesTask ??= LoadDrivesAsync();
 
     partial void OnShowExifPaneChanged(bool value)
     {
@@ -284,6 +300,7 @@ public partial class BrowserViewModel : ObservableObject
             return;
         }
 
+        var loadVersion = ++_folderLoadVersion;
         _loadCts?.Cancel();
         _loadCts = new CancellationTokenSource();
         var ct = _loadCts.Token;
@@ -293,48 +310,109 @@ public partial class BrowserViewModel : ObservableObject
         FilteredItems.Clear();
         SelectedIndex = -1;
         FilterText = "";
+        ItemsSummary = "Loading...";
         IsLoading = true;
 
         try
         {
             var contents = await FolderScanner.ScanBrowserAsync(folder, ct);
-            var entries = contents.Folders
-                .Select(entry => ThumbnailItem.CreateFolder(entry.Path, entry.PreviewMedia))
-                .Concat(contents.Media.Select(entry => entry.IsVideo
-                    ? ThumbnailItem.CreateVideo(entry.Path)
-                    : new ThumbnailItem(entry.Path)));
+            var sortMode = SortMode;
+            var sortDescending = SortDescending;
+            var sortedEntries = await Task.Run(() =>
+            {
+                var entries = contents.Folders
+                    .Select(entry => ThumbnailItem.CreateFolder(entry.Path))
+                    .Concat(contents.Media.Select(entry => entry.IsVideo
+                        ? ThumbnailItem.CreateVideo(entry.Path)
+                        : new ThumbnailItem(entry.Path)));
+                return ApplySortToItems(entries, sortMode, sortDescending);
+            }, ct);
 
-            foreach (var entry in ApplySortToItems(entries))
+            for (var offset = 0; offset < sortedEntries.Count; offset += ItemPublishBatchSize)
             {
                 ct.ThrowIfCancellationRequested();
-                Items.Add(entry);
+                var end = Math.Min(offset + ItemPublishBatchSize, sortedEntries.Count);
+                for (var index = offset; index < end; index++)
+                {
+                    var entry = sortedEntries[index];
+                    Items.Add(entry);
+                    FilteredItems.Add(entry);
+                }
+
+                ItemsSummary = $"Loading... {Items.Count} items";
+                await Dispatcher.Yield(DispatcherPriority.Background);
             }
-            ApplyFilter();
+
             UpdateItemsSummary();
+            if (FilteredItems.Count > 0) SelectedIndex = 0;
             _ = LoadThumbnailsAsync(ct);
         }
         catch (OperationCanceledException) { /* expected */ }
         catch { /* ignore folder read errors */ }
         finally
         {
-            IsLoading = false;
-            _ = SyncTreeSelectionAsync(folder);
+            if (loadVersion == _folderLoadVersion)
+            {
+                IsLoading = false;
+                _ = SyncTreeSelectionAsync(folder);
+            }
         }
     }
 
     private async Task LoadThumbnailsAsync(CancellationToken ct, bool force = false)
     {
+        var loadVersion = ++_thumbnailLoadVersion;
+        IsThumbnailLoading = true;
         var snapshot = Items.ToList();
         var tier = _activeCacheTier;
         var folderPreviewTier = RoundToCacheTier(Math.Max(64, ThumbnailWidth / 2));
-        foreach (var item in snapshot)
+        try
         {
-            if (ct.IsCancellationRequested) break;
-
-            try
+            for (var offset = 0; offset < snapshot.Count; offset += ThumbnailLoadBatchSize)
             {
-                if (item.IsFolder)
+                if (ct.IsCancellationRequested) break;
+                var count = Math.Min(ThumbnailLoadBatchSize, snapshot.Count - offset);
+                var tasks = new Task[count];
+                for (var index = 0; index < count; index++)
+                    tasks[index] = LoadThumbnailAsync(
+                        snapshot[offset + index], tier, folderPreviewTier, force, ct);
+
+                try { await Task.WhenAll(tasks).ConfigureAwait(false); }
+                catch (OperationCanceledException) { break; }
+            }
+        }
+        finally
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (loadVersion == _thumbnailLoadVersion)
+                    IsThumbnailLoading = false;
+            });
+        }
+    }
+
+    private async Task LoadThumbnailAsync(
+        ThumbnailItem item,
+        int tier,
+        int folderPreviewTier,
+        bool force,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (item.IsFolder)
+            {
+                await Dispatcher.UIThread.InvokeAsync(item.BeginFolderPreviewLoading);
+                try
                 {
+                    if (!item.FolderPreviewMediaLoaded)
+                    {
+                        var previewMedia = await FolderScanner.ScanPreviewAsync(item.Path, ct)
+                            .ConfigureAwait(false);
+                        await Dispatcher.UIThread.InvokeAsync(
+                            () => item.SetFolderPreviewMedia(previewMedia));
+                    }
+
                     var previewCount = Math.Min(4, item.FolderPreviewMedia.Count);
                     for (var index = 0; index < previewCount; index++)
                     {
@@ -351,34 +429,39 @@ public partial class BrowserViewModel : ObservableObject
                         }
                     }
                 }
-                else
+                finally
                 {
-                    if (!force && item.Thumbnail is not null) continue;
-
-                    var thumbnail = await _cache.GetOrCreateAsync(
-                        item.Path, tier, item.IsVideo, ct);
-                    if (thumbnail is not null)
-                    {
-                        await Dispatcher.UIThread.InvokeAsync(() => item.Thumbnail = thumbnail);
-                    }
+                    await Dispatcher.UIThread.InvokeAsync(item.EndFolderPreviewLoading);
                 }
+                return;
             }
-            catch (OperationCanceledException) { break; }
-            catch { /* skip this thumbnail */ }
+
+            if (!force && item.Thumbnail is not null) return;
+            var thumbnail = await _cache.GetOrCreateAsync(item.Path, tier, item.IsVideo, ct);
+            if (thumbnail is not null)
+                await Dispatcher.UIThread.InvokeAsync(() => item.Thumbnail = thumbnail);
         }
+        catch (OperationCanceledException) { throw; }
+        catch { /* skip this thumbnail */ }
     }
 
-    private List<ThumbnailItem> ApplySortToItems(IEnumerable<ThumbnailItem> items)
+    private List<ThumbnailItem> ApplySortToItems(IEnumerable<ThumbnailItem> items) =>
+        ApplySortToItems(items, SortMode, SortDescending);
+
+    private static List<ThumbnailItem> ApplySortToItems(
+        IEnumerable<ThumbnailItem> items,
+        SortMode sortMode,
+        bool sortDescending)
     {
         IEnumerable<ThumbnailItem> SortGroup(IEnumerable<ThumbnailItem> group)
         {
-            IEnumerable<ThumbnailItem> sorted = SortMode switch
+            IEnumerable<ThumbnailItem> sorted = sortMode switch
             {
                 SortMode.Date => group.OrderBy(item => GetMtime(item.Path)),
                 SortMode.Size => group.OrderBy(item => GetSize(item.Path)),
                 _ => group.OrderBy(item => item.FileName, StringComparer.OrdinalIgnoreCase)
             };
-            return SortDescending ? sorted.Reverse() : sorted;
+            return sortDescending ? sorted.Reverse() : sorted;
         }
 
         // Keep navigation folders grouped ahead of media files in every sort mode.
