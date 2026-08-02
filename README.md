@@ -2,7 +2,7 @@
 
 A lightweight, ACDSee-style image and video viewer for Windows. Built on .NET 10 and Avalonia 12.
 
-> **Status**: early MVP. The viewer and browser work; file association is deferred — see [Roadmap](#roadmap).
+> **Status**: early MVP. The viewer, browser, video playback, and Windows Explorer integration work.
 
 ## Features
 
@@ -22,6 +22,7 @@ A lightweight, ACDSee-style image and video viewer for Windows. Built on .NET 10
 ### Browser mode
 - Explorer-style folder tree with drives at the root, compact rows, accurate leaf-folder chevrons, lazy-loaded subfolders, and a resizable splitter
 - Thumbnail grid with disk-cached previews (tiered up to 512 px; cache lives under `%LOCALAPPDATA%`); subfolders stay above media files and show a 2x2 image/video preview mosaic
+- The selected file or folder has a bright blue outline and check badge that remains visible over light or dark previews
 - Sort by name, date, or size — click the sort buttons or press `Ctrl+1` / `Ctrl+2` / `Ctrl+3`; click again to toggle direction
 - Type any text to filter by filename — `Backspace` edits, `Esc` clears
 - Click the current path in the toolbar to edit it Explorer-style; press Enter to navigate or Esc to revert (invalid paths surface an inline error)
@@ -39,7 +40,8 @@ A lightweight, ACDSee-style image and video viewer for Windows. Built on .NET 10
 - Drag-and-drop a file or folder anywhere on the window
 
 ### Other
-- **Single-instance**: opening another media file from Explorer focuses the existing window and switches to it
+- **Windows integration**: the **Explorer...** button registers this portable copy for Open with and Default Apps without changing defaults; supported files also get a lightweight “Browse containing folder in ImageViewer” action
+- **Single-instance**: opening media files in rapid succession from Explorer reuses and focuses the running instance, including while the first window is still starting
 - Window position, size, sort order, smooth-scrolling preference, EXIF overlay state, slideshow delay, and last folder persist between launches
 - Follows the Windows light / dark theme setting
 - **Common formats** (JPG, PNG, GIF, BMP, WebP, TIFF, ICO) via Skia
@@ -70,6 +72,22 @@ ImageViewer\bin\Release\net10.0\win-x64\publish\ImageViewer.exe
 ```
 
 Native AOT is self-contained and needs the Windows C++ build tools when publishing.
+
+## Windows Explorer integration
+
+Open **Explorer...** in the browser toolbar and choose **Register this copy**. Registration is per-user, does not require elevation, and only makes ImageViewer available as a choice. Windows requires you to confirm any defaults yourself; use **Choose defaults...** to open the correct Settings page.
+
+The equivalent portable-mode commands are:
+
+```powershell
+& ".\ImageViewer.exe" --register
+& ".\ImageViewer.exe" --default-apps
+& ".\ImageViewer.exe" --unregister
+```
+
+Registration stores the exact path of the executable that ran `--register`. If you move a portable build, run `--register` again from the new location to repair its commands. Run `--unregister` before deleting the final copy. Unregister removes ImageViewer-owned capabilities, ProgIDs, Open-with entries, and context actions; it does not touch media files, settings, caches, or registry values owned by other applications.
+
+The Explorer action launches a separate ImageViewer process and hands the containing folder to the existing instance. It is a static registry verb, not an in-process shell extension; on Windows 11 it can appear under **Show more options**.
 
 ## Keyboard shortcuts
 
@@ -128,7 +146,6 @@ ImageViewer\
 ## Roadmap
 
 Known polish gaps, in rough priority order:
-- **Default-viewer file association** (`--register` / `--unregister` CLI flags are no-op stubs)
 - **Lossless rotate-and-save** (`R` is display-only at the moment)
 
 ## Grid stress diagnostics

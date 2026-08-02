@@ -187,8 +187,4 @@ public partial class BrowserView : UserControl
         container.BringIntoView(rect);
     }
 
-    private void OnCloseExifPaneClicked(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is BrowserViewModel vm) vm.ShowExifPane = false;
-    }
 }

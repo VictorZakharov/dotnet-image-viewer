@@ -21,6 +21,10 @@ public static class ImageLoader
         ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tiff", ".tif", ".ico"
     };
 
+    private static readonly string[] AllExtensions = [.. CommonExtensions, .. RawExtensions];
+
+    public static IReadOnlyList<string> SupportedExtensions => AllExtensions;
+
     public static async Task<LoadedImage> LoadAsync(string path, CancellationToken ct = default)
     {
         return await Task.Run(() =>
