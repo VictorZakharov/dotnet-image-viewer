@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Versioning;
 using Microsoft.Win32;
@@ -8,14 +9,17 @@ namespace ImageViewer.Services;
 public static partial class WindowsFileRegistration
 {
     [SupportedOSPlatform("windows")]
-    private static bool IsRegistrationComplete(string executablePath)
+    private static bool IsRegistrationComplete(
+        string executablePath,
+        IReadOnlyList<(string Extension, bool IsVideo)> fileTypes)
     {
         using var capabilities = Registry.CurrentUser.OpenSubKey(CapabilitiesPath);
         using var associations = capabilities?.OpenSubKey("FileAssociations");
         if (capabilities is null
             || !IsOwned(capabilities)
             || associations is null
-            || !ValueEquals(capabilities, "ApplicationName", ApplicationName))
+            || !ValueEquals(capabilities, "ApplicationName", ApplicationName)
+            || associations.GetValueNames().Length != fileTypes.Count)
         {
             return false;
         }
@@ -27,13 +31,13 @@ public static partial class WindowsFileRegistration
             return false;
         }
 
-        if (!IsApplicationEntryComplete(executablePath)
+        if (!IsApplicationEntryComplete(executablePath, fileTypes)
             || !IsAppPathComplete(executablePath))
         {
             return false;
         }
 
-        foreach (var fileType in FileTypes)
+        foreach (var fileType in fileTypes)
         {
             var progId = ProgIdFor(fileType.Extension);
             if (!ValueEquals(associations, fileType.Extension, progId)
@@ -47,7 +51,9 @@ public static partial class WindowsFileRegistration
     }
 
     [SupportedOSPlatform("windows")]
-    private static bool IsApplicationEntryComplete(string executablePath)
+    private static bool IsApplicationEntryComplete(
+        string executablePath,
+        IReadOnlyList<(string Extension, bool IsVideo)> fileTypes)
     {
         using var key = Registry.CurrentUser.OpenSubKey(ApplicationEntryPath);
         using var command = key?.OpenSubKey(@"shell\open\command");
@@ -58,7 +64,8 @@ public static partial class WindowsFileRegistration
             && command is not null
             && ValueEquals(command, "", OpenCommand(executablePath))
             && supported is not null
-            && FileTypes.All(type => HasValue(supported, type.Extension));
+            && supported.GetValueNames().Length == fileTypes.Count
+            && fileTypes.All(type => HasValue(supported, type.Extension));
     }
 
     [SupportedOSPlatform("windows")]
@@ -102,4 +109,15 @@ public static partial class WindowsFileRegistration
     [SupportedOSPlatform("windows")]
     private static bool HasValue(RegistryKey key, string name) =>
         key.GetValueNames().Contains(name, StringComparer.OrdinalIgnoreCase);
+
+    [SupportedOSPlatform("windows")]
+    private static bool RegisteredExtensionsMatch(
+        RegistryKey appKey,
+        IReadOnlyList<(string Extension, bool IsVideo)> fileTypes)
+    {
+        var registered = new HashSet<string>(
+            ReadRegisteredExtensions(appKey),
+            StringComparer.OrdinalIgnoreCase);
+        return registered.SetEquals(fileTypes.Select(type => type.Extension));
+    }
 }

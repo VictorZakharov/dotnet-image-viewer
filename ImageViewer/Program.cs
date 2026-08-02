@@ -21,7 +21,7 @@ internal static class Program
             case StartupCommand.Register:
             case StartupCommand.Unregister:
             case StartupCommand.DefaultApps:
-                return WindowsIntegrationCli.Execute(request.Command);
+                return WindowsIntegrationCli.Execute(request);
             case StartupCommand.Invalid:
                 return 2;
         }

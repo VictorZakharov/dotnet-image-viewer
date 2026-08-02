@@ -4,8 +4,8 @@
         x:CompileBindings="False"
         Title="Windows integration"
         Icon="/Assets/ImageViewer.png"
-        Width="560" Height="440"
-        MinWidth="500" MinHeight="420"
+        Width="590" Height="540"
+        MinWidth="560" MinHeight="520"
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         Background="#0f1729">
@@ -13,40 +13,62 @@
     <StackPanel Orientation="Horizontal" Spacing="14">
       <Image Source="/Assets/ImageViewer.png" Width="48" Height="48"/>
       <StackPanel VerticalAlignment="Center">
-        <TextBlock Text="Windows &amp; Explorer integration"
+        <TextBlock x:Name="HeaderText"
+                   Text="Windows &amp; Explorer integration"
                    Foreground="#f3f7ff" FontSize="20" FontWeight="SemiBold"/>
-        <TextBlock Text="Open media from Explorer without changing your defaults"
+        <TextBlock x:Name="SubtitleText"
+                   Text="Open media from Explorer without changing your defaults"
                    Foreground="#8fa1c0" FontSize="12"/>
       </StackPanel>
     </StackPanel>
 
-    <StackPanel Grid.Row="1" Spacing="14">
+    <StackPanel Grid.Row="1" Spacing="12">
       <Border x:Name="StatusBorder"
               Background="#162038" BorderThickness="1" CornerRadius="6" Padding="14">
         <StackPanel Spacing="5">
           <TextBlock x:Name="StatusText"
                      AutomationProperties.AutomationId="IntegrationStatus"
                      Foreground="#e7eef9" FontSize="14" FontWeight="SemiBold"/>
+          <TextBlock x:Name="RegisteredTypesText"
+                     AutomationProperties.AutomationId="RegisteredAssociationGroups"
+                     Foreground="#b3c1dd" FontSize="11"/>
           <TextBlock x:Name="PathText"
                      Foreground="#8fa1c0" FontSize="11"
                      TextWrapping="Wrap"/>
         </StackPanel>
       </Border>
 
+      <Border Background="#121c32" CornerRadius="6" Padding="14">
+        <StackPanel Spacing="9">
+          <TextBlock Text="Make ImageViewer available for:"
+                     Foreground="#e7eef9" FontSize="13" FontWeight="SemiBold"/>
+          <WrapPanel Orientation="Horizontal" ItemSpacing="24">
+            <CheckBox x:Name="ImagesCheckBox"
+                      AutomationProperties.AutomationId="ImageAssociations"
+                      Content="Images"
+                      IsCheckedChanged="OnAssociationSelectionChanged"/>
+            <CheckBox x:Name="VideosCheckBox"
+                      AutomationProperties.AutomationId="VideoAssociations"
+                      Content="Videos"
+                      IsCheckedChanged="OnAssociationSelectionChanged"/>
+          </WrapPanel>
+        </StackPanel>
+      </Border>
+
       <TextBlock Foreground="#c8d4e8" FontSize="12" TextWrapping="Wrap">
-        Registration adds ImageViewer to Open with and Default Apps, plus a
-        “Browse containing folder in ImageViewer” action for supported files.
+        Registration adds ImageViewer to Open with and Default Apps for the
+        selected types, plus a &quot;Browse containing folder in ImageViewer&quot; action.
         It never selects ImageViewer as a default automatically.
       </TextBlock>
       <TextBlock Foreground="#e8c786" FontSize="12" TextWrapping="Wrap">
-        Windows requires you to confirm each default in Settings. Use “Choose
-        defaults” after registering this copy.
+        Windows requires you to confirm each default in Settings. Use &quot;Choose
+        defaults&quot; after registering this copy.
       </TextBlock>
 
       <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
         <Button x:Name="RegisterButton"
                 AutomationProperties.AutomationId="RegisterIntegration"
-                Content="Register this copy" Click="OnRegisterClicked" Padding="14,7"/>
+                Content="Register selected" Click="OnRegisterClicked" Padding="14,7"/>
         <Button x:Name="DefaultsButton"
                 AutomationProperties.AutomationId="OpenDefaultApps"
                 Content="Choose defaults..." Click="OnDefaultsClicked" Padding="14,7"/>
@@ -57,10 +79,11 @@
 
       <TextBlock x:Name="ResultText"
                  AutomationProperties.AutomationId="IntegrationResult"
-                 Foreground="#8fcfa8" FontSize="12" TextWrapping="Wrap"/>
+                 Foreground="#8fcfa8" FontSize="12" TextWrapping="Wrap"
+                 MinHeight="18"/>
     </StackPanel>
 
-    <Button Grid.Row="2" Content="Close" Click="OnCloseClicked"
+    <Button x:Name="CloseButton" Grid.Row="2" Content="Close" Click="OnCloseClicked"
             HorizontalAlignment="Right" Padding="20,7"/>
   </Grid>
 </Window>

@@ -19,6 +19,7 @@ public static partial class WindowsFileRegistration
     private const string ClassesPath = @"Software\Classes";
     private const string RegisteredExecutableName = "RegisteredExecutable";
     private const string RegisteredExtensionsName = "RegisteredExtensions";
+    private const string RegisteredGroupsName = "RegisteredGroups";
     private const string BrowseVerb = "ImageViewer.BrowseContaining";
 
     private static readonly (string Extension, bool IsVideo)[] FileTypes =
@@ -26,6 +27,9 @@ public static partial class WindowsFileRegistration
         .. MediaFileTypes.ImageExtensions.Select(extension => (extension, false)),
         .. MediaFileTypes.SupportedVideoExtensions.Select(extension => (extension, true))
     ];
+
+    public static int ImageAssociationCount => MediaFileTypes.ImageExtensions.Count;
+    public static int VideoAssociationCount => MediaFileTypes.SupportedVideoExtensions.Count;
 
     public static WindowsIntegrationStatus GetStatus()
     {
@@ -36,12 +40,20 @@ public static partial class WindowsFileRegistration
         catch { return new WindowsIntegrationStatus(WindowsIntegrationState.NeedsRepair); }
     }
 
-    public static void RegisterCurrentExecutable()
+    public static void RegisterCurrentExecutable(
+        MediaAssociationGroups groups = MediaAssociationGroups.All)
     {
         if (!OperatingSystem.IsWindows())
             throw new PlatformNotSupportedException("Windows integration is available only on Windows.");
+        if (groups == MediaAssociationGroups.None
+            || (groups & ~MediaAssociationGroups.All) != MediaAssociationGroups.None)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(groups),
+                "Select image associations, video associations, or both.");
+        }
 
-        RegisterWindows(WindowsIntegrationLauncher.GetExecutablePath());
+        RegisterWindows(WindowsIntegrationLauncher.GetExecutablePath(), groups);
     }
 
     public static void UnregisterCurrentUser()
@@ -60,41 +72,53 @@ public static partial class WindowsFileRegistration
             return new WindowsIntegrationStatus(WindowsIntegrationState.NeedsRepair);
 
         var registeredPath = appKey.GetValue(RegisteredExecutableName) as string;
+        var groups = ReadRegisteredGroups(appKey);
+        var selectedFileTypes = SelectFileTypes(groups);
         if (string.IsNullOrWhiteSpace(registeredPath)
-            || !IsRegistrationComplete(registeredPath))
+            || groups == MediaAssociationGroups.None
+            || !RegisteredExtensionsMatch(appKey, selectedFileTypes)
+            || !IsRegistrationComplete(registeredPath, selectedFileTypes))
         {
             return new WindowsIntegrationStatus(
                 WindowsIntegrationState.NeedsRepair,
-                registeredPath);
+                registeredPath,
+                groups);
         }
 
         var currentPath = WindowsIntegrationLauncher.TryGetExecutablePath();
         var state = currentPath is not null && PathsEqual(currentPath, registeredPath)
             ? WindowsIntegrationState.RegisteredHere
             : WindowsIntegrationState.RegisteredElsewhere;
-        return new WindowsIntegrationStatus(state, registeredPath);
+        return new WindowsIntegrationStatus(state, registeredPath, groups);
     }
 
     [SupportedOSPlatform("windows")]
-    private static void RegisterWindows(string executablePath)
+    private static void RegisterWindows(
+        string executablePath,
+        MediaAssociationGroups groups)
     {
         executablePath = Path.GetFullPath(executablePath);
         if (!File.Exists(executablePath))
             throw new FileNotFoundException("The executable to register was not found.", executablePath);
 
-        var previousExtensions = ReadRegisteredExtensions();
-        foreach (var extension in previousExtensions.Except(
-                     FileTypes.Select(type => type.Extension),
-                     StringComparer.OrdinalIgnoreCase))
+        var selectedFileTypes = SelectFileTypes(groups);
+        var selectedExtensions = selectedFileTypes
+            .Select(type => type.Extension)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var extensionsToRemove = ReadRegisteredExtensions()
+            .Concat(FileTypes.Select(type => type.Extension))
+            .Where(extension => !selectedExtensions.Contains(extension))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+        foreach (var extension in extensionsToRemove)
         {
             RemoveFileType(extension);
         }
 
-        WriteApplicationRoot(executablePath);
-        WriteCapabilities(executablePath);
-        foreach (var fileType in FileTypes)
+        WriteApplicationRoot(executablePath, groups, selectedFileTypes);
+        WriteCapabilities(executablePath, selectedFileTypes);
+        foreach (var fileType in selectedFileTypes)
             WriteFileType(fileType.Extension, fileType.IsVideo, executablePath);
-        WriteApplicationEntry(executablePath);
+        WriteApplicationEntry(executablePath, selectedFileTypes);
         WriteAppPath(executablePath);
         WriteRegisteredApplicationsValue();
         NotifyAssociationsChanged();
@@ -142,4 +166,11 @@ public static partial class WindowsFileRegistration
 
     private static string IconReference(string executablePath) =>
         $"\"{executablePath}\",0";
+
+    private static (string Extension, bool IsVideo)[] SelectFileTypes(
+        MediaAssociationGroups groups) =>
+        FileTypes.Where(type => type.IsVideo
+            ? (groups & MediaAssociationGroups.Videos) != 0
+            : (groups & MediaAssociationGroups.Images) != 0)
+        .ToArray();
 }

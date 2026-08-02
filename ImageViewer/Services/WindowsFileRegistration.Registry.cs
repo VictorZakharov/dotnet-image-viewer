@@ -13,19 +13,25 @@ public static partial class WindowsFileRegistration
     private const int AssociationChanged = 0x08000000;
 
     [SupportedOSPlatform("windows")]
-    private static void WriteApplicationRoot(string executablePath)
+    private static void WriteApplicationRoot(
+        string executablePath,
+        MediaAssociationGroups groups,
+        IReadOnlyList<(string Extension, bool IsVideo)> fileTypes)
     {
         using var key = OpenOwnedOrNew(AppRoot);
         key.SetValue(RegisteredExecutableName, executablePath, RegistryValueKind.String);
         key.SetValue(
             RegisteredExtensionsName,
-            FileTypes.Select(type => type.Extension).ToArray(),
+            fileTypes.Select(type => type.Extension).ToArray(),
             RegistryValueKind.MultiString);
-        key.SetValue("RegistrationVersion", 1, RegistryValueKind.DWord);
+        key.SetValue(RegisteredGroupsName, (int)groups, RegistryValueKind.DWord);
+        key.SetValue("RegistrationVersion", 2, RegistryValueKind.DWord);
     }
 
     [SupportedOSPlatform("windows")]
-    private static void WriteCapabilities(string executablePath)
+    private static void WriteCapabilities(
+        string executablePath,
+        IReadOnlyList<(string Extension, bool IsVideo)> fileTypes)
     {
         using var key = RecreateOwned(CapabilitiesPath);
         key.SetValue("ApplicationName", ApplicationName, RegistryValueKind.String);
@@ -36,7 +42,7 @@ public static partial class WindowsFileRegistration
         key.SetValue("ApplicationIcon", IconReference(executablePath), RegistryValueKind.String);
 
         using var associations = key.CreateSubKey("FileAssociations", writable: true);
-        foreach (var fileType in FileTypes)
+        foreach (var fileType in fileTypes)
             associations.SetValue(fileType.Extension, ProgIdFor(fileType.Extension), RegistryValueKind.String);
     }
 
@@ -66,7 +72,9 @@ public static partial class WindowsFileRegistration
     }
 
     [SupportedOSPlatform("windows")]
-    private static void WriteApplicationEntry(string executablePath)
+    private static void WriteApplicationEntry(
+        string executablePath,
+        IReadOnlyList<(string Extension, bool IsVideo)> fileTypes)
     {
         using var key = RecreateOwned(ApplicationEntryPath);
         key.SetValue("FriendlyAppName", ApplicationName);
@@ -75,7 +83,7 @@ public static partial class WindowsFileRegistration
         using var command = key.CreateSubKey(@"shell\open\command", writable: true);
         command.SetValue("", OpenCommand(executablePath));
         using var supported = key.CreateSubKey("SupportedTypes", writable: true);
-        foreach (var fileType in FileTypes)
+        foreach (var fileType in fileTypes)
             supported.SetValue(fileType.Extension, "", RegistryValueKind.String);
     }
 
@@ -100,15 +108,6 @@ public static partial class WindowsFileRegistration
                 "Another application owns the ImageViewer Default Apps registration.");
         }
         key.SetValue(ApplicationName, CapabilitiesPath, RegistryValueKind.String);
-    }
-
-    [SupportedOSPlatform("windows")]
-    private static IReadOnlyList<string> ReadRegisteredExtensions()
-    {
-        using var key = Registry.CurrentUser.OpenSubKey(AppRoot);
-        return key is not null && IsOwned(key)
-            ? key.GetValue(RegisteredExtensionsName) as string[] ?? []
-            : [];
     }
 
     [SupportedOSPlatform("windows")]

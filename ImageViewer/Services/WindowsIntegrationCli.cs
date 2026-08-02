@@ -4,16 +4,16 @@ namespace ImageViewer.Services;
 
 internal static class WindowsIntegrationCli
 {
-    public static int Execute(StartupCommand command)
+    public static int Execute(CommandLineRequest request)
     {
         if (!OperatingSystem.IsWindows()) return 2;
 
         try
         {
-            switch (command)
+            switch (request.Command)
             {
                 case StartupCommand.Register:
-                    WindowsFileRegistration.RegisterCurrentExecutable();
+                    WindowsFileRegistration.RegisterCurrentExecutable(request.AssociationGroups);
                     break;
                 case StartupCommand.Unregister:
                     WindowsFileRegistration.UnregisterCurrentUser();

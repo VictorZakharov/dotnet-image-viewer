@@ -75,15 +75,20 @@ Native AOT is self-contained and needs the Windows C++ build tools when publishi
 
 ## Windows Explorer integration
 
-Open **Explorer...** in the browser toolbar and choose **Register this copy**. Registration is per-user, does not require elevation, and only makes ImageViewer available as a choice. Windows requires you to confirm any defaults yourself; use **Choose defaults...** to open the correct Settings page.
+When associations are missing, ImageViewer prompts after its first window appears. Select **Images**, **Videos**, or both, then register the selection. The same controls are always available from **Explorer...** in the browser toolbar. Registration is per-user, does not require elevation, and only makes ImageViewer available as a choice. Windows requires you to confirm any defaults yourself; use **Choose defaults...** to open the correct Settings page.
 
 The equivalent portable-mode commands are:
 
 ```powershell
 & ".\ImageViewer.exe" --register
+& ".\ImageViewer.exe" --register images
+& ".\ImageViewer.exe" --register videos
+& ".\ImageViewer.exe" --register images videos
 & ".\ImageViewer.exe" --default-apps
 & ".\ImageViewer.exe" --unregister
 ```
+
+Plain `--register` registers both groups. Re-running it with a category selection replaces the previous selection, so an images-only or videos-only setup is remembered and is not treated as missing on the next startup.
 
 Registration stores the exact path of the executable that ran `--register`. If you move a portable build, run `--register` again from the new location to repair its commands. Run `--unregister` before deleting the final copy. Unregister removes ImageViewer-owned capabilities, ProgIDs, Open-with entries, and context actions; it does not touch media files, settings, caches, or registry values owned by other applications.
 

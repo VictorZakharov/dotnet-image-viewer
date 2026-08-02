@@ -28,6 +28,7 @@ public partial class App : Application
 
             _vm = new MainWindowViewModel(settings);
             _mainWindow = new MainWindow { DataContext = _vm };
+            _mainWindow.Opened += OnMainWindowOpened;
 
             if (!string.IsNullOrEmpty(Program.InitialPath))
             {
