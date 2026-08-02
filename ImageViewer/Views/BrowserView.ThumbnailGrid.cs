@@ -25,10 +25,6 @@ public partial class BrowserView
             ScheduleViewportRefresh();
         };
         ThumbRepeater.AddHandler(
-            InputElement.PointerWheelChangedEvent,
-            OnThumbWheel,
-            RoutingStrategies.Tunnel);
-        ThumbRepeater.AddHandler(
             InputElement.KeyDownEvent,
             OnThumbnailGridKeyDown,
             RoutingStrategies.Tunnel);
@@ -42,7 +38,7 @@ public partial class BrowserView
     private void AttachThumbnailGrid(BrowserViewModel vm)
     {
         vm.RenameRequested += OnRenameRequested;
-        vm.ThumbnailRequestsInvalidated += ScheduleViewportRefresh;
+        vm.ThumbnailRequestsInvalidated += OnThumbnailRequestsInvalidated;
         vm.FilteredItems.CollectionChanged += OnFilteredItemsChanged;
         vm.ReportRealizedItems(_realizedThumbnailElements.Count);
         ScheduleViewportRefresh();
@@ -51,14 +47,23 @@ public partial class BrowserView
     private void DetachThumbnailGrid(BrowserViewModel vm)
     {
         vm.RenameRequested -= OnRenameRequested;
-        vm.ThumbnailRequestsInvalidated -= ScheduleViewportRefresh;
+        vm.ThumbnailRequestsInvalidated -= OnThumbnailRequestsInvalidated;
         vm.FilteredItems.CollectionChanged -= OnFilteredItemsChanged;
     }
 
     public void FocusThumbnailGrid() => ThumbRepeater.Focus();
 
-    private void OnFilteredItemsChanged(object? sender, NotifyCollectionChangedEventArgs e) =>
+    private void OnFilteredItemsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        CancelSmoothScrolling();
         ScheduleViewportRefresh();
+    }
+
+    private void OnThumbnailRequestsInvalidated()
+    {
+        CancelSmoothScrolling();
+        ScheduleViewportRefresh();
+    }
 
     private void OnThumbScrollChanged(object? sender, ScrollChangedEventArgs e) =>
         ScheduleViewportRefresh();
@@ -177,19 +182,6 @@ public partial class BrowserView
         vm.OpenSelected();
     }
 
-    private void OnThumbWheel(object? sender, PointerWheelEventArgs e)
-    {
-        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control)) return;
-        if (DataContext is not BrowserViewModel vm) return;
-
-        const int step = 24;
-        var oldWidth = vm.ThumbnailWidth;
-        vm.ResizeThumbnailsBy(e.Delta.Y > 0 ? step : -step);
-        if (vm.ThumbnailWidth != oldWidth && vm.SelectedIndex >= 0)
-            ScrollIndexIntoView(vm.SelectedIndex);
-        e.Handled = true;
-    }
-
     private void OnThumbnailGridKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Source is TextBox) return;
@@ -202,6 +194,7 @@ public partial class BrowserView
         var index = Math.Max(0, vm.SelectedIndex);
         var newIndex = GetNavigationTarget(e.Key, index, total, perRow, RowsPerPage(vm));
         if (newIndex < 0) return;
+        CancelGridSmoothScrolling();
 
         if (newIndex != index)
         {
@@ -243,6 +236,7 @@ public partial class BrowserView
 
     private void ScrollIndexIntoView(int index)
     {
+        CancelGridSmoothScrolling();
         Dispatcher.UIThread.Post(() =>
         {
             try

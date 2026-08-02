@@ -19,6 +19,7 @@ public partial class BrowserView : UserControl
     {
         InitializeComponent();
         InitializeThumbnailGrid();
+        InitializeSmoothScrolling();
         AddHandler(InputElement.KeyDownEvent, OnRootPreviewKeyDown, RoutingStrategies.Tunnel);
         AddHandler(InputElement.PointerPressedEvent, OnRootPointerPressed, RoutingStrategies.Tunnel);
         FolderTree.SizeChanged += OnFolderTreeSizeChanged;
@@ -86,12 +87,14 @@ public partial class BrowserView : UserControl
         if (_vm is not null)
         {
             _vm.TreeNodeFocused -= OnTreeNodeFocused;
+            DetachSmoothScrolling(_vm);
             DetachThumbnailGrid(_vm);
         }
         _vm = DataContext as BrowserViewModel;
         if (_vm is not null)
         {
             _vm.TreeNodeFocused += OnTreeNodeFocused;
+            AttachSmoothScrolling(_vm);
             AttachThumbnailGrid(_vm);
         }
     }
@@ -164,6 +167,7 @@ public partial class BrowserView : UserControl
 
     private void CenterTreeContainer(FolderTreeItem item)
     {
+        CancelTreeSmoothScrolling();
         var container = FolderTree.TreeContainerFromItem(item);
         if (container is null) return;
 
