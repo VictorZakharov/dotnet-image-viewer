@@ -126,10 +126,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            var thumbList = this.GetVisualDescendants()
-                .OfType<ListBox>()
-                .FirstOrDefault(lb => lb.Name == "ThumbList");
-            thumbList?.Focus();
+            _browserView?.FocusThumbnailGrid();
         }
     }
 
