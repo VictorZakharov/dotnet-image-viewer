@@ -193,6 +193,10 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
             DurationLabel = "00:00";
 
             var previousMedia = _currentMedia;
+            // Browser mode pauses playback. Stop that media before replacing it
+            // so VLC creates a fresh video output instead of reusing a black one.
+            if (previousMedia is not null)
+                VideoPlayer.Stop();
             _currentMedia = new Media(_libVlc, new Uri(path));
             if (!VideoPlayer.Play(_currentMedia))
                 PlaybackError = "Could not start video playback.";
