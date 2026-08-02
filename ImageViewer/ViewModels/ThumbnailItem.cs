@@ -8,19 +8,19 @@ using ImageViewer.Services;
 
 namespace ImageViewer.ViewModels;
 
-public partial class ThumbnailItem : ObservableObject
+public partial class ThumbnailItem : ObservableObject, IDisposable
 {
+    public const int FolderPreviewSlotCount = 4;
+
     public bool IsFolder { get; }
     public bool IsVideo { get; }
     public bool IsImage => !IsFolder && !IsVideo;
     public bool IsFile => !IsFolder;
     public IReadOnlyList<MediaScanEntry> FolderPreviewMedia { get; private set; }
     public bool FolderPreviewMediaLoaded { get; private set; }
-    public bool FolderPreview1IsVideo => IsFolderPreviewVideo(0);
-    public bool FolderPreview2IsVideo => IsFolderPreviewVideo(1);
-    public bool FolderPreview3IsVideo => IsFolderPreviewVideo(2);
-    public bool FolderPreview4IsVideo => IsFolderPreviewVideo(3);
+    public IReadOnlyList<FolderPreviewSlot> FolderPreviewSlots { get; }
     public DateTime? ModifiedAt { get; }
+    public long FileSize { get; }
     public string DateLabel => ModifiedAt?.ToString("yyyy-MM-dd") ?? "";
     public string DateToolTip => ModifiedAt is { } date
         ? $"Modified {date:yyyy-MM-dd HH:mm:ss}"
@@ -36,12 +36,11 @@ public partial class ThumbnailItem : ObservableObject
     private string _fileName;
 
     [ObservableProperty] private Bitmap? _thumbnail;
-    [ObservableProperty] private Bitmap? _folderThumbnail1;
-    [ObservableProperty] private Bitmap? _folderThumbnail2;
-    [ObservableProperty] private Bitmap? _folderThumbnail3;
-    [ObservableProperty] private Bitmap? _folderThumbnail4;
     [ObservableProperty] private bool _isFolderPreviewLoading;
+    [ObservableProperty] private bool _isSelected;
     private int _folderPreviewLoadCount;
+    private int _thumbnailTier;
+    private int _folderThumbnailTier;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowFileTitle))]
     private bool _isRenaming;
@@ -111,7 +110,11 @@ public partial class ThumbnailItem : ObservableObject
         IsVideo = isVideo;
         FolderPreviewMedia = folderPreviewMedia ?? Array.Empty<MediaScanEntry>();
         FolderPreviewMediaLoaded = !isFolder || folderPreviewMedia is not null;
-        ModifiedAt = GetModifiedAt(path);
+        var previewSlots = new FolderPreviewSlot[isFolder ? FolderPreviewSlotCount : 0];
+        for (var index = 0; index < previewSlots.Length; index++)
+            previewSlots[index] = new FolderPreviewSlot();
+        FolderPreviewSlots = previewSlots;
+        (ModifiedAt, FileSize) = GetFileMetadata(path);
         _path = path;
         _fileName = System.IO.Path.GetFileName(path);
     }
@@ -124,51 +127,64 @@ public partial class ThumbnailItem : ObservableObject
         IReadOnlyList<MediaScanEntry>? previewMedia = null) =>
         new(path, isFolder: true, isVideo: false, previewMedia);
 
-    private static DateTime? GetModifiedAt(string path)
+    private static (DateTime? ModifiedAt, long FileSize) GetFileMetadata(string path)
     {
         try
         {
-            var modifiedAt = File.GetLastWriteTime(path);
-            return modifiedAt == DateTime.MinValue ? null : modifiedAt;
+            if (File.Exists(path))
+            {
+                var info = new FileInfo(path);
+                var modifiedAt = info.LastWriteTime;
+                return (modifiedAt == DateTime.MinValue ? null : modifiedAt, info.Length);
+            }
+
+            var directoryModifiedAt = Directory.GetLastWriteTime(path);
+            return (directoryModifiedAt == DateTime.MinValue ? null : directoryModifiedAt, 0);
         }
         catch
         {
-            return null;
+            return (null, 0);
         }
     }
 
-    public Bitmap? GetFolderThumbnail(int index) => index switch
-    {
-        0 => FolderThumbnail1,
-        1 => FolderThumbnail2,
-        2 => FolderThumbnail3,
-        3 => FolderThumbnail4,
-        _ => null
-    };
+    public bool NeedsThumbnail(int tier) => _thumbnailTier != tier;
 
-    private bool IsFolderPreviewVideo(int index) =>
-        index >= 0 && index < FolderPreviewMedia.Count && FolderPreviewMedia[index].IsVideo;
+    public bool NeedsFolderThumbnails(int tier) => _folderThumbnailTier != tier;
 
-    public void SetFolderThumbnail(int index, Bitmap? bitmap)
+    public void ApplyThumbnail(Bitmap? bitmap, int tier)
     {
-        switch (index)
+        if (!ReferenceEquals(Thumbnail, bitmap))
         {
-            case 0: FolderThumbnail1 = bitmap; break;
-            case 1: FolderThumbnail2 = bitmap; break;
-            case 2: FolderThumbnail3 = bitmap; break;
-            case 3: FolderThumbnail4 = bitmap; break;
+            var previous = Thumbnail;
+            Thumbnail = bitmap;
+            previous?.Dispose();
         }
+        _thumbnailTier = tier;
     }
+
+    public void ApplyFolderThumbnail(int index, Bitmap? bitmap)
+    {
+        if (index < 0 || index >= FolderPreviewSlots.Count)
+        {
+            bitmap?.Dispose();
+            return;
+        }
+
+        FolderPreviewSlots[index].ApplyThumbnail(bitmap);
+    }
+
+    public void MarkFolderThumbnailsAttempted(int tier) => _folderThumbnailTier = tier;
 
     public void SetFolderPreviewMedia(IReadOnlyList<MediaScanEntry> previewMedia)
     {
         FolderPreviewMedia = previewMedia;
         FolderPreviewMediaLoaded = true;
         OnPropertyChanged(nameof(FolderPreviewMedia));
-        OnPropertyChanged(nameof(FolderPreview1IsVideo));
-        OnPropertyChanged(nameof(FolderPreview2IsVideo));
-        OnPropertyChanged(nameof(FolderPreview3IsVideo));
-        OnPropertyChanged(nameof(FolderPreview4IsVideo));
+        for (var index = 0; index < FolderPreviewSlots.Count; index++)
+        {
+            FolderPreviewSlots[index].IsVideo =
+                index < previewMedia.Count && previewMedia[index].IsVideo;
+        }
     }
 
     public void BeginFolderPreviewLoading()
@@ -236,5 +252,12 @@ public partial class ThumbnailItem : ObservableObject
             IsRenaming = false;
             return false;
         }
+    }
+
+    public void Dispose()
+    {
+        ApplyThumbnail(null, _thumbnailTier);
+        foreach (var slot in FolderPreviewSlots)
+            slot.Dispose();
     }
 }

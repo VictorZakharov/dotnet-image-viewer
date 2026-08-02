@@ -98,5 +98,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     public void StopViewerSlideshow() => _viewerVm?.StopSlideshow();
 
-    public void Dispose() => _viewerVm?.Dispose();
+    public void Dispose()
+    {
+        BrowserVM.Dispose();
+        _viewerVm?.Dispose();
+    }
 }

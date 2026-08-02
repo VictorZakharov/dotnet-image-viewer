@@ -2,7 +2,7 @@
 
 A lightweight, ACDSee-style image and video viewer for Windows. Built on .NET 10 and Avalonia 12.
 
-> **Status**: early MVP. The viewer and browser work; file association and grid virtualization are deferred — see [Roadmap](#roadmap).
+> **Status**: early MVP. The viewer and browser work; file association is deferred — see [Roadmap](#roadmap).
 
 ## Features
 
@@ -28,7 +28,8 @@ A lightweight, ACDSee-style image and video viewer for Windows. Built on .NET 10
 - `Del` moves the selected media file to the Recycle Bin
 - Click a file title or press `F2` to rename it inline; only the stem is edited so the extension can't be lost. Enter commits, Esc cancels, click-away commits, and starting another rename commits the pending one
 - `Ctrl+wheel` resizes thumbnails (96–512 px). The cache regenerates at the new tier so larger thumbnails stay sharp; the size persists between launches
-- Folder/tree scans stay off the UI thread; grid items arrive in batches, a top progress strip covers thumbnail work, and folder tiles show spinners while their 2×2 previews load
+- Folder/tree scans stay off the UI thread; the wrapping grid virtualizes item controls, realizing only the viewport plus a small overscan region
+- Thumbnail and folder-mosaic work is visible-first, limited to four concurrent loads, and cancelled when it becomes stale; a top progress strip covers grid work and folder tiles show their own spinners
 - Each thumbnail shows its file extension as a coloured pill in the top-right corner (JPG amber, PNG green, GIF magenta, BMP gold, WEBP cyan, TIFF violet, RAW red)
 - Right-click any media thumbnail (or media in the viewer) → **Properties** opens a side-pane with EXIF date-taken data where available plus created, modified, and accessed file dates
 - The folder tree expands and centers on the active folder when one is opened from the viewer, drag-drop, or CLI; long names truncate with a tooltip
@@ -99,6 +100,7 @@ Native AOT is self-contained and needs the Windows C++ build tools when publishi
 ## Tech stack
 
 - [Avalonia 12.1](https://avaloniaui.net/blog/release-12-1) for the UI (cross-platform-capable; deployed as Windows-only for now)
+- Avalonia `ItemsRepeater` with `UniformGridLayout` for the virtualized media grid
 - [CommunityToolkit.Mvvm](https://learn.microsoft.com/dotnet/communitytoolkit/mvvm/) MVVM source generators
 - [Magick.NET](https://github.com/dlemstra/Magick.NET) for RAW decoding
 - [MetadataExtractor](https://github.com/drewnoakes/metadata-extractor-dotnet) for EXIF
@@ -126,7 +128,24 @@ ImageViewer\
 Known polish gaps, in rough priority order:
 - **Default-viewer file association** (`--register` / `--unregister` CLI flags are no-op stubs)
 - **Lossless rotate-and-save** (`R` is display-only at the moment)
-- **Thumbnail-grid virtualization** for folders with 1000+ media files
+
+## Grid stress diagnostics
+
+Set `IMAGEVIEWER_GRID_DIAGNOSTICS=1` before starting the app to show realized, queued, and active thumbnail counts plus viewport layout metrics in the top-right corner of the browser.
+
+The following creates a disposable 10,000-entry folder for repeatable container and navigation checks. The files are intentionally empty: this isolates grid realization, queue bounds, keyboard navigation, and memory from image decode cost.
+
+```powershell
+$stressFolder = Join-Path $env:TEMP "ImageViewer-grid-stress-10000"
+New-Item -ItemType Directory -Path $stressFolder -Force | Out-Null
+0..9999 | ForEach-Object {
+    [IO.File]::Create((Join-Path $stressFolder ("image-{0:D5}.jpg" -f $_))).Dispose()
+}
+$env:IMAGEVIEWER_GRID_DIAGNOSTICS = "1"
+ImageViewer\bin\Release\net10.0\ImageViewer.exe $stressFolder
+```
+
+Press `End`, `Home`, `PageDown`, and `PageUp` while watching the overlay. Realized controls and pending work should remain proportional to the viewport, not the 10,000-item collection. Remove the fixture afterward with `Remove-Item -LiteralPath $stressFolder -Recurse`.
 
 ## Development notes
 
