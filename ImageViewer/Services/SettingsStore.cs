@@ -16,6 +16,7 @@ public sealed class AppSettings
     public int ThumbnailSize { get; set; } = 192;
     public string SortMode { get; set; } = "Name";
     public bool SortDescending { get; set; }
+    public bool SmoothScrollingEnabled { get; set; } = true;
     public int SlideshowDelaySeconds { get; set; } = 5;
     public bool ShowExifOverlay { get; set; }
     public bool ShowExifPane { get; set; }

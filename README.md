@@ -28,6 +28,8 @@ A lightweight, ACDSee-style image and video viewer for Windows. Built on .NET 10
 - `Del` moves the selected media file to the Recycle Bin
 - Click a file title or press `F2` to rename it inline; only the stem is edited so the extension can't be lost. Enter commits, Esc cancels, click-away commits, and starting another rename commits the pending one
 - `Ctrl+wheel` resizes thumbnails (96–512 px). The cache regenerates at the new tier so larger thumbnails stay sharp; the size persists between launches
+- Mouse-wheel scrolling is velocity-sensitive in both the folder tree and media grid: small movements stay precise while rapid input travels farther and decelerates smoothly. Fractional precision input keeps its native platform behavior
+- The **Smooth** toolbar toggle disables animated scrolling for both panes and persists between launches; Windows' reduced-motion preference overrides it
 - Folder/tree scans stay off the UI thread; the wrapping grid virtualizes item controls, realizing only the viewport plus a small overscan region
 - Thumbnail and folder-mosaic work is visible-first, limited to four concurrent loads, and cancelled when it becomes stale; a top progress strip covers grid work and folder tiles show their own spinners
 - Each thumbnail shows its file extension as a coloured pill in the top-right corner (JPG amber, PNG green, GIF magenta, BMP gold, WEBP cyan, TIFF violet, RAW red)
@@ -38,7 +40,7 @@ A lightweight, ACDSee-style image and video viewer for Windows. Built on .NET 10
 
 ### Other
 - **Single-instance**: opening another media file from Explorer focuses the existing window and switches to it
-- Window position, size, sort order, EXIF overlay state, slideshow delay, and last folder persist between launches
+- Window position, size, sort order, smooth-scrolling preference, EXIF overlay state, slideshow delay, and last folder persist between launches
 - Follows the Windows light / dark theme setting
 - **Common formats** (JPG, PNG, GIF, BMP, WebP, TIFF, ICO) via Skia
 - **RAW formats** (NEF, CR2, CR3, ARW, DNG, RAF, RW2, ORF, PEF, SRW) via Magick.NET

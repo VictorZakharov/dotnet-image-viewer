@@ -159,6 +159,7 @@ public partial class BrowserViewModel : ObservableObject, IDisposable
         // window appears.
         _thumbnailWidth = Math.Clamp(settings.ThumbnailSize, MinThumbnailSize, MaxThumbnailSize);
         _activeCacheTier = RoundToCacheTier(_thumbnailWidth);
+        _smoothScrollingEnabled = settings.SmoothScrollingEnabled;
         ShowExifPane = settings.ShowExifPane;
         ShowGridDiagnostics = string.Equals(
             Environment.GetEnvironmentVariable("IMAGEVIEWER_GRID_DIAGNOSTICS"),
