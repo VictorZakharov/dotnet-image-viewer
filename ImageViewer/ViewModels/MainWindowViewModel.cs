@@ -41,15 +41,22 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string? _currentFolder;
 
+    public bool CloseViewerOnEscape { get; private set; }
+
     private void OnBrowserOpenRequested(string path) => Open(path);
 
-    public void Open(string path)
+    public void Open(string path) => Open(path, closeViewerOnEscape: false);
+
+    public void OpenDirect(string path) => Open(path, closeViewerOnEscape: true);
+
+    private void Open(string path, bool closeViewerOnEscape)
     {
         try
         {
             if (Directory.Exists(path))
             {
                 _viewerVm?.Deactivate();
+                CloseViewerOnEscape = false;
                 CurrentFolder = path;
                 Settings.LastFolder = path;
                 CurrentImagePath = null;
@@ -58,6 +65,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             }
             else if (File.Exists(path) && MediaFileTypes.IsSupported(path))
             {
+                CloseViewerOnEscape = closeViewerOnEscape;
                 CurrentImagePath = path;
                 var dir = Path.GetDirectoryName(path);
                 if (!string.IsNullOrEmpty(dir))
@@ -81,6 +89,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         if (IsViewerMode && !string.IsNullOrEmpty(CurrentFolder))
         {
             _viewerVm?.Deactivate();
+            CloseViewerOnEscape = false;
             _ = BrowserVM.LoadFolderAsync(CurrentFolder);
             IsViewerMode = false;
         }
@@ -90,6 +99,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         }
         else if (!IsViewerMode && !string.IsNullOrEmpty(CurrentImagePath))
         {
+            CloseViewerOnEscape = false;
             IsViewerMode = true;
         }
     }

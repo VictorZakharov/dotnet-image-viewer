@@ -26,6 +26,8 @@ public partial class ThumbnailItem : ObservableObject, IDisposable
         ? $"Modified {date:yyyy-MM-dd HH:mm:ss}"
         : "Modified date unavailable";
     public bool ShowFileTitle => IsFile && !IsRenaming;
+    public bool ShowEmptyFolderPreview =>
+        IsFolder && FolderPreviewMediaLoaded && FolderPreviewMedia.Count == 0;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ExtensionLabel), nameof(ExtensionBrush))]
@@ -180,6 +182,7 @@ public partial class ThumbnailItem : ObservableObject, IDisposable
         FolderPreviewMedia = previewMedia;
         FolderPreviewMediaLoaded = true;
         OnPropertyChanged(nameof(FolderPreviewMedia));
+        OnPropertyChanged(nameof(ShowEmptyFolderPreview));
         for (var index = 0; index < FolderPreviewSlots.Count; index++)
         {
             FolderPreviewSlots[index].IsVideo =

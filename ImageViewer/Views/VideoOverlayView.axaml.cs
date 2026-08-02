@@ -25,6 +25,9 @@ public partial class VideoOverlayView : UserControl
             case Key.Escape:
                 if (viewer.IsFullscreen)
                     viewer.ToggleFullscreenCommand.Execute(null);
+                else if (GetMainWindow() is
+                         { DataContext: MainWindowViewModel { CloseViewerOnEscape: true } } mainWindow)
+                    mainWindow.Close();
                 else if (GetMainViewModel() is { } main)
                     main.ToggleModeCommand.Execute(null);
                 e.Handled = true;
@@ -61,14 +64,18 @@ public partial class VideoOverlayView : UserControl
 
     private MainWindowViewModel? GetMainViewModel()
     {
-        if (TopLevel.GetTopLevel(this) is Window overlay
-            && overlay.Owner?.DataContext is MainWindowViewModel main)
+        if (GetMainWindow()?.DataContext is MainWindowViewModel main)
         {
             return main;
         }
 
         return null;
     }
+
+    private MainWindow? GetMainWindow() =>
+        TopLevel.GetTopLevel(this) is Window overlay && overlay.Owner is MainWindow mainWindow
+            ? mainWindow
+            : null;
 
     private void OnInfoPillClicked(object? sender, PointerPressedEventArgs e)
     {

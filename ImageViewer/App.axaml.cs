@@ -32,7 +32,7 @@ public partial class App : Application
 
             if (!string.IsNullOrEmpty(Program.InitialPath))
             {
-                _vm.Open(Program.InitialPath);
+                _vm.OpenDirect(Program.InitialPath);
             }
 
             _instanceServer = new SingleInstanceServer(Program.PipeName);
@@ -51,7 +51,7 @@ public partial class App : Application
     {
         Dispatcher.UIThread.Post(() =>
         {
-            _vm?.Open(path);
+            _vm?.OpenDirect(path);
             BringToFront();
         });
     }

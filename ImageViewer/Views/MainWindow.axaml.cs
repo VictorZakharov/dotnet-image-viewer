@@ -183,6 +183,8 @@ public partial class MainWindow : Window
             case Key.Escape:
                 if (viewer?.IsFullscreen == true)
                     viewer.ToggleFullscreenCommand.Execute(null);
+                else if (viewer is not null && vm.CloseViewerOnEscape)
+                    Close();
                 else if (viewer is not null)
                     vm.ToggleModeCommand.Execute(null);
                 else if (!string.IsNullOrEmpty(browser.FilterText))

@@ -268,7 +268,8 @@
                                 CornerRadius="3"
                                 IsVisible="{Binding IsFolder}">
                           <Grid Margin="3">
-                            <ItemsControl ItemsSource="{Binding FolderPreviewSlots}">
+                            <ItemsControl ItemsSource="{Binding FolderPreviewSlots}"
+                                          IsVisible="{Binding !ShowEmptyFolderPreview}">
                               <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                   <UniformGrid Rows="2" Columns="2"/>
@@ -293,6 +294,15 @@
                                 </DataTemplate>
                               </ItemsControl.ItemTemplate>
                             </ItemsControl>
+                            <TextBlock Text="No images"
+                                       AutomationProperties.Name="No images"
+                                       Foreground="#7f91af"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       IsHitTestVisible="False"
+                                       IsVisible="{Binding ShowEmptyFolderPreview}"/>
                             <Border Background="#80070b16"
                                      IsHitTestVisible="False"
                                      IsVisible="{Binding IsFolderPreviewLoading}">
