@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace ImageViewer.Services;
 
 [System.Flags]
@@ -21,8 +23,11 @@ public enum WindowsIntegrationState
 public sealed record WindowsIntegrationStatus(
     WindowsIntegrationState State,
     string? RegisteredExecutablePath = null,
-    MediaAssociationGroups RegisteredGroups = MediaAssociationGroups.None)
+    MediaAssociationGroups RegisteredGroups = MediaAssociationGroups.None,
+    IReadOnlyList<string>? RegisteredExtensions = null)
 {
+    public IReadOnlyList<string> Extensions => RegisteredExtensions ?? [];
+
     public bool IsRegistered => State is
         WindowsIntegrationState.RegisteredHere or
         WindowsIntegrationState.RegisteredElsewhere;

@@ -28,15 +28,21 @@ public partial class App
         await Task.Delay(TimeSpan.FromMilliseconds(300));
 
         if (!OperatingSystem.IsWindows()
-            || _mainWindow is not { IsVisible: true } owner)
+            || _mainWindow is not { IsVisible: true } owner
+            || _vm?.Settings.SuppressAssociationPrompt == true)
         {
             return;
         }
 
         var status = WindowsFileRegistration.GetStatus();
-        if (status.State == WindowsIntegrationState.RegisteredHere || !owner.IsVisible) return;
+        var allFormatsRegistered =
+            status.State == WindowsIntegrationState.RegisteredHere
+            && status.Extensions.Count == WindowsFileRegistration.TotalAssociationCount;
+        if (allFormatsRegistered || !owner.IsVisible) return;
 
-        var dialog = new WindowsIntegrationDialog(isStartupPrompt: true);
+        var dialog = new WindowsIntegrationDialog(
+            isStartupPrompt: true,
+            settings: _vm?.Settings);
         await dialog.ShowDialog(owner);
     }
 }

@@ -25,7 +25,7 @@ public static partial class WindowsFileRegistration
             fileTypes.Select(type => type.Extension).ToArray(),
             RegistryValueKind.MultiString);
         key.SetValue(RegisteredGroupsName, (int)groups, RegistryValueKind.DWord);
-        key.SetValue("RegistrationVersion", 2, RegistryValueKind.DWord);
+        key.SetValue("RegistrationVersion", 3, RegistryValueKind.DWord);
     }
 
     [SupportedOSPlatform("windows")]

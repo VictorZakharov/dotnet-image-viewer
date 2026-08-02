@@ -30,6 +30,9 @@ public static partial class WindowsFileRegistration
 
     public static int ImageAssociationCount => MediaFileTypes.ImageExtensions.Count;
     public static int VideoAssociationCount => MediaFileTypes.SupportedVideoExtensions.Count;
+    public static int TotalAssociationCount => FileTypes.Length;
+    public static IReadOnlyList<string> ImageExtensions => MediaFileTypes.ImageExtensions;
+    public static IReadOnlyList<string> VideoExtensions => MediaFileTypes.SupportedVideoExtensions;
 
     public static WindowsIntegrationStatus GetStatus()
     {
@@ -53,7 +56,20 @@ public static partial class WindowsFileRegistration
                 "Select image associations, video associations, or both.");
         }
 
-        RegisterWindows(WindowsIntegrationLauncher.GetExecutablePath(), groups);
+        RegisterWindows(
+            WindowsIntegrationLauncher.GetExecutablePath(),
+            SelectFileTypes(groups));
+    }
+
+    public static void RegisterCurrentExecutable(IReadOnlyCollection<string> extensions)
+    {
+        if (!OperatingSystem.IsWindows())
+            throw new PlatformNotSupportedException("Windows integration is available only on Windows.");
+        ArgumentNullException.ThrowIfNull(extensions);
+
+        RegisterWindows(
+            WindowsIntegrationLauncher.GetExecutablePath(),
+            SelectFileTypes(extensions));
     }
 
     public static void UnregisterCurrentUser()
@@ -72,36 +88,45 @@ public static partial class WindowsFileRegistration
             return new WindowsIntegrationStatus(WindowsIntegrationState.NeedsRepair);
 
         var registeredPath = appKey.GetValue(RegisteredExecutableName) as string;
-        var groups = ReadRegisteredGroups(appKey);
-        var selectedFileTypes = SelectFileTypes(groups);
+        var registeredExtensions = ReadRegisteredExtensions(appKey);
+        var selectedFileTypes = SelectKnownFileTypes(registeredExtensions);
+        var selectedExtensions = selectedFileTypes
+            .Select(type => type.Extension)
+            .ToArray();
+        var groups = GetGroups(selectedFileTypes);
         if (string.IsNullOrWhiteSpace(registeredPath)
-            || groups == MediaAssociationGroups.None
+            || selectedFileTypes.Length == 0
             || !RegisteredExtensionsMatch(appKey, selectedFileTypes)
             || !IsRegistrationComplete(registeredPath, selectedFileTypes))
         {
             return new WindowsIntegrationStatus(
                 WindowsIntegrationState.NeedsRepair,
                 registeredPath,
-                groups);
+                groups,
+                selectedExtensions);
         }
 
         var currentPath = WindowsIntegrationLauncher.TryGetExecutablePath();
         var state = currentPath is not null && PathsEqual(currentPath, registeredPath)
             ? WindowsIntegrationState.RegisteredHere
             : WindowsIntegrationState.RegisteredElsewhere;
-        return new WindowsIntegrationStatus(state, registeredPath, groups);
+        return new WindowsIntegrationStatus(
+            state,
+            registeredPath,
+            groups,
+            selectedExtensions);
     }
 
     [SupportedOSPlatform("windows")]
     private static void RegisterWindows(
         string executablePath,
-        MediaAssociationGroups groups)
+        IReadOnlyList<(string Extension, bool IsVideo)> selectedFileTypes)
     {
         executablePath = Path.GetFullPath(executablePath);
         if (!File.Exists(executablePath))
             throw new FileNotFoundException("The executable to register was not found.", executablePath);
 
-        var selectedFileTypes = SelectFileTypes(groups);
+        var groups = GetGroups(selectedFileTypes);
         var selectedExtensions = selectedFileTypes
             .Select(type => type.Extension)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -166,11 +191,4 @@ public static partial class WindowsFileRegistration
 
     private static string IconReference(string executablePath) =>
         $"\"{executablePath}\",0";
-
-    private static (string Extension, bool IsVideo)[] SelectFileTypes(
-        MediaAssociationGroups groups) =>
-        FileTypes.Where(type => type.IsVideo
-            ? (groups & MediaAssociationGroups.Videos) != 0
-            : (groups & MediaAssociationGroups.Images) != 0)
-        .ToArray();
 }

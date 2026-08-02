@@ -9,41 +9,49 @@ namespace ImageViewer.Views;
 public partial class WindowsIntegrationDialog : Window
 {
     private readonly bool _isStartupPrompt;
+    private readonly AppSettings? _settings;
     private WindowsIntegrationStatus _status = new(WindowsIntegrationState.NotRegistered);
     private bool _selectionInitialized;
 
-    public WindowsIntegrationDialog() : this(isStartupPrompt: false)
+    public WindowsIntegrationDialog() : this(isStartupPrompt: false, settings: null)
     {
     }
 
-    public WindowsIntegrationDialog(bool isStartupPrompt)
+    public WindowsIntegrationDialog(bool isStartupPrompt, AppSettings? settings = null)
     {
         _isStartupPrompt = isStartupPrompt;
+        _settings = settings;
         InitializeComponent();
+        InitializeAssociationSelectors();
+        ConfigurePrompt();
+        Closing += OnClosing;
         Opened += OnOpened;
     }
 
-    private void OnOpened(object? sender, EventArgs e)
+    private void ConfigurePrompt()
     {
-        ImagesCheckBox.Content = $"Images ({WindowsFileRegistration.ImageAssociationCount} formats)";
-        VideosCheckBox.Content = $"Videos ({WindowsFileRegistration.VideoAssociationCount} formats)";
+        NeverAskAgainCheckBox.IsVisible = _settings is not null;
+        NeverAskAgainCheckBox.IsChecked = _settings?.SuppressAssociationPrompt == true;
+        if (!_isStartupPrompt) return;
 
-        if (_isStartupPrompt)
-        {
-            Title = "Missing file associations";
-            HeaderText.Text = "Choose file associations";
-            SubtitleText.Text = "Select the media groups to add for this Windows account";
-            CloseButton.Content = "Not now";
-        }
-
-        RefreshStatus(resetSelection: true);
+        Title = "Missing file associations";
+        HeaderText.Text = "Choose file associations";
+        SubtitleText.Text = "Select the media formats to add for this Windows account";
+        CloseButton.Content = "Not now";
     }
+
+    private void OnOpened(object? sender, EventArgs e) =>
+        RefreshStatus(resetSelection: true);
 
     private void RefreshStatus(bool resetSelection = false)
     {
         _status = WindowsFileRegistration.GetStatus();
+        var hasMissingFormats = _status.Extensions.Count
+                                < WindowsFileRegistration.TotalAssociationCount;
         (StatusText.Text, StatusBorder.BorderBrush) = _status.State switch
         {
+            WindowsIntegrationState.RegisteredHere when hasMissingFormats =>
+                ("Some formats are not registered", Brush.Parse("#e0a060")),
             WindowsIntegrationState.RegisteredHere =>
                 ("Registered for this copy", Brush.Parse("#5bc78a")),
             WindowsIntegrationState.RegisteredElsewhere =>
@@ -55,21 +63,19 @@ public partial class WindowsIntegrationDialog : Window
             _ => ("Not registered", Brush.Parse("#445573"))
         };
 
-        RegisteredTypesText.Text = _status.RegisteredGroups == MediaAssociationGroups.None
-            ? "No media groups are registered."
-            : $"Registered types: {DescribeGroups(_status.RegisteredGroups)}.";
+        RegisteredTypesText.Text = _status.Extensions.Count == 0
+            ? "No media formats are registered."
+            : $"Registered formats: {DescribeExtensions(_status.Extensions)}.";
         PathText.Text = _status.RegisteredExecutablePath is { Length: > 0 } path
             ? $"Registered executable: {path}"
             : "No executable is registered for this Windows account.";
 
         if (resetSelection || !_selectionInitialized)
         {
-            var groups = _status.RegisteredGroups == MediaAssociationGroups.None
-                ? MediaAssociationGroups.All
-                : _status.RegisteredGroups;
             _selectionInitialized = true;
-            ImagesCheckBox.IsChecked = (groups & MediaAssociationGroups.Images) != 0;
-            VideosCheckBox.IsChecked = (groups & MediaAssociationGroups.Videos) != 0;
+            SetSelectedExtensions(_status.Extensions.Count == 0
+                ? AllExtensions
+                : _status.Extensions);
         }
 
         RegisterButton.Content = _status.State == WindowsIntegrationState.RegisteredHere
@@ -77,40 +83,27 @@ public partial class WindowsIntegrationDialog : Window
             : "Register selected";
         if (_isStartupPrompt)
             CloseButton.Content = _status.State == WindowsIntegrationState.RegisteredHere
+                                  && !hasMissingFormats
                 ? "Done"
                 : "Not now";
         UpdateActionAvailability();
     }
 
-    private MediaAssociationGroups SelectedGroups
-    {
-        get
-        {
-            var groups = MediaAssociationGroups.None;
-            if (ImagesCheckBox.IsChecked == true) groups |= MediaAssociationGroups.Images;
-            if (VideosCheckBox.IsChecked == true) groups |= MediaAssociationGroups.Videos;
-            return groups;
-        }
-    }
-
     private void UpdateActionAvailability()
     {
         RegisterButton.IsEnabled = _status.State != WindowsIntegrationState.Unsupported
-                                   && SelectedGroups != MediaAssociationGroups.None;
+                                   && SelectedExtensions.Length > 0;
         DefaultsButton.IsEnabled = _status.IsRegistered;
         RemoveButton.IsEnabled = _status.State is not
             (WindowsIntegrationState.Unsupported or WindowsIntegrationState.NotRegistered);
     }
 
-    private void OnAssociationSelectionChanged(object? sender, RoutedEventArgs e) =>
-        UpdateActionAvailability();
-
     private void OnRegisterClicked(object? sender, RoutedEventArgs e)
     {
-        var groups = SelectedGroups;
+        var extensions = SelectedExtensions;
         RunRegistryAction(
-            () => WindowsFileRegistration.RegisterCurrentExecutable(groups),
-            $"ImageViewer is now registered for {DescribeGroups(groups)}.");
+            () => WindowsFileRegistration.RegisterCurrentExecutable(extensions),
+            $"ImageViewer is now registered for {DescribeExtensions(extensions)}.");
     }
 
     private void OnUnregisterClicked(object? sender, RoutedEventArgs e)
@@ -147,11 +140,11 @@ public partial class WindowsIntegrationDialog : Window
 
     private void OnCloseClicked(object? sender, RoutedEventArgs e) => Close();
 
-    private static string DescribeGroups(MediaAssociationGroups groups) => groups switch
+    private void OnClosing(object? sender, WindowClosingEventArgs e)
     {
-        MediaAssociationGroups.Images => "images",
-        MediaAssociationGroups.Videos => "videos",
-        MediaAssociationGroups.All => "images and videos",
-        _ => "no media types"
-    };
+        if (_settings is null) return;
+
+        _settings.SuppressAssociationPrompt = NeverAskAgainCheckBox.IsChecked == true;
+        SettingsStore.Save(_settings);
+    }
 }
