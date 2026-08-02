@@ -70,7 +70,7 @@ public partial class BrowserViewModel
     {
         if (_suppressTreeSelectionLoad) return;
         if (value is FolderTreeItem item && !string.IsNullOrEmpty(item.Path))
-            _ = LoadFolderAsync(item.Path);
+            OpenRequested?.Invoke(item.Path);
     }
 
     public async Task SyncTreeSelectionAsync(string folder)
