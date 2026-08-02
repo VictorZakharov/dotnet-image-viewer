@@ -1,6 +1,6 @@
 # Image Viewer
 
-A lightweight, ACDSee-style image and video viewer for Windows. Built on .NET 10 and Avalonia 11.
+A lightweight, ACDSee-style image and video viewer for Windows. Built on .NET 10 and Avalonia 12.
 
 > **Status**: early MVP. The viewer and browser work; file association and grid virtualization are deferred — see [Roadmap](#roadmap).
 
@@ -88,7 +88,7 @@ Or launch `ImageViewer\bin\Debug\net10.0\ImageViewer.exe` directly. With no argu
 
 ## Tech stack
 
-- [Avalonia 11](https://avaloniaui.net/) for the UI (cross-platform-capable; deployed as Windows-only for now)
+- [Avalonia 12.1](https://avaloniaui.net/blog/release-12-1) for the UI (cross-platform-capable; deployed as Windows-only for now)
 - [CommunityToolkit.Mvvm](https://learn.microsoft.com/dotnet/communitytoolkit/mvvm/) MVVM source generators
 - [Magick.NET](https://github.com/dlemstra/Magick.NET) for RAW decoding
 - [MetadataExtractor](https://github.com/drewnoakes/metadata-extractor-dotnet) for EXIF

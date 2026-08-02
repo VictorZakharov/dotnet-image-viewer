@@ -71,7 +71,7 @@ public sealed class ThumbnailCache
                         {
                             Directory.CreateDirectory(_cacheDir);
                             using var output = File.Create(thumbPath);
-                            thumbnail.Save(output);
+                            thumbnail.Save(output, PngBitmapEncoderOptions.Default);
                         }
                         catch { /* cache write failure is non-fatal */ }
 
