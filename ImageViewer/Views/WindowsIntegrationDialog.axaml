@@ -1,0 +1,123 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ImageViewer.Views.WindowsIntegrationDialog"
+        x:CompileBindings="False"
+        Title="Windows integration"
+        Icon="/Assets/ImageViewer.png"
+        Width="680" Height="670"
+        MinWidth="620" MinHeight="560"
+        CanResize="True"
+        WindowStartupLocation="CenterOwner"
+        Background="#0f1729">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="26" RowSpacing="18">
+    <StackPanel Orientation="Horizontal" Spacing="14">
+      <Image Source="/Assets/ImageViewer.png" Width="48" Height="48"/>
+      <StackPanel VerticalAlignment="Center">
+        <TextBlock x:Name="HeaderText"
+                   Text="Windows &amp; Explorer integration"
+                   Foreground="#f3f7ff" FontSize="20" FontWeight="SemiBold"/>
+        <TextBlock x:Name="SubtitleText"
+                   Text="Open media from Explorer without changing your defaults"
+                   Foreground="#8fa1c0" FontSize="12"/>
+      </StackPanel>
+    </StackPanel>
+
+    <ScrollViewer Grid.Row="1"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Spacing="12" Margin="0,0,8,0">
+      <Border x:Name="StatusBorder"
+              Background="#162038" BorderThickness="1" CornerRadius="6" Padding="14">
+        <StackPanel Spacing="5">
+          <TextBlock x:Name="StatusText"
+                     AutomationProperties.AutomationId="IntegrationStatus"
+                     Foreground="#e7eef9" FontSize="14" FontWeight="SemiBold"/>
+          <TextBlock x:Name="RegisteredTypesText"
+                     AutomationProperties.AutomationId="RegisteredAssociationGroups"
+                     Foreground="#b3c1dd" FontSize="11"/>
+          <TextBlock x:Name="PathText"
+                     Foreground="#8fa1c0" FontSize="11"
+                     TextWrapping="Wrap"/>
+        </StackPanel>
+      </Border>
+
+      <Border Background="#121c32" CornerRadius="6" Padding="14">
+        <StackPanel Spacing="10">
+          <TextBlock Text="Make ImageViewer available for:"
+                     Foreground="#e7eef9" FontSize="13" FontWeight="SemiBold"/>
+          <TextBlock Text="Toggle a whole group, or customize individual extensions."
+                     Foreground="#8fa1c0" FontSize="11"/>
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+            <Border Background="#0f1729" CornerRadius="4" Padding="10">
+              <StackPanel Spacing="4">
+                <CheckBox x:Name="ImagesCheckBox"
+                          AutomationProperties.AutomationId="ImageAssociations"
+                          Content="Images"
+                          FontWeight="SemiBold"
+                          IsThreeState="True"
+                          Click="OnGroupClicked"/>
+                <WrapPanel x:Name="ImageExtensionsPanel"
+                           Margin="2,2,0,0" ItemSpacing="2" LineSpacing="2"/>
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Background="#0f1729" CornerRadius="4" Padding="10">
+              <StackPanel Spacing="4">
+                <CheckBox x:Name="VideosCheckBox"
+                          AutomationProperties.AutomationId="VideoAssociations"
+                          Content="Videos"
+                          FontWeight="SemiBold"
+                          IsThreeState="True"
+                          Click="OnGroupClicked"/>
+                <WrapPanel x:Name="VideoExtensionsPanel"
+                           Margin="2,2,0,0" ItemSpacing="2" LineSpacing="2"/>
+              </StackPanel>
+            </Border>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <TextBlock Foreground="#c8d4e8" FontSize="12" TextWrapping="Wrap">
+        Registration adds ImageViewer to Open with and Default Apps for the
+        selected types, plus a &quot;Browse containing folder in ImageViewer&quot; action.
+        It never selects ImageViewer as a default automatically.
+      </TextBlock>
+      <TextBlock Foreground="#e8c786" FontSize="12" TextWrapping="Wrap">
+        Windows requires you to confirm each default in Settings. Use &quot;Choose
+        defaults&quot; after registering this copy.
+      </TextBlock>
+
+    </StackPanel>
+    </ScrollViewer>
+
+    <StackPanel Grid.Row="2" Spacing="8">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+        <TextBlock x:Name="ResultText"
+                   AutomationProperties.AutomationId="IntegrationResult"
+                   Foreground="#8fcfa8" FontSize="12" TextWrapping="Wrap"
+                   MinHeight="18"/>
+        <CheckBox x:Name="NeverAskAgainCheckBox"
+                  Grid.Column="1"
+                  AutomationProperties.AutomationId="NeverAskAgain"
+                  Content="Never ask again"
+                  IsVisible="False"/>
+      </Grid>
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+        <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
+          <Button x:Name="RegisterButton"
+                  AutomationProperties.AutomationId="RegisterIntegration"
+                  Content="Register selected" Click="OnRegisterClicked" Padding="14,7"/>
+          <Button x:Name="DefaultsButton"
+                  AutomationProperties.AutomationId="OpenDefaultApps"
+                  Content="Choose defaults..." Click="OnDefaultsClicked" Padding="14,7"/>
+          <Button x:Name="RemoveButton"
+                  AutomationProperties.AutomationId="UnregisterIntegration"
+                  Content="Remove integration" Click="OnUnregisterClicked" Padding="14,7"/>
+        </WrapPanel>
+        <Button x:Name="CloseButton" Grid.Column="1"
+                AutomationProperties.AutomationId="CloseIntegrationDialog"
+                Content="Close" Click="OnCloseClicked"
+                HorizontalAlignment="Right" Width="104" Padding="20,7"/>
+      </Grid>
+    </StackPanel>
+  </Grid>
+</Window>

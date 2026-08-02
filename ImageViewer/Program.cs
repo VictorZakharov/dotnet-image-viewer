@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Threading;
 using Avalonia;
 using ImageViewer.Services;
@@ -16,18 +15,18 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args)
     {
-        if (args.Length > 0)
+        var request = CommandLineRequest.Parse(args);
+        switch (request.Command)
         {
-            switch (args[0])
-            {
-                case "--register":
-                case "--unregister":
-                    // Implemented in pass 3 (file association).
-                    return 0;
-            }
+            case StartupCommand.Register:
+            case StartupCommand.Unregister:
+            case StartupCommand.DefaultApps:
+                return WindowsIntegrationCli.Execute(request);
+            case StartupCommand.Invalid:
+                return 2;
         }
 
-        InitialPath = ResolveInitialPath(args);
+        InitialPath = request.InitialPath;
 
         var mutex = new Mutex(initiallyOwned: false, MutexName);
         bool acquired = false;
@@ -38,8 +37,12 @@ internal static class Program
 
             if (!acquired)
             {
-                SingleInstanceServer.TryHandoff(PipeName, InitialPath);
-                return 0;
+                return SingleInstanceServer.TryHandoff(
+                    PipeName,
+                    InitialPath,
+                    timeoutMs: 5000)
+                    ? 0
+                    : 3;
             }
 
             return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
@@ -52,13 +55,6 @@ internal static class Program
             }
             mutex.Dispose();
         }
-    }
-
-    private static string? ResolveInitialPath(string[] args)
-    {
-        if (args.Length == 0) return null;
-        try { return Path.GetFullPath(args[0]); }
-        catch { return null; }
     }
 
     public static AppBuilder BuildAvaloniaApp()

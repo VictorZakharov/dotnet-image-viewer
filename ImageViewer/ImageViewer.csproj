@@ -13,7 +13,10 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <RootNamespace>ImageViewer</RootNamespace>
     <AssemblyName>ImageViewer</AssemblyName>
-    <ApplicationIcon></ApplicationIcon>
+    <ApplicationIcon>Assets\ImageViewer.ico</ApplicationIcon>
+    <AssemblyTitle>ImageViewer</AssemblyTitle>
+    <Product>ImageViewer</Product>
+    <Description>A lightweight image and video viewer for Windows</Description>
     <!-- Tmds.DBus.Protocol is a Linux-only transitive dep from Avalonia; we ship Windows-only for now. -->
     <NuGetAuditMode>direct</NuGetAuditMode>
   </PropertyGroup>
