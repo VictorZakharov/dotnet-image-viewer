@@ -8,7 +8,7 @@ namespace ImageViewer.Services;
 
 public sealed record MediaScanEntry(string Path, bool IsVideo);
 
-public sealed record FolderScanEntry(string Path, IReadOnlyList<MediaScanEntry> PreviewMedia);
+public sealed record FolderScanEntry(string Path);
 
 public sealed record BrowserScanResult(
     IReadOnlyList<FolderScanEntry> Folders,
@@ -35,8 +35,10 @@ public static class FolderScanner
                     ct.ThrowIfCancellationRequested();
                     if (IsHiddenOrSystem(directory)) continue;
 
-                    var previewMedia = ScanMedia(directory, ct, maxCount: 4);
-                    folders.Add(new FolderScanEntry(directory, previewMedia));
+                    // Folder previews are loaded independently after the folder
+                    // tile is visible. Do not crawl every child directory before
+                    // the top-level grid can be shown.
+                    folders.Add(new FolderScanEntry(directory));
                 }
             }
             catch (OperationCanceledException) { throw; }
@@ -52,6 +54,14 @@ public static class FolderScanner
             var media = ScanMedia(folder, ct);
             return new BrowserScanResult(folders, media);
         }, ct).ConfigureAwait(false);
+    }
+
+    public static async Task<List<MediaScanEntry>> ScanPreviewAsync(
+        string folder,
+        CancellationToken ct = default)
+    {
+        return await Task.Run(() => ScanMedia(folder, ct, maxCount: 4), ct)
+            .ConfigureAwait(false);
     }
 
     private static List<MediaScanEntry> ScanMedia(

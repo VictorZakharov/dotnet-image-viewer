@@ -16,6 +16,7 @@ public partial class MainWindow : Window
 {
     private WindowState _preFullscreenState = WindowState.Normal;
     private MainWindowViewModel? _trackedVm;
+    private ViewerViewModel? _trackedViewerVm;
     private BrowserView? _browserView;
     private ViewerView? _viewerView;
 
@@ -44,7 +45,6 @@ public partial class MainWindow : Window
         if (s.WindowMaximized) WindowState = WindowState.Maximized;
 
         _trackedVm = vm;
-        vm.ViewerVM.PropertyChanged += OnViewerVmPropertyChanged;
         vm.PropertyChanged += OnMainVmPropertyChanged;
         ShowActiveView();
 
@@ -65,7 +65,7 @@ public partial class MainWindow : Window
     {
         if (e.PropertyName != nameof(MainWindowViewModel.IsViewerMode)) return;
         if (DataContext is MainWindowViewModel vm && !vm.IsViewerMode)
-            vm.ViewerVM.Deactivate();
+            vm.DeactivateViewer();
         ShowActiveView();
         // After a mode switch (double-click thumbnail, Enter, etc.) keyboard
         // focus stays on whichever element had it before — typically the hidden
@@ -81,14 +81,28 @@ public partial class MainWindow : Window
 
         if (vm.IsViewerMode)
         {
-            _viewerView ??= new ViewerView { DataContext = vm.ViewerVM };
+            var viewerVm = vm.ViewerVM;
+            TrackViewerVm(viewerVm);
+            _viewerView ??= new ViewerView { DataContext = viewerVm };
             ModeHost.Content = _viewerView;
         }
         else
         {
             _browserView ??= new BrowserView { DataContext = vm.BrowserVM };
             ModeHost.Content = _browserView;
+            Dispatcher.UIThread.Post(
+                () => _ = vm.BrowserVM.EnsureDrivesLoadedAsync(),
+                DispatcherPriority.Background);
         }
+    }
+
+    private void TrackViewerVm(ViewerViewModel viewerVm)
+    {
+        if (ReferenceEquals(_trackedViewerVm, viewerVm)) return;
+        if (_trackedViewerVm is not null)
+            _trackedViewerVm.PropertyChanged -= OnViewerVmPropertyChanged;
+        _trackedViewerVm = viewerVm;
+        _trackedViewerVm.PropertyChanged += OnViewerVmPropertyChanged;
     }
 
     private void FocusActiveView()
@@ -123,12 +137,13 @@ public partial class MainWindow : Window
     {
         if (DataContext is not MainWindowViewModel vm) return;
 
-        vm.ViewerVM.StopSlideshow();
+        vm.StopViewerSlideshow();
         if (_trackedVm is not null)
         {
-            _trackedVm.ViewerVM.PropertyChanged -= OnViewerVmPropertyChanged;
             _trackedVm.PropertyChanged -= OnMainVmPropertyChanged;
         }
+        if (_trackedViewerVm is not null)
+            _trackedViewerVm.PropertyChanged -= OnViewerVmPropertyChanged;
 
         var s = vm.Settings;
         s.WindowMaximized = WindowState == WindowState.Maximized;
@@ -160,18 +175,18 @@ public partial class MainWindow : Window
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
         if (DataContext is not MainWindowViewModel vm) return;
-        var viewer = vm.ViewerVM;
         var browser = vm.BrowserVM;
+        var viewer = vm.IsViewerMode ? vm.ViewerVM : null;
 
-        if (vm.IsViewerMode && viewer.IsSlideshowRunning && e.Key != Key.Space && e.Key != Key.F5)
+        if (viewer is not null && viewer.IsSlideshowRunning && e.Key != Key.Space && e.Key != Key.F5)
             viewer.StopSlideshow();
 
         switch (e.Key)
         {
             case Key.Escape:
-                if (viewer.IsFullscreen)
+                if (viewer?.IsFullscreen == true)
                     viewer.ToggleFullscreenCommand.Execute(null);
-                else if (vm.IsViewerMode)
+                else if (viewer is not null)
                     vm.ToggleModeCommand.Execute(null);
                 else if (!string.IsNullOrEmpty(browser.FilterText))
                     browser.FilterText = "";
@@ -189,7 +204,7 @@ public partial class MainWindow : Window
                 return;
         }
 
-        if (vm.IsViewerMode)
+        if (viewer is not null)
         {
             switch (e.Key)
             {

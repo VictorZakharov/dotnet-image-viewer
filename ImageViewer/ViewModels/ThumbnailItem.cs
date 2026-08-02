@@ -14,7 +14,8 @@ public partial class ThumbnailItem : ObservableObject
     public bool IsVideo { get; }
     public bool IsImage => !IsFolder && !IsVideo;
     public bool IsFile => !IsFolder;
-    public IReadOnlyList<MediaScanEntry> FolderPreviewMedia { get; }
+    public IReadOnlyList<MediaScanEntry> FolderPreviewMedia { get; private set; }
+    public bool FolderPreviewMediaLoaded { get; private set; }
     public bool FolderPreview1IsVideo => IsFolderPreviewVideo(0);
     public bool FolderPreview2IsVideo => IsFolderPreviewVideo(1);
     public bool FolderPreview3IsVideo => IsFolderPreviewVideo(2);
@@ -39,6 +40,8 @@ public partial class ThumbnailItem : ObservableObject
     [ObservableProperty] private Bitmap? _folderThumbnail2;
     [ObservableProperty] private Bitmap? _folderThumbnail3;
     [ObservableProperty] private Bitmap? _folderThumbnail4;
+    [ObservableProperty] private bool _isFolderPreviewLoading;
+    private int _folderPreviewLoadCount;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowFileTitle))]
     private bool _isRenaming;
@@ -94,7 +97,7 @@ public partial class ThumbnailItem : ObservableObject
         ExtensionBrushes.TryGetValue(label, out var b) ? b : DefaultExtBrush;
 
     public ThumbnailItem(string path)
-        : this(path, isFolder: false, isVideo: false, Array.Empty<MediaScanEntry>())
+        : this(path, isFolder: false, isVideo: false, folderPreviewMedia: null)
     {
     }
 
@@ -102,20 +105,23 @@ public partial class ThumbnailItem : ObservableObject
         string path,
         bool isFolder,
         bool isVideo,
-        IReadOnlyList<MediaScanEntry> folderPreviewMedia)
+        IReadOnlyList<MediaScanEntry>? folderPreviewMedia)
     {
         IsFolder = isFolder;
         IsVideo = isVideo;
-        FolderPreviewMedia = folderPreviewMedia;
+        FolderPreviewMedia = folderPreviewMedia ?? Array.Empty<MediaScanEntry>();
+        FolderPreviewMediaLoaded = !isFolder || folderPreviewMedia is not null;
         ModifiedAt = GetModifiedAt(path);
         _path = path;
         _fileName = System.IO.Path.GetFileName(path);
     }
 
     public static ThumbnailItem CreateVideo(string path) =>
-        new(path, isFolder: false, isVideo: true, Array.Empty<MediaScanEntry>());
+        new(path, isFolder: false, isVideo: true, folderPreviewMedia: null);
 
-    public static ThumbnailItem CreateFolder(string path, IReadOnlyList<MediaScanEntry> previewMedia) =>
+    public static ThumbnailItem CreateFolder(
+        string path,
+        IReadOnlyList<MediaScanEntry>? previewMedia = null) =>
         new(path, isFolder: true, isVideo: false, previewMedia);
 
     private static DateTime? GetModifiedAt(string path)
@@ -152,6 +158,29 @@ public partial class ThumbnailItem : ObservableObject
             case 2: FolderThumbnail3 = bitmap; break;
             case 3: FolderThumbnail4 = bitmap; break;
         }
+    }
+
+    public void SetFolderPreviewMedia(IReadOnlyList<MediaScanEntry> previewMedia)
+    {
+        FolderPreviewMedia = previewMedia;
+        FolderPreviewMediaLoaded = true;
+        OnPropertyChanged(nameof(FolderPreviewMedia));
+        OnPropertyChanged(nameof(FolderPreview1IsVideo));
+        OnPropertyChanged(nameof(FolderPreview2IsVideo));
+        OnPropertyChanged(nameof(FolderPreview3IsVideo));
+        OnPropertyChanged(nameof(FolderPreview4IsVideo));
+    }
+
+    public void BeginFolderPreviewLoading()
+    {
+        _folderPreviewLoadCount++;
+        IsFolderPreviewLoading = true;
+    }
+
+    public void EndFolderPreviewLoading()
+    {
+        if (_folderPreviewLoadCount > 0) _folderPreviewLoadCount--;
+        IsFolderPreviewLoading = _folderPreviewLoadCount > 0;
     }
 
     public void BeginRename()

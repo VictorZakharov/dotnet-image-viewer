@@ -61,9 +61,18 @@ internal static class Program
         catch { return null; }
     }
 
-    public static AppBuilder BuildAvaloniaApp() =>
-        AppBuilder.Configure<App>()
+    public static AppBuilder BuildAvaloniaApp()
+    {
+        var builder = AppBuilder.Configure<App>()
             .UsePlatformDetect()
-            .WithInterFont()
-            .LogToTrace();
+            .WithInterFont();
+
+#if DEBUG
+        // Keep Avalonia diagnostics available while developing without paying
+        // for a trace sink in production startup.
+        builder.LogToTrace();
+#endif
+
+        return builder;
+    }
 }

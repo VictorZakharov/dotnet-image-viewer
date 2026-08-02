@@ -198,8 +198,8 @@
                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                     Padding="2">
             <TreeView.Styles>
-              <Style Selector="TreeViewItem">
-                <Setter Property="IsExpanded" Value="{ReflectionBinding IsExpanded, Mode=TwoWay}"/>
+              <Style Selector="TreeViewItem" x:DataType="vm:FolderTreeItem">
+                <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
                 <Setter Property="MinHeight" Value="28"/>
                 <Setter Property="Padding" Value="0"/>
                 <Setter Property="Margin" Value="0"/>
@@ -239,8 +239,8 @@
             </ListBox.ItemsPanel>
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:ThumbnailItem">
-                <Border Width="{ReflectionBinding #Root.DataContext.ThumbnailWidth}"
-                        Height="{ReflectionBinding #Root.DataContext.ThumbnailHeight}"
+                <Border Width="{Binding #Root.DataContext.ThumbnailWidth}"
+                        Height="{Binding #Root.DataContext.ThumbnailHeight}"
                         Margin="2"
                         Background="#1a2440" CornerRadius="4">
                   <Border.ContextFlyout>
@@ -364,6 +364,36 @@
                                            IsVisible="{Binding FolderPreview4IsVideo}"/>
                               </Grid>
                             </Border>
+                            <Border Grid.RowSpan="2" Grid.ColumnSpan="2"
+                                    Background="#80070b16"
+                                    IsHitTestVisible="False"
+                                    IsVisible="{Binding IsFolderPreviewLoading}">
+                              <TextBlock Text="&#x25D4;"
+                                         AutomationProperties.Name="Loading folder previews"
+                                         Foreground="#e0a060"
+                                         FontSize="28"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"
+                                         RenderTransformOrigin="50%,50%">
+                                <TextBlock.RenderTransform>
+                                  <RotateTransform/>
+                                </TextBlock.RenderTransform>
+                                <TextBlock.Styles>
+                                  <Style Selector="TextBlock">
+                                    <Style.Animations>
+                                      <Animation Duration="0:0:0.8" IterationCount="INFINITE">
+                                        <KeyFrame Cue="0%">
+                                          <Setter Property="RotateTransform.Angle" Value="0"/>
+                                        </KeyFrame>
+                                        <KeyFrame Cue="100%">
+                                          <Setter Property="RotateTransform.Angle" Value="360"/>
+                                        </KeyFrame>
+                                      </Animation>
+                                    </Style.Animations>
+                                  </Style>
+                                </TextBlock.Styles>
+                              </TextBlock>
+                            </Border>
                           </Grid>
                         </Border>
                       </Grid>
@@ -428,6 +458,12 @@
               </TextBlock>
             </StackPanel>
           </Panel>
+          <ProgressBar IsIndeterminate="True"
+                       AutomationProperties.Name="Loading images"
+                       IsVisible="{Binding IsGridLoading}"
+                       Height="3"
+                       HorizontalAlignment="Stretch"
+                       VerticalAlignment="Top"/>
         </Grid>
       </Grid>
     </DockPanel>
