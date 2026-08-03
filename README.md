@@ -2,7 +2,7 @@
 
 A lightweight, filesystem-first image and video viewer for Windows and Linux. Built on .NET 10 and Avalonia 12.
 
-> **Status**: public preview (`0.1.0`). The viewer, browser, and video playback work on Windows and Linux; Windows Explorer integration remains Windows-specific.
+> **Status**: public preview (`0.2.0`). The viewer, browser, and video playback work on Windows and Linux; Windows Explorer integration remains Windows-specific.
 
 ## Download
 
@@ -18,8 +18,9 @@ On Windows, extract the complete archive to a writable folder and run
 `sudo apt install ./ImageViewer-v<version>-linux-x64.deb`, then start
 `imageviewer` from a terminal or the desktop application menu. The package
 registers ImageViewer as an available handler without changing user defaults.
-If Linux assets are not attached to the latest release yet, build current
-`main` using the Linux instructions below.
+
+Maintainer release tags build and publish the Windows archive, Linux portable
+archive, Debian package, and their SHA-256 checksums from the tagged source.
 
 The initial preview is not code-signed. Windows may therefore show an
 unrecognized-app warning for a newly downloaded build. Verify that the archive
