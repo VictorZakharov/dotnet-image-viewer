@@ -5,14 +5,16 @@ namespace ImageViewer.Services;
 
 public static class FileNameCollisionResolver
 {
-    public static string CreateUniquePath(string desiredPath)
+    public static string CreateUniquePath(string desiredPath, bool isDirectory = false)
     {
         if (!Exists(desiredPath)) return desiredPath;
 
         var directory = Path.GetDirectoryName(desiredPath)
             ?? throw new ArgumentException("A destination directory is required.", nameof(desiredPath));
-        var stem = Path.GetFileNameWithoutExtension(desiredPath);
-        var extension = Path.GetExtension(desiredPath);
+        var stem = isDirectory
+            ? Path.GetFileName(desiredPath)
+            : Path.GetFileNameWithoutExtension(desiredPath);
+        var extension = isDirectory ? "" : Path.GetExtension(desiredPath);
         for (var suffix = 2; suffix < int.MaxValue; suffix++)
         {
             var candidate = Path.Combine(directory, $"{stem} ({suffix}){extension}");

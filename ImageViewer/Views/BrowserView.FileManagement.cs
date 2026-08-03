@@ -68,11 +68,11 @@ public partial class BrowserView
     private async Task MoveSelectionAsync()
     {
         if (_vm is not { } vm || GetOwnerWindow() is not { } owner) return;
-        var paths = vm.SelectedFilePaths;
+        var paths = vm.SelectedPaths;
         if (paths.Count == 0) return;
         var folders = await owner.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = $"Move {paths.Count} selected file{(paths.Count == 1 ? "" : "s")} to...",
+            Title = $"Move {paths.Count} selected item{(paths.Count == 1 ? "" : "s")} to...",
             AllowMultiple = false
         });
         var destination = folders.FirstOrDefault()?.TryGetLocalPath();
@@ -87,7 +87,7 @@ public partial class BrowserView
     private async Task DeleteSelectionAsync()
     {
         if (_vm is not { } vm || GetOwnerWindow() is not { } owner) return;
-        var paths = vm.SelectedFilePaths;
+        var paths = vm.SelectedPaths;
         if (paths.Count == 0 || !await FileDeleteConfirmationDialog.ConfirmAsync(owner, paths)) return;
         await RunFileOperationAsync(new FileOperationRequest(
             FileOperationKind.Delete,
@@ -195,7 +195,7 @@ public partial class BrowserView
         if (consumeCutClipboard)
             await RemoveSuccessfulCutFilesAsync(result.Successful.Select(item => item.SourcePath));
 
-        await vm.ReloadCurrentFolderAsync();
+        await vm.ReloadAfterFileOperationAsync();
         vm.ReportFileOperation(FormatOperationStatus(result));
         if (result.Failures.Count > 0 || result.SkippedPaths.Count > 0 || result.IsCanceled)
             await new FileOperationResultDialog(result).ShowDialog(owner);
@@ -215,9 +215,9 @@ public partial class BrowserView
 
     private static string GetOperationHeading(FileOperationKind kind) => kind switch
     {
-        FileOperationKind.Copy => "Copying files",
-        FileOperationKind.Move => "Moving files",
-        _ => "Moving files to the Recycle Bin"
+        FileOperationKind.Copy => "Copying items",
+        FileOperationKind.Move => "Moving items",
+        _ => "Moving items to the Recycle Bin"
     };
 
     private static string FormatOperationStatus(FileOperationResult result) =>

@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="ImageViewer.Views.FileDeleteConfirmationDialog"
         x:CompileBindings="False"
-        Title="Delete selected files"
+        Title="Delete selected items"
         Icon="/Assets/ImageViewer.png"
         Width="560" Height="360"
         CanResize="False"
@@ -12,7 +12,7 @@
     <StackPanel Spacing="5">
       <TextBlock x:Name="HeadingText" Foreground="#f3f7ff"
                  FontSize="19" FontWeight="SemiBold"/>
-      <TextBlock Text="The files will be moved to the Windows Recycle Bin."
+      <TextBlock Text="The selected files and folders will be moved to the Windows Recycle Bin."
                  Foreground="#e8c786" FontSize="12"/>
     </StackPanel>
     <Border Grid.Row="1" Background="#162038" CornerRadius="6" Padding="12">

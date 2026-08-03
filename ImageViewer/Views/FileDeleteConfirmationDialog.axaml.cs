@@ -18,8 +18,8 @@ public partial class FileDeleteConfirmationDialog : Window
         : this()
     {
         HeadingText.Text = paths.Count == 1
-            ? "Delete 1 selected file?"
-            : $"Delete {paths.Count} selected files?";
+            ? "Delete 1 selected item?"
+            : $"Delete {paths.Count} selected items?";
         var names = paths.Take(12).Select(Path.GetFileName).ToList();
         if (paths.Count > names.Count) names.Add($"...and {paths.Count - names.Count} more");
         FileListText.Text = string.Join(System.Environment.NewLine, names);

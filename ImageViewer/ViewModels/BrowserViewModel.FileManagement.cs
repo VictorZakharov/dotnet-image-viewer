@@ -17,8 +17,8 @@ public partial class BrowserViewModel
     public event Action<BrowserFileCommand>? FileCommandRequested;
     public event Action<string, string>? RenameCompleted;
 
-    public IReadOnlyList<string> SelectedFilePaths =>
-        SelectedFiles.Select(item => item.Path).ToList();
+    public IReadOnlyList<string> SelectedPaths =>
+        SelectedItems.Select(item => item.Path).ToList();
 
     [RelayCommand]
     private void CopyFiles() => RequestFileCommand(BrowserFileCommand.Copy, needsSelection: true);
@@ -49,14 +49,16 @@ public partial class BrowserViewModel
 
     public void ReportFileOperation(string status) => FileOperationStatus = status;
 
-    public Task ReloadCurrentFolderAsync() =>
-        string.IsNullOrEmpty(CurrentFolder)
-            ? Task.CompletedTask
-            : LoadFolderCoreAsync(CurrentFolder, force: true);
+    public async Task ReloadAfterFileOperationAsync()
+    {
+        if (!string.IsNullOrEmpty(CurrentFolder))
+            await LoadFolderCoreAsync(CurrentFolder, force: true);
+        await RefreshFolderTreeAsync();
+    }
 
     private void RequestFileCommand(BrowserFileCommand command, bool needsSelection)
     {
-        if (needsSelection && !HasSelectedFiles) return;
+        if (needsSelection && !HasSelectedItems) return;
         FileCommandRequested?.Invoke(command);
     }
 

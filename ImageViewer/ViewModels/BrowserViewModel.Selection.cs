@@ -16,7 +16,7 @@ public partial class BrowserViewModel
     [ObservableProperty] private string _selectionSummary = "";
 
     public bool HasSelection => SelectedCount > 0;
-    public bool HasSelectedFiles => SelectedFileCount > 0;
+    public bool HasSelectedItems => SelectedCount > 0;
     public IReadOnlyList<ThumbnailItem> SelectedItems =>
         Items.Where(_selection.IsSelected).ToList();
     public IReadOnlyList<ThumbnailItem> SelectedFiles =>
@@ -148,7 +148,7 @@ public partial class BrowserViewModel
         SelectedCount = selected.Count;
         SelectedFileCount = selected.Count(item => item.IsFile);
         OnPropertyChanged(nameof(HasSelection));
-        OnPropertyChanged(nameof(HasSelectedFiles));
+        OnPropertyChanged(nameof(HasSelectedItems));
         OnPropertyChanged(nameof(SelectedItems));
         OnPropertyChanged(nameof(SelectedFiles));
         SelectionSummary = FormatSelectionSummary(selected);

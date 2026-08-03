@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="ImageViewer.Views.FileCollisionDialog"
         x:CompileBindings="False"
-        Title="File name collision"
+        Title="Name collision"
         Icon="/Assets/ImageViewer.png"
         Width="620" Height="330"
         CanResize="False"
@@ -10,7 +10,7 @@
         Background="#0f1729">
   <Grid RowDefinitions="Auto,*,Auto" Margin="24" RowSpacing="18">
     <StackPanel Spacing="5">
-      <TextBlock Text="A file with this name already exists"
+      <TextBlock Text="An item with this name already exists"
                  Foreground="#f3f7ff" FontSize="19" FontWeight="SemiBold"/>
       <TextBlock Text="Choose what ImageViewer should do with this collision."
                  Foreground="#8fa1c0" FontSize="12"/>

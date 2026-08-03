@@ -115,14 +115,14 @@
       <Grid Margin="14,0" ColumnDefinitions="Auto,*">
         <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
           <Button Content="Copy" Command="{Binding CopyFilesCommand}"
-                  IsEnabled="{Binding HasSelectedFiles}" Padding="10,3"/>
+                  IsEnabled="{Binding HasSelectedItems}" Padding="10,3"/>
           <Button Content="Cut" Command="{Binding CutFilesCommand}"
-                  IsEnabled="{Binding HasSelectedFiles}" Padding="10,3"/>
+                  IsEnabled="{Binding HasSelectedItems}" Padding="10,3"/>
           <Button Content="Paste" Command="{Binding PasteFilesCommand}" Padding="10,3"/>
           <Button Content="Move..." Command="{Binding MoveFilesCommand}"
-                  IsEnabled="{Binding HasSelectedFiles}" Padding="10,3"/>
+                  IsEnabled="{Binding HasSelectedItems}" Padding="10,3"/>
           <Button Content="Delete" Command="{Binding DeleteSelectedCommand}"
-                  IsEnabled="{Binding HasSelectedFiles}" Padding="10,3"/>
+                  IsEnabled="{Binding HasSelectedItems}" Padding="10,3"/>
           <Button Content="{Binding UndoFileOperationLabel}"
                   Command="{Binding UndoFileOperationCommand}"
                   IsEnabled="{Binding CanUndoFileOperation}" Padding="10,3"/>
@@ -235,8 +235,6 @@
                     </Style>
                     <Style Selector="Border.selected">
                       <Setter Property="Background" Value="#29496f"/>
-                      <Setter Property="BorderBrush" Value="#67b7ff"/>
-                      <Setter Property="BorderThickness" Value="3"/>
                     </Style>
                   </Border.Styles>
                   <Border.ContextFlyout>
@@ -245,14 +243,10 @@
                                  Click="OnThumbPropertiesClicked"
                                  IsVisible="{Binding IsFile}"/>
                       <Separator IsVisible="{Binding IsFile}"/>
-                      <MenuItem Header="Copy" Click="OnCopyFilesClicked"
-                                IsVisible="{Binding IsFile}"/>
-                      <MenuItem Header="Cut" Click="OnCutFilesClicked"
-                                IsVisible="{Binding IsFile}"/>
-                      <MenuItem Header="Move..." Click="OnMoveFilesClicked"
-                                IsVisible="{Binding IsFile}"/>
-                      <MenuItem Header="Delete" Click="OnDeleteFilesClicked"
-                                IsVisible="{Binding IsFile}"/>
+                      <MenuItem Header="Copy" Click="OnCopyFilesClicked"/>
+                      <MenuItem Header="Cut" Click="OnCutFilesClicked"/>
+                      <MenuItem Header="Move..." Click="OnMoveFilesClicked"/>
+                      <MenuItem Header="Delete" Click="OnDeleteFilesClicked"/>
                     </MenuFlyout>
                   </Border.ContextFlyout>
                   <Grid>
@@ -392,6 +386,13 @@
                         </Border>
                       </Grid>
                     </DockPanel>
+                    <!-- Explicit overlay stays visible over both bright and dark thumbnails. -->
+                    <Border BorderBrush="#21b6ff"
+                            BorderThickness="5"
+                            CornerRadius="4"
+                            IsHitTestVisible="False"
+                            IsVisible="{Binding IsSelected}"
+                            ZIndex="10"/>
                     <!-- Folder badge -->
                     <Border HorizontalAlignment="Left" VerticalAlignment="Top"
                             Margin="8,8,0,0"
@@ -428,7 +429,8 @@
                             BorderThickness="1"
                             CornerRadius="12"
                             IsHitTestVisible="False"
-                            IsVisible="{Binding ShowSelectionCheckmark}">
+                            IsVisible="{Binding ShowSelectionCheckmark}"
+                            ZIndex="20">
                       <TextBlock Text="&#x2713;"
                                  Foreground="#07101f"
                                  FontSize="14"

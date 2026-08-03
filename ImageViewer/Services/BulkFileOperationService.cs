@@ -72,8 +72,9 @@ public sealed class BulkFileOperationService
             var destination = transfer.DestinationPath;
             try
             {
-                if (!File.Exists(transfer.SourcePath))
-                    throw new FileNotFoundException("The source file no longer exists.", transfer.SourcePath);
+                var sourceIsDirectory = Directory.Exists(transfer.SourcePath);
+                if (!sourceIsDirectory && !File.Exists(transfer.SourcePath))
+                    throw new FileNotFoundException("The source item no longer exists.", transfer.SourcePath);
                 var destinationFolder = Path.GetDirectoryName(destination);
                 if (string.IsNullOrEmpty(destinationFolder) || !Directory.Exists(destinationFolder))
                     throw new DirectoryNotFoundException("The destination folder does not exist.");
@@ -83,7 +84,10 @@ public sealed class BulkFileOperationService
                 if (samePath || File.Exists(destination) || Directory.Exists(destination))
                 {
                     var choice = await resolveCollision(
-                        new FileCollision(transfer.SourcePath, destination, samePath),
+                        new FileCollision(
+                            transfer.SourcePath,
+                            destination,
+                            samePath),
                         cancellationToken);
                     if (choice == FileCollisionChoice.Cancel)
                     {
@@ -97,15 +101,25 @@ public sealed class BulkFileOperationService
                         continue;
                     }
                     if (choice == FileCollisionChoice.Rename)
-                        destination = FileNameCollisionResolver.CreateUniquePath(destination);
+                        destination = FileNameCollisionResolver.CreateUniquePath(
+                            destination,
+                            sourceIsDirectory);
                     else
                         replace = true;
                 }
 
                 if (kind == FileOperationKind.Copy)
-                    await CopyFileSafelyAsync(transfer.SourcePath, destination, replace, cancellationToken);
+                    await SafeFileSystemTransfer.CopyAsync(
+                        transfer.SourcePath,
+                        destination,
+                        replace,
+                        cancellationToken);
                 else
-                    await MoveFileSafelyAsync(transfer.SourcePath, destination, replace, cancellationToken);
+                    await SafeFileSystemTransfer.MoveAsync(
+                        transfer.SourcePath,
+                        destination,
+                        replace,
+                        cancellationToken);
                 successful.Add(new FileOperationSuccess(transfer.SourcePath, destination));
             }
             catch (OperationCanceledException)
@@ -149,7 +163,7 @@ public sealed class BulkFileOperationService
             try
             {
                 if (!FileOperations.DeleteToRecycleBin(source))
-                    throw new IOException("Windows could not move the file to the Recycle Bin.");
+                    throw new IOException("Windows could not move the item to the Recycle Bin.");
                 successful.Add(new FileOperationSuccess(source, null));
             }
             catch (Exception ex)
@@ -169,57 +183,6 @@ public sealed class BulkFileOperationService
             failures,
             canceled);
     }, CancellationToken.None);
-
-    private static async Task CopyFileSafelyAsync(
-        string source,
-        string destination,
-        bool replace,
-        CancellationToken cancellationToken)
-    {
-        var directory = Path.GetDirectoryName(destination)!;
-        var temp = Path.Combine(directory, $".{Path.GetFileName(destination)}.{Guid.NewGuid():N}.tmp");
-        try
-        {
-            await using (var input = new FileStream(
-                source, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 128,
-                FileOptions.Asynchronous | FileOptions.SequentialScan))
-            await using (var output = new FileStream(
-                temp, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 128,
-                FileOptions.Asynchronous | FileOptions.SequentialScan))
-            {
-                await input.CopyToAsync(output, cancellationToken);
-            }
-
-            File.SetLastWriteTime(temp, File.GetLastWriteTime(source));
-            File.Move(temp, destination, replace);
-        }
-        finally
-        {
-            try { if (File.Exists(temp)) File.Delete(temp); }
-            catch { /* a later cleanup can remove an abandoned temp file */ }
-        }
-    }
-
-    private static async Task MoveFileSafelyAsync(
-        string source,
-        string destination,
-        bool replace,
-        CancellationToken cancellationToken)
-    {
-        if (string.Equals(
-            Path.GetPathRoot(source),
-            Path.GetPathRoot(destination),
-            StringComparison.OrdinalIgnoreCase))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            File.Move(source, destination, replace);
-            return;
-        }
-
-        await CopyFileSafelyAsync(source, destination, replace, cancellationToken);
-        cancellationToken.ThrowIfCancellationRequested();
-        File.Delete(source);
-    }
 
     private static bool PathsEqual(string left, string right) =>
         string.Equals(

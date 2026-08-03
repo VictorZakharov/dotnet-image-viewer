@@ -31,7 +31,7 @@ public sealed class BrowserSelectionTests : IDisposable
     }
 
     [Fact]
-    public void BulkFileSelectionExcludesFolderPreviewTiles()
+    public void GenericFileOperationsIncludeFolderPreviewTiles()
     {
         var folder = ThumbnailItem.CreateFolder(CreateFolder("folder"));
         var file = CreateFileItem("photo.jpg");
@@ -41,7 +41,7 @@ public sealed class BrowserSelectionTests : IDisposable
 
         Assert.Equal(2, vm.SelectedCount);
         Assert.Equal(1, vm.SelectedFileCount);
-        Assert.Equal(new[] { file.Path }, vm.SelectedFilePaths);
+        Assert.Equal(new[] { folder.Path, file.Path }, vm.SelectedPaths);
     }
 
     public void Dispose()

@@ -20,6 +20,21 @@ public partial class BrowserViewModel
     public Task EnsureDrivesLoadedAsync() =>
         _loadDrivesTask ??= LoadDrivesAsync();
 
+    public async Task RefreshFolderTreeAsync()
+    {
+        if (_loadDrivesTask is { } pendingLoad)
+        {
+            try { await pendingLoad; }
+            catch { /* the replacement load below can recover */ }
+        }
+
+        _suppressTreeSelectionLoad = true;
+        try { SelectedTreeItem = null; }
+        finally { _suppressTreeSelectionLoad = false; }
+        _loadDrivesTask = LoadDrivesAsync();
+        await _loadDrivesTask;
+    }
+
     private async Task LoadDrivesAsync()
     {
         try

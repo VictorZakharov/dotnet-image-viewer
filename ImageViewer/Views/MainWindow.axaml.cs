@@ -321,7 +321,7 @@ public partial class MainWindow : Window
 
     private void OnDragOver(object? sender, DragEventArgs e)
     {
-        if (_browserView?.IsInternalFileDragActive == true)
+        if (_browserView?.IsInternalItemDragActive == true)
         {
             e.DragEffects = DragDropEffects.None;
             e.Handled = true;
@@ -335,7 +335,7 @@ public partial class MainWindow : Window
 
     private void OnDrop(object? sender, DragEventArgs e)
     {
-        if (_browserView?.IsInternalFileDragActive == true)
+        if (_browserView?.IsInternalItemDragActive == true)
         {
             e.Handled = true;
             return;

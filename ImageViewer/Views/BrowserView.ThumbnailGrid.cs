@@ -171,8 +171,8 @@ public partial class BrowserView
                 item,
                 toggle: e.KeyModifiers.HasFlag(KeyModifiers.Control),
                 extend: e.KeyModifiers.HasFlag(KeyModifiers.Shift));
-        if (properties.IsLeftButtonPressed && item.IsFile)
-            PrepareFileDrag(e, border);
+        if (properties.IsLeftButtonPressed)
+            PrepareItemDrag(e, border);
         FocusThumbnailGrid();
     }
 

@@ -14,12 +14,12 @@ public partial class BrowserView
     {
         if (_vm is not { } vm ||
             GetOwnerWindow() is not { Clipboard: { } clipboard }) return;
-        var paths = vm.SelectedFilePaths;
+        var paths = vm.SelectedPaths;
         if (paths.Count == 0) return;
-        var storageItems = await ResolveStorageFilesAsync(paths);
+        var storageItems = await ResolveStorageItemsAsync(paths);
         if (storageItems.Count == 0)
         {
-            vm.ReportFileOperation("No selected files are still available.");
+            vm.ReportFileOperation("No selected items are still available.");
             return;
         }
 
@@ -31,7 +31,7 @@ public partial class BrowserView
         await clipboard.SetFilesAsync(storageItems);
         _fileClipboard.Set(availablePaths, isCut);
         vm.ReportFileOperation(
-            $"{availablePaths.Count} file{(availablePaths.Count == 1 ? "" : "s")} " +
+            $"{availablePaths.Count} item{(availablePaths.Count == 1 ? "" : "s")} " +
             (isCut ? "ready to move" : "copied"));
     }
 
@@ -42,13 +42,14 @@ public partial class BrowserView
         var storageItems = await clipboard.TryGetFilesAsync();
         var paths = storageItems?
             .Select(item => item.TryGetLocalPath())
-            .Where(path => !string.IsNullOrEmpty(path) && File.Exists(path))
+            .Where(path => !string.IsNullOrEmpty(path) &&
+                           (File.Exists(path) || Directory.Exists(path)))
             .Cast<string>()
             .Distinct(System.StringComparer.OrdinalIgnoreCase)
             .ToList() ?? new List<string>();
         if (paths.Count == 0)
         {
-            vm.ReportFileOperation("The clipboard contains no files to paste.");
+            vm.ReportFileOperation("The clipboard contains no files or folders to paste.");
             return;
         }
 
@@ -72,18 +73,22 @@ public partial class BrowserView
             return;
         }
 
-        var remaining = await ResolveStorageFilesAsync(_fileClipboard.Paths);
+        var remaining = await ResolveStorageItemsAsync(_fileClipboard.Paths);
         await clipboard.SetFilesAsync(remaining);
     }
 
-    private async Task<List<IStorageItem>> ResolveStorageFilesAsync(IEnumerable<string> paths)
+    private async Task<List<IStorageItem>> ResolveStorageItemsAsync(IEnumerable<string> paths)
     {
         var result = new List<IStorageItem>();
         if (GetOwnerWindow() is not { } owner) return result;
         foreach (var path in paths)
         {
-            var file = await owner.StorageProvider.TryGetFileFromPathAsync(path);
-            if (file is not null) result.Add(file);
+            IStorageItem? item = File.Exists(path)
+                ? await owner.StorageProvider.TryGetFileFromPathAsync(path)
+                : Directory.Exists(path)
+                    ? await owner.StorageProvider.TryGetFolderFromPathAsync(path)
+                    : null;
+            if (item is not null) result.Add(item);
         }
         return result;
     }

@@ -14,24 +14,24 @@ public partial class BrowserView
 {
     private PointerPressedEventArgs? _dragStartEvent;
     private Point _dragStartPoint;
-    private IReadOnlyList<string> _draggedFilePaths = Array.Empty<string>();
+    private IReadOnlyList<string> _draggedPaths = Array.Empty<string>();
     private IPointer? _dragPointer;
     private bool _dragStarting;
 
-    internal bool IsInternalFileDragActive => _dragStarting;
+    internal bool IsInternalItemDragActive => _dragStarting;
 
-    private void PrepareFileDrag(PointerPressedEventArgs e, Control source)
+    private void PrepareItemDrag(PointerPressedEventArgs e, Control source)
     {
         if (_vm is not { } vm || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
-            ClearFileDrag();
+            ClearItemDrag();
             return;
         }
 
-        _draggedFilePaths = vm.SelectedFilePaths;
-        if (_draggedFilePaths.Count == 0)
+        _draggedPaths = vm.SelectedPaths;
+        if (_draggedPaths.Count == 0)
         {
-            ClearFileDrag();
+            ClearItemDrag();
             return;
         }
 
@@ -43,10 +43,10 @@ public partial class BrowserView
 
     private async void OnThumbnailPointerMoved(object? sender, PointerEventArgs e)
     {
-        if (_dragStarting || _dragStartEvent is null || _draggedFilePaths.Count == 0) return;
+        if (_dragStarting || _dragStartEvent is null || _draggedPaths.Count == 0) return;
         if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
-            ClearFileDrag();
+            ClearItemDrag();
             return;
         }
 
@@ -57,7 +57,7 @@ public partial class BrowserView
         _dragStarting = true;
         try
         {
-            var storageItems = await ResolveStorageFilesAsync(_draggedFilePaths);
+            var storageItems = await ResolveStorageItemsAsync(_draggedPaths);
             if (storageItems.Count == 0) return;
 
             var transfer = new DataTransfer();
@@ -70,17 +70,17 @@ public partial class BrowserView
         }
         catch (Exception ex)
         {
-            _vm?.ReportFileOperation($"Could not start file drag: {ex.Message}");
+            _vm?.ReportFileOperation($"Could not start item drag: {ex.Message}");
         }
         finally
         {
-            ClearFileDrag();
+            ClearItemDrag();
         }
     }
 
     private void OnThumbnailPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
-        if (!_dragStarting) ClearFileDrag();
+        if (!_dragStarting) ClearItemDrag();
     }
 
     private void OnFolderTreeDragOver(object? sender, DragEventArgs e)
@@ -95,7 +95,7 @@ public partial class BrowserView
     private async void OnFolderTreeDrop(object? sender, DragEventArgs e)
     {
         var target = FindFolderTarget(e.Source as Visual);
-        var paths = _draggedFilePaths.ToArray();
+        var paths = _draggedPaths.ToArray();
         e.Handled = true;
         if (target is null || paths.Length == 0 || !CanDropOnFolder(target.Path)) return;
 
@@ -106,9 +106,13 @@ public partial class BrowserView
     {
         if (!Directory.Exists(destination)) return false;
 
-        return _draggedFilePaths.Any(path => !string.Equals(
-            Path.GetDirectoryName(path)?.TrimEnd(Path.DirectorySeparatorChar),
-            destination.TrimEnd(Path.DirectorySeparatorChar),
+        var normalizedDestination = NormalizePath(destination);
+        if (_draggedPaths.Any(path => Directory.Exists(path) &&
+            IsSameOrDescendant(normalizedDestination, NormalizePath(path)))) return false;
+
+        return _draggedPaths.Any(path => !string.Equals(
+            NormalizePath(Path.GetDirectoryName(path) ?? ""),
+            normalizedDestination,
             StringComparison.OrdinalIgnoreCase));
     }
 
@@ -122,13 +126,20 @@ public partial class BrowserView
         return null;
     }
 
-    private void ClearFileDrag()
+    private static string NormalizePath(string path) =>
+        Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+    private static bool IsSameOrDescendant(string candidate, string parent) =>
+        string.Equals(candidate, parent, StringComparison.OrdinalIgnoreCase) ||
+        candidate.StartsWith(parent + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+
+    private void ClearItemDrag()
     {
         try { _dragPointer?.Capture(null); }
         catch { /* the platform drag may already have released this pointer */ }
         _dragPointer = null;
         _dragStartEvent = null;
-        _draggedFilePaths = Array.Empty<string>();
+        _draggedPaths = Array.Empty<string>();
         _dragStarting = false;
     }
 }
