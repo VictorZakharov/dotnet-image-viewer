@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ImageViewer.Models;
+using ImageViewer.Services;
 
 namespace ImageViewer.ViewModels;
 
@@ -19,7 +20,7 @@ public partial class DuplicateFinderViewModel : ObservableObject, IDisposable
     [ObservableProperty] private double _progressValue;
     [ObservableProperty] private string _progressText = "Ready to scan";
     [ObservableProperty] private string _statusText =
-        "No files are selected automatically. Review every choice before using the Recycle Bin.";
+        $"No files are selected automatically. Review every choice before using the {FileOperations.TrashDisplayName}.";
 
     public bool HasGroups => Groups.Count > 0;
     public bool HasScanDetails => ScanDetails.Count > 0;
@@ -29,6 +30,7 @@ public partial class DuplicateFinderViewModel : ObservableObject, IDisposable
         ? "Nothing selected"
         : $"{SelectedCount} selected · {DuplicateDisplay.FormatBytes(SelectedBytes)}";
     public bool CanDelete => !IsScanning && SelectedCount > 0;
+    public string MoveToTrashLabel => $"Move selected to {FileOperations.TrashDisplayName}";
     public bool SelectionLeavesOnePerGroup =>
         Groups.All(group => group.SelectedCount == 0 || group.LeavesFileAfterDeletion);
     public IReadOnlyList<string> SelectedPaths => Groups
@@ -94,14 +96,14 @@ public partial class DuplicateFinderViewModel : ObservableObject, IDisposable
 
     public void RemoveDeletedPaths(IReadOnlyList<string> paths)
     {
-        var removed = new HashSet<string>(paths, StringComparer.OrdinalIgnoreCase);
+        var removed = new HashSet<string>(paths, FileSystemPath.Comparer);
         foreach (var group in Groups.ToList())
         {
             if (!group.Files.Any(file => removed.Contains(file.Path))) continue;
             Groups.Remove(group);
             group.Dispose();
         }
-        StatusText = $"Moved {paths.Count} file{(paths.Count == 1 ? "" : "s")} to the Recycle Bin. " +
+        StatusText = $"Moved {paths.Count} file{(paths.Count == 1 ? "" : "s")} to the {FileOperations.TrashDisplayName}. " +
                      "Affected groups were removed; rescan to review what remains.";
         NotifySelectionChanged();
         NotifyResultChanged();

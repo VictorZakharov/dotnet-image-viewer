@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ImageViewer.Models;
+using ImageViewer.Services;
 
 namespace ImageViewer.ViewModels;
 
@@ -71,9 +72,9 @@ public partial class ImageCompareViewModel : ObservableObject, IDisposable
 
     public void RemoveDeleted(IReadOnlyList<string> paths)
     {
-        var removed = new HashSet<string>(paths, StringComparer.OrdinalIgnoreCase);
+        var removed = new HashSet<string>(paths, FileSystemPath.Comparer);
         _deletedPaths.AddRange(paths.Where(path => !_deletedPaths.Contains(
-            path, StringComparer.OrdinalIgnoreCase)));
+            path, FileSystemPath.Comparer)));
         foreach (var candidate in Candidates.Where(candidate => removed.Contains(candidate.Path)).ToList())
         {
             Candidates.Remove(candidate);

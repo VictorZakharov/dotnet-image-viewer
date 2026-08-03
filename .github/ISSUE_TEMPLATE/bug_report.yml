@@ -29,9 +29,10 @@ body:
       label: Version or commit
       description: Include the release version or commit hash when known.
   - type: input
-    id: windows
+    id: operating_system
     attributes:
-      label: Windows version
+      label: Operating system and version
+      placeholder: Windows 11 24H2, Ubuntu 24.04, etc.
   - type: textarea
     id: details
     attributes:

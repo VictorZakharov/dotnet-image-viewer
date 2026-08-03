@@ -110,7 +110,7 @@
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
           <Button Content="Clear selection" Click="OnClearSelection" Padding="12,5"/>
-          <Button Content="Move selected to Recycle Bin" Click="OnDeleteSelected"
+          <Button Content="{Binding MoveToTrashLabel}" Click="OnDeleteSelected"
                   IsEnabled="{Binding CanDelete}" Padding="16,6"/>
           <Button Content="Close" Click="OnClose" Padding="14,6"/>
         </StackPanel>

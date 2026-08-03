@@ -7,7 +7,9 @@ namespace ImageViewer;
 
 internal static class Program
 {
-    public const string MutexName = "Local\\ImageViewer.SingleInstance.{8B2D9F35-3A14-4F8B-A19C-7E5D6C4B0A21}";
+    public static string MutexName => OperatingSystem.IsWindows()
+        ? "Local\\ImageViewer.SingleInstance.{8B2D9F35-3A14-4F8B-A19C-7E5D6C4B0A21}"
+        : "ImageViewer.SingleInstance.{8B2D9F35-3A14-4F8B-A19C-7E5D6C4B0A21}";
     public const string PipeName = "ImageViewer.Pipe.{8B2D9F35-3A14-4F8B-A19C-7E5D6C4B0A21}";
 
     public static string? InitialPath { get; private set; }

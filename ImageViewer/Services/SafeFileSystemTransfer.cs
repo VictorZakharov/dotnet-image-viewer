@@ -44,15 +44,24 @@ internal static partial class SafeFileSystemTransfer
         ValidateDestination(source, destination, sourceIsDirectory);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (string.Equals(
+        var canTryDirectMove = !OperatingSystem.IsWindows() || FileSystemPath.Equals(
             Path.GetPathRoot(source),
-            Path.GetPathRoot(destination),
-            StringComparison.OrdinalIgnoreCase))
+            Path.GetPathRoot(destination));
+        if (canTryDirectMove)
         {
-            await Task.Run(
-                () => MoveWithinVolume(source, destination, replace),
-                cancellationToken).ConfigureAwait(false);
-            return;
+            try
+            {
+                await Task.Run(
+                    () => MoveWithinVolume(source, destination, replace),
+                    cancellationToken).ConfigureAwait(false);
+                return;
+            }
+            catch (IOException) when (!OperatingSystem.IsWindows() && Exists(source))
+            {
+                // Unix paths all have "/" as their root even when they live on
+                // different mounts. A direct rename reports EXDEV; copy and
+                // remove is the portable cross-filesystem fallback.
+            }
         }
 
         await CopyAsync(source, destination, replace, cancellationToken).ConfigureAwait(false);
@@ -91,7 +100,7 @@ internal static partial class SafeFileSystemTransfer
         var destinationPath = Normalize(destination);
         if (destinationPath.StartsWith(
             sourcePath + Path.DirectorySeparatorChar,
-            StringComparison.OrdinalIgnoreCase))
+            FileSystemPath.Comparison))
         {
             throw new IOException("A folder cannot be copied or moved into itself.");
         }

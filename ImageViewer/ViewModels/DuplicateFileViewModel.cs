@@ -3,6 +3,7 @@ using System.IO;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ImageViewer.Models;
+using ImageViewer.Services;
 
 namespace ImageViewer.ViewModels;
 
@@ -50,8 +51,7 @@ public partial class DuplicateFileViewModel : ObservableObject, IDisposable
     {
         Entry = entry;
         _selectionChanged = selectionChanged;
-        IsSuggestedKeeper = string.Equals(
-            entry.Path, keeper.Path, StringComparison.OrdinalIgnoreCase);
+        IsSuggestedKeeper = FileSystemPath.Equals(entry.Path, keeper.Path);
         MatchText = groupKind == DuplicateGroupKind.Exact
             ? "Byte-identical"
             : entry.ContentHash == keeper.ContentHash

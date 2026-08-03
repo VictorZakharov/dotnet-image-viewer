@@ -1,0 +1,15 @@
+Package: imageviewer
+Version: @VERSION@
+Section: graphics
+Priority: optional
+Architecture: @ARCHITECTURE@
+Installed-Size: @INSTALLED_SIZE@
+Maintainer: Victor Zakharov <neolisk@gmail.com>
+Homepage: https://github.com/VictorZakharov/dotnet-image-viewer
+Depends: ca-certificates, libc6, libgcc-s1, libgssapi-krb5-2, libicu74,
+ libssl3t64, libstdc++6, tzdata, zlib1g, libx11-6, libice6, libsm6,
+ libfontconfig1, libvlc-dev, vlc-plugin-base, vlc-plugin-video-output,
+ ffmpeg, desktop-file-utils
+Description: Lightweight filesystem-first image and video viewer
+ ImageViewer provides a thumbnail browser, metadata inspection, duplicate
+ detection, side-by-side comparison, and LibVLC video playback.

@@ -45,7 +45,7 @@ public partial class DuplicateFinderWindow : Window
             .Select(folder => folder.TryGetLocalPath())
             .Where(path => !string.IsNullOrWhiteSpace(path))
             .Select(path => Path.GetFullPath(path!))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Distinct(FileSystemPath.Comparer)
             .ToList();
         if (selected.Count == 0) return;
         _roots.Clear();

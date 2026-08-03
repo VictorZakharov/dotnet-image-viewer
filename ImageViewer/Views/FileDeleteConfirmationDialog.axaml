@@ -12,7 +12,7 @@
     <StackPanel Spacing="5">
       <TextBlock x:Name="HeadingText" Foreground="#f3f7ff"
                  FontSize="19" FontWeight="SemiBold"/>
-      <TextBlock Text="The selected files and folders will be moved to the Windows Recycle Bin."
+      <TextBlock x:Name="TrashDescriptionText"
                  Foreground="#e8c786" FontSize="12"/>
     </StackPanel>
     <Border Grid.Row="1" Background="#162038" CornerRadius="6" Padding="12">
@@ -23,7 +23,7 @@
     </Border>
     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
       <Button Content="Cancel" Click="OnCancel" Padding="18,6"/>
-      <Button Content="Move to Recycle Bin" Click="OnConfirm" Padding="18,6"/>
+      <Button x:Name="ConfirmButton" Click="OnConfirm" Padding="18,6"/>
     </StackPanel>
   </Grid>
 </Window>

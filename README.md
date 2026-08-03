@@ -1,16 +1,25 @@
 # Image Viewer
 
-A lightweight, filesystem-first image and video viewer for Windows. Built on .NET 10 and Avalonia 12.
+A lightweight, filesystem-first image and video viewer for Windows and Linux. Built on .NET 10 and Avalonia 12.
 
-> **Status**: public preview (`0.1.0`). The viewer, browser, video playback, and Windows Explorer integration work.
+> **Status**: public preview (`0.1.0`). The viewer, browser, and video playback work on Windows and Linux; Windows Explorer integration remains Windows-specific.
 
 ## Download
 
-Prebuilt Windows packages are published on the
+Prebuilt packages are published on the
 [Releases](https://github.com/VictorZakharov/dotnet-image-viewer/releases) page.
-Download `ImageViewer-v0.1.0-win-x64.zip`, extract the complete archive to a
-writable folder, and run `ImageViewer.exe`. The package is self-contained, so
-installing .NET is not required.
+Release assets use these names:
+
+- Windows x64: `ImageViewer-v<version>-win-x64.zip`
+- Linux x64: `ImageViewer-v<version>-linux-x64.deb` (Ubuntu 24.04) and a portable `.tar.gz` for compatible x64 desktops
+
+On Windows, extract the complete archive to a writable folder and run
+`ImageViewer.exe`. On Ubuntu 24.04, install the package with
+`sudo apt install ./ImageViewer-v<version>-linux-x64.deb`, then start
+`imageviewer` from a terminal or the desktop application menu. The package
+registers ImageViewer as an available handler without changing user defaults.
+If Linux assets are not attached to the latest release yet, build current
+`main` using the Linux instructions below.
 
 The initial preview is not code-signed. Windows may therefore show an
 unrecognized-app warning for a newly downloaded build. Verify that the archive
@@ -33,24 +42,24 @@ published `.sha256` file before running it.
 - Respects EXIF orientation on load
 
 ### Browser mode
-- Explorer-style folder tree with drives at the root, compact rows, accurate leaf-folder chevrons, lazy-loaded subfolders, and a resizable splitter
-- Thumbnail grid with disk-cached previews (tiered up to 512 px; cache lives under `%LOCALAPPDATA%`); subfolders stay above media files and show a 2x2 image/video preview mosaic
+- Explorer-style folder tree with Windows drives or the Linux filesystem root, compact rows, accurate leaf-folder chevrons, lazy-loaded subfolders, and a resizable splitter
+- Thumbnail grid with disk-cached previews (tiered up to 512 px; cache lives in the platform local application-data directory); subfolders stay above media files and show a 2x2 image/video preview mosaic
 - A single selection uses a bright blue frame; multi-selection adds visible check badges. Use `Ctrl`-click to toggle items, `Shift`-click for ranges, and `Ctrl+A` to select the current filtered grid
 - Selection survives sort and filter changes, with a toolbar summary showing the selected count and aggregate media size
 - Sort by name, date, or size — click the sort buttons or press `Ctrl+1` / `Ctrl+2` / `Ctrl+3`; click again to toggle direction
 - Type any text to filter by filename — `Backspace` edits, `Esc` clears
 - Click the current path in the toolbar to edit it Explorer-style; press Enter to navigate or Esc to revert (invalid paths surface an inline error)
-- Copy, cut, paste, move, and Recycle Bin delete work on every selected file and folder, with collision choices, progress/cancel, aggregate failure details, and undo for the last move or rename
+- Copy, cut, paste, move, and Trash/Recycle Bin delete work on every selected file and folder, with collision choices, progress/cancel, aggregate failure details, and undo for the last move or rename
 - Drag selected files and folders onto a writable folder in the tree to move them; folder tiles participate in filesystem operations while remaining excluded from viewer/EXIF-only media actions
 - Click a file title or press `F2` to rename it inline; only the stem is edited so the extension can't be lost. Enter commits, Esc cancels, click-away commits, and starting another rename commits the pending one
 - `Ctrl+wheel` resizes thumbnails (96–512 px). The cache regenerates at the new tier so larger thumbnails stay sharp; the size persists between launches
 - Mouse-wheel scrolling is velocity-sensitive in both the folder tree and media grid: small movements stay precise while rapid input travels farther and decelerates smoothly. Fractional precision input keeps its native platform behavior
-- The **Smooth** toolbar toggle disables animated scrolling for both panes and persists between launches; Windows' reduced-motion preference overrides it
+- The **Smooth** toolbar toggle disables animated scrolling for both panes and persists between launches; Windows' reduced-motion preference overrides it on Windows
 - Folder/tree scans stay off the UI thread; the wrapping grid virtualizes item controls, realizing only the viewport plus a small overscan region
 - Thumbnail and folder-mosaic work is visible-first, limited to four concurrent loads, and cancelled when it becomes stale; a top progress strip covers grid work and folder tiles show their own spinners
 - Each thumbnail shows its file extension as a coloured pill in the top-right corner (JPG amber, PNG green, GIF magenta, BMP gold, WEBP cyan, TIFF violet, RAW red)
 - Right-click any media thumbnail (or media in the viewer) → **Properties** opens a side-pane with EXIF date-taken data where available plus created, modified, and accessed file dates
-- **Duplicates...** scans one or more folders for byte-identical or visually similar images, with reviewable keeper suggestions and Recycle Bin deletion
+- **Duplicates...** scans one or more folders for byte-identical or visually similar images, with reviewable keeper suggestions and Trash/Recycle Bin deletion
 - Select 2–4 images and choose **Compare...** for a dedicated side-by-side view; similar-image groups also open compare directly and apply the chosen keeper back to their review selection
 - The folder tree expands and centers on the active folder when one is opened from the viewer, drag-drop, or CLI; long names truncate with a tooltip
 - `Enter` or double-click opens the selected image/video or navigates into the selected folder
@@ -58,46 +67,61 @@ published `.sha256` file before running it.
 
 ### Other
 - **Windows integration**: the **Explorer...** button registers this portable copy for Open with and Default Apps without changing defaults; supported files also get a lightweight “Browse containing folder in ImageViewer” action
-- **Single-instance**: opening media files in rapid succession from Explorer reuses and focuses the running instance, including while the first window is still starting
+- **Single-instance**: opening media files in rapid succession from a file manager reuses and focuses the running instance, including while the first window is still starting
 - Window position, size, sort order, smooth-scrolling preference, EXIF overlay state, slideshow delay, and last folder persist between launches
-- Follows the Windows light / dark theme setting
+- Follows the platform light / dark theme setting
 - **Common formats** (JPG, PNG, GIF, BMP, WebP, TIFF, ICO) via Skia
 - **RAW formats** (NEF, CR2, CR3, ARW, DNG, RAF, RW2, ORF, PEF, SRW) via Magick.NET
 - **Video formats** (MP4, M4V, MOV, AVI, MKV, WebM, WMV, MPEG, MTS/M2TS, TS, 3GP, OGV, VOB) via LibVLC
 
 ## Requirements
 
-- Windows 10 / 11 on x64 for the prebuilt package
+- Windows 10 / 11 x64, or Ubuntu 24.04 x64 (the validated Linux target)
+- Linux video playback uses the system LibVLC development/runtime package, and video previews use FFmpeg; the `.deb` declares both dependencies
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) (10.0 or newer) only when building from source
 
 ## Build & run
 
-```powershell
+```text
 dotnet build ImageViewer.sln -c Debug
 dotnet run --project ImageViewer
-# or open a specific image or video:
-dotnet run --project ImageViewer -- "C:\Pictures\photo.jpg"
 ```
 
-Or launch `ImageViewer\bin\Debug\net10.0\ImageViewer.exe` directly. With no argument the app opens its browser at your last folder, falling back to `%USERPROFILE%\Pictures` on first launch.
+Pass an image, video, or folder path after `--` to open it directly. With no
+argument the app opens its browser at the last folder, falling back to the
+platform Pictures folder on first launch. Linux development and tests require
+the media/runtime packages used by the release:
 
-For the fastest startup, publish the Avalonia 12 Native AOT build:
+```bash
+sudo apt install libvlc-dev vlc-plugin-base vlc-plugin-video-output ffmpeg
+```
+
+For the fastest startup, publish the Avalonia 12 Native AOT build on the same
+operating system it will run on.
+
+Windows:
 
 ```powershell
 dotnet publish ImageViewer\ImageViewer.csproj -c Release -r win-x64
 ImageViewer\bin\Release\net10.0\win-x64\publish\ImageViewer.exe
 ```
 
-Native AOT is self-contained and needs the Windows C++ build tools when publishing.
+This needs the Windows C++ build tools. The release archive and checksum are
+created with `./scripts/Publish-Release.ps1`.
 
-Maintainers can build the release archive and checksum with:
+Ubuntu/Debian:
 
-```powershell
-.\scripts\Publish-Release.ps1
+```bash
+sudo apt install clang zlib1g-dev libx11-6 libice6 libsm6 libfontconfig1 \
+  libvlc-dev vlc-plugin-base vlc-plugin-video-output ffmpeg desktop-file-utils
+dotnet publish ImageViewer/ImageViewer.csproj -c Release -r linux-x64
+./ImageViewer/bin/Release/net10.0/linux-x64/publish/ImageViewer
 ```
 
-The version comes from `ImageViewer.csproj`; generated files are written under
-the ignored `artifacts` directory.
+Maintainers with PowerShell installed can run `pwsh ./scripts/Publish-Linux.ps1`
+to test, publish, and produce both the portable archive and Debian package. The
+version comes from `ImageViewer.csproj`; generated files are written under the
+ignored `artifacts` directory.
 
 ## Windows Explorer integration
 
@@ -120,21 +144,30 @@ Registration stores the exact path of the executable that ran `--register`. If y
 
 The Explorer action launches a separate ImageViewer process and hands the containing folder to the existing instance. It is a static registry verb, not an in-process shell extension; on Windows 11 it can appear under **Show more options**.
 
+## Linux desktop integration
+
+The Debian package installs a freedesktop desktop entry, application icon, and
+the supported image/video MIME associations. This makes ImageViewer appear in
+application menus and **Open With** lists; it deliberately does not replace any
+default application. The portable archive does not install desktop metadata.
+Linux deletion follows the freedesktop Trash specification so files remain
+recoverable through the desktop Trash.
+
 ## Compare mode
 
-Select 2–4 images in the browser and choose **Compare...**, or use **Compare 2–4...** on an exact/similar duplicate group. Videos and folders are rejected with a clear status message. The original browser selection is restored on return, excluding any files deliberately moved to the Recycle Bin.
+Select 2–4 images in the browser and choose **Compare...**, or use **Compare 2–4...** on an exact/similar duplicate group. Videos and folders are rejected with a clear status message. The original browser selection is restored on return, excluding any files deliberately moved to the Trash or Recycle Bin.
 
 Each cell loads a cached preview first and decodes full resolution in the background, with at most two full-resolution decodes at once. The active cell has a bright frame. **Synchronized** zoom and pan keep the same normalized image region centered even when dimensions differ; turn it off for independent inspection. **Fit**, **100%**, and two-image **Blink / alternate** are available from the toolbar and keyboard. Dimensions, size, date taken, camera, lens, and exposure stay aligned under each image, with differences highlighted.
 
-Pick, Reject, and **Keep this; reject others** are comparison-session review marks. Returning to the browser or duplicate finder updates visible badges immediately, and rejected duplicate candidates become a reviewable deletion selection. Review marks are not written to media metadata. Rejected-file deletion always uses the existing confirmation, progress, and Windows Recycle Bin workflow.
+Pick, Reject, and **Keep this; reject others** are comparison-session review marks. Returning to the browser or duplicate finder updates visible badges immediately, and rejected duplicate candidates become a reviewable deletion selection. Review marks are not written to media metadata. Rejected-file deletion always uses the existing confirmation, progress, and platform Trash/Recycle Bin workflow.
 
 ## Duplicate finder
 
 Open **Duplicates...** from the browser toolbar and choose one or more folders. Exact mode first groups by size and SHA-256, then compares the bytes before reporting a match. Similar mode uses a 64-bit perceptual dHash; its distance threshold is adjustable from 0 (closest) to 20 (broadest), and every result is clearly labelled as exact or visually similar.
 
-Results include thumbnails, full paths, dimensions, EXIF date taken, created/modified/accessed dates, camera metadata, and file sizes. Sort by reclaimable space, group size, or newest date. **Select suggested duplicates** uses the displayed keeper rule, but the initial selection is always empty and can be changed freely. A group must retain at least one file, and every removal goes through the normal review prompt and Windows Recycle Bin workflow.
+Results include thumbnails, full paths, dimensions, EXIF date taken, created/modified/accessed dates, camera metadata, and file sizes. Sort by reclaimable space, group size, or newest date. **Select suggested duplicates** uses the displayed keeper rule, but the initial selection is always empty and can be changed freely. A group must retain at least one file, and every removal goes through the normal review prompt and platform Trash/Recycle Bin workflow.
 
-Hard-linked paths are identified as the same physical file and excluded from reclaimable totals. Individual read failures appear under **Scan details** without stopping other files. Pause, cancel, and restart are safe: completed hashes are cached in `%LOCALAPPDATA%\ImageViewer\duplicate-hashes.json` and reused only while file identity, size, and modified time still match.
+Hard-linked paths are identified as the same physical file and excluded from reclaimable totals. Individual read failures appear under **Scan details** without stopping other files. Pause, cancel, and restart are safe: completed hashes are cached in the platform local application-data directory (typically `%LOCALAPPDATA%\ImageViewer` on Windows or `~/.local/share/ImageViewer` on Linux) and reused only while file identity, size, and modified time still match.
 
 ## Keyboard shortcuts
 
@@ -152,7 +185,7 @@ Hard-linked paths are identified as the same physical file and excluded from rec
 | Viewer  | mouse wheel               | Zoom (cursor-centered)                            |
 | Viewer  | click + drag              | Pan when zoomed                                   |
 | Viewer  | double-click              | Fit ↔ 100%                                        |
-| Browser | `Del`                     | Move to Recycle Bin                               |
+| Browser | `Del`                     | Move to Trash / Recycle Bin                       |
 | Browser | `F2` / click file title   | Rename selected file (Enter commits, Esc cancels) |
 | Browser | `Ctrl`-click              | Toggle an item in the selection                   |
 | Browser | `Shift`-click             | Select a range from the stable anchor             |
@@ -176,11 +209,11 @@ Hard-linked paths are identified as the same physical file and excluded from rec
 | Compare | `S`                       | Toggle synchronized normalized zoom and pan       |
 | Compare | `B` / `Space`             | Enter or alternate the two-image blink view       |
 | Compare | `P` / `X` / `K`           | Pick / reject / keep active and reject others     |
-| Compare | `Delete`                  | Review rejected images for Recycle Bin deletion   |
+| Compare | `Delete`                  | Review rejected images for Trash deletion         |
 
 ## Tech stack
 
-- [Avalonia 12.1](https://avaloniaui.net/blog/release-12-1) for the UI (cross-platform-capable; deployed as Windows-only for now)
+- [Avalonia 12.1](https://avaloniaui.net/blog/release-12-1) for the Windows and Linux UI
 - Avalonia `ItemsRepeater` with `UniformGridLayout` for the virtualized media grid
 - [CommunityToolkit.Mvvm](https://learn.microsoft.com/dotnet/communitytoolkit/mvvm/) MVVM source generators
 - [Magick.NET](https://github.com/dlemstra/Magick.NET) for RAW decoding
@@ -206,12 +239,14 @@ ImageViewer\
 ├── Controls\               Custom ZoomPanImage control
 ├── Models\                 EXIF DTO and SortMode enum
 ├── Services\               Image loading, folder scanning, thumbnail cache,
-│                           EXIF reader, file ops (Recycle Bin), settings store,
+│                           EXIF reader, platform Trash/file ops, settings store,
 │                           single-instance pipe server
 ├── ViewModels\             MainWindow, Viewer, Browser, ThumbnailItem, FolderTreeItem
 └── Views\                  MainWindow + ViewerView + BrowserView
 ImageViewer.Tests\          Selection and safe file-operation tests
-scripts\Publish-Release.ps1 Local test, Native AOT publish, ZIP, and checksum
+packaging/linux/            Desktop entry and Debian package metadata
+scripts/Publish-Release.ps1 Test, Native AOT publish, archive, and checksum
+scripts/Publish-Linux.ps1   Linux archive and Debian package build
 ```
 
 ## Roadmap

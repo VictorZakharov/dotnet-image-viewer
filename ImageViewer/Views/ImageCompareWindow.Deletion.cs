@@ -30,7 +30,7 @@ public partial class ImageCompareWindow
 
         _deleteRunning = true;
         var progressDialog = new FileOperationProgressDialog(
-            "Moving rejected images to the Recycle Bin");
+            $"Moving rejected images to the {FileOperations.TrashDisplayName}");
         progressDialog.Show(this);
         FileOperationResult result;
         try
@@ -59,7 +59,7 @@ public partial class ImageCompareWindow
         var deleted = result.Successful.Select(success => success.SourcePath).ToList();
         foreach (var candidate in _viewModel.Candidates
                      .Where(candidate => deleted.Contains(
-                         candidate.Path, StringComparer.OrdinalIgnoreCase)).ToList())
+                         candidate.Path, FileSystemPath.Comparer)).ToList())
             CancelCandidateLoad(candidate);
         if (deleted.Count > 0)
         {

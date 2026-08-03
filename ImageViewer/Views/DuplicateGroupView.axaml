@@ -42,7 +42,7 @@
               <Grid ColumnDefinitions="Auto,96,*,Auto" ColumnSpacing="10">
                 <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
                           VerticalAlignment="Center"
-                          ToolTip.Tip="Select this file for the Recycle Bin"/>
+                          ToolTip.Tip="Select this file for deletion"/>
                 <Border Grid.Column="1" Width="96" Height="72"
                         Background="#070b16" CornerRadius="3">
                   <Grid>

@@ -12,7 +12,7 @@ public sealed class DuplicateHashCache
     private readonly object _gate = new();
     private readonly string _path;
     private Dictionary<string, DuplicateHashCacheEntry> _entries =
-        new(StringComparer.OrdinalIgnoreCase);
+        new(FileSystemPath.Comparer);
 
     public DuplicateHashCache(string? customPath = null)
     {
@@ -39,7 +39,7 @@ public sealed class DuplicateHashCache
             lock (_gate)
             {
                 _entries = new Dictionary<string, DuplicateHashCacheEntry>(
-                    StringComparer.OrdinalIgnoreCase);
+                    FileSystemPath.Comparer);
                 foreach (var entry in document.Entries)
                     _entries[Normalize(entry.Path)] = entry;
             }

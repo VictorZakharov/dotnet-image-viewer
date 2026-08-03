@@ -94,7 +94,8 @@
                   ToolTip.Tip="Find exact or visually similar duplicate images"
                   Click="OnFindDuplicatesClicked"
                   Padding="10,4"/>
-          <Button Content="Explorer..."
+          <Button x:Name="WindowsIntegrationButton"
+                  Content="Explorer..."
                   AutomationProperties.Name="Windows and Explorer integration"
                   ToolTip.Tip="Windows file associations and Explorer integration"
                   Click="OnWindowsIntegrationClicked"

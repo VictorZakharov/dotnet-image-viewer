@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ImageViewer.Models;
+using ImageViewer.Services;
 
 namespace ImageViewer.ViewModels;
 
@@ -36,8 +37,8 @@ public sealed class DuplicateGroupViewModel : ObservableObject, IDisposable
         Model = model;
         _selectionChanged = selectionChanged;
         _keeperReason = model.KeeperReason;
-        var keeper = model.Files.First(file => string.Equals(
-            file.Path, model.SuggestedKeeperPath, StringComparison.OrdinalIgnoreCase));
+        var keeper = model.Files.First(file =>
+            FileSystemPath.Equals(file.Path, model.SuggestedKeeperPath));
         Files = new ObservableCollection<DuplicateFileViewModel>(model.Files.Select(file =>
             new DuplicateFileViewModel(file, keeper, model.Kind, OnFileSelectionChanged)));
     }
@@ -79,15 +80,15 @@ public sealed class DuplicateGroupViewModel : ObservableObject, IDisposable
     {
         var decisions = result.Decisions.ToDictionary(
             decision => decision.Path,
-            StringComparer.OrdinalIgnoreCase);
+            FileSystemPath.Comparer);
         foreach (var file in Files)
             if (decisions.TryGetValue(file.Path, out var decision))
                 file.ApplyDecision(decision);
         if (!string.IsNullOrEmpty(result.PickedPath))
         {
             foreach (var file in Files)
-                file.IsSuggestedKeeper = string.Equals(
-                    file.Path, result.PickedPath, StringComparison.OrdinalIgnoreCase);
+                file.IsSuggestedKeeper =
+                    FileSystemPath.Equals(file.Path, result.PickedPath);
             _keeperReason = "chosen in side-by-side compare.";
         }
         OnPropertyChanged(nameof(KeeperRule));

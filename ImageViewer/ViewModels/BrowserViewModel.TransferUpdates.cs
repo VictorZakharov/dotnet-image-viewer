@@ -28,7 +28,7 @@ public partial class BrowserViewModel
         var destinations = destinationPaths
             .Where(path => !string.IsNullOrEmpty(path) && IsInCurrentFolder(path!))
             .Cast<string>()
-            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Distinct(FileSystemPath.Comparer)
             .ToList();
         if (destinations.Count == 0) return;
 
@@ -37,7 +37,7 @@ public partial class BrowserViewModel
         var selectedPaths = SelectedPaths;
         var destinationSet = new HashSet<string>(
             destinations,
-            StringComparer.OrdinalIgnoreCase);
+            FileSystemPath.Comparer);
         var replacedItems = Items
             .Where(item => destinationSet.Contains(item.Path))
             .ToList();
@@ -105,10 +105,9 @@ public partial class BrowserViewModel
         try
         {
             var parent = Path.GetDirectoryName(Path.GetFullPath(path));
-            return string.Equals(
+            return FileSystemPath.Equals(
                 parent?.TrimEnd('\\', '/'),
-                CurrentFolder?.TrimEnd('\\', '/'),
-                StringComparison.OrdinalIgnoreCase);
+                CurrentFolder?.TrimEnd('\\', '/'));
         }
         catch { return false; }
     }
@@ -116,13 +115,13 @@ public partial class BrowserViewModel
     private void AddTransferredFoldersToTree(IEnumerable<ThumbnailItem> folders)
     {
         if (SelectedTreeItem is not FolderTreeItem parent
-            || !string.Equals(parent.Path, CurrentFolder, StringComparison.OrdinalIgnoreCase)
+            || !FileSystemPath.Equals(parent.Path, CurrentFolder)
             || parent.Children.Any(child => string.IsNullOrEmpty(child.Path))) return;
 
         foreach (var folder in folders)
         {
-            if (parent.Children.Any(child => string.Equals(
-                    child.Path, folder.Path, StringComparison.OrdinalIgnoreCase))) continue;
+            if (parent.Children.Any(child =>
+                    FileSystemPath.Equals(child.Path, folder.Path))) continue;
             var node = new FolderTreeItem(folder.Path, folder.FileName);
             var index = parent.Children.TakeWhile(child => StringComparer.OrdinalIgnoreCase.Compare(
                 child.Name, node.Name) < 0).Count();

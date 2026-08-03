@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Avalonia.Input.Platform;
 using Avalonia.Platform.Storage;
 using ImageViewer.Models;
+using ImageViewer.Services;
 
 namespace ImageViewer.Views;
 
@@ -45,7 +46,7 @@ public partial class BrowserView
             .Where(path => !string.IsNullOrEmpty(path) &&
                            (File.Exists(path) || Directory.Exists(path)))
             .Cast<string>()
-            .Distinct(System.StringComparer.OrdinalIgnoreCase)
+            .Distinct(FileSystemPath.Comparer)
             .ToList() ?? new List<string>();
         if (paths.Count == 0)
         {

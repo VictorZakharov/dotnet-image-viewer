@@ -39,27 +39,7 @@ public partial class BrowserViewModel
     {
         try
         {
-            var drives = await Task.Run(() =>
-            {
-                var result = new List<(string Path, string Label)>();
-                foreach (var drive in DriveInfo.GetDrives())
-                {
-                    if (!drive.IsReady) continue;
-                    string label;
-                    try
-                    {
-                        label = string.IsNullOrEmpty(drive.VolumeLabel)
-                            ? drive.Name.TrimEnd('\\')
-                            : $"{drive.Name.TrimEnd('\\')} ({drive.VolumeLabel})";
-                    }
-                    catch
-                    {
-                        label = drive.Name;
-                    }
-                    result.Add((drive.RootDirectory.FullName, label));
-                }
-                return result;
-            }).ConfigureAwait(false);
+            var drives = await Task.Run(FileSystemRoots.Get).ConfigureAwait(false);
 
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -109,7 +89,7 @@ public partial class BrowserViewModel
         chain.Reverse();
 
         var drive = DriveTree.FirstOrDefault(d =>
-            string.Equals(NormalizeRoot(d.Path), NormalizeRoot(chain[0]), StringComparison.OrdinalIgnoreCase));
+            FileSystemPath.Equals(NormalizeRoot(d.Path), NormalizeRoot(chain[0])));
         if (drive is null) return;
 
         FolderTreeItem? current = drive;
@@ -119,7 +99,7 @@ public partial class BrowserViewModel
             await current.EnsureChildrenLoadedAsync();
             if (syncVersion != _treeSyncVersion) return;
             current = current.Children.FirstOrDefault(c =>
-                string.Equals(c.Path, chain[i], StringComparison.OrdinalIgnoreCase));
+                FileSystemPath.Equals(c.Path, chain[i]));
         }
 
         if (current is null) return;
@@ -143,7 +123,7 @@ public partial class BrowserViewModel
 
     private async Task LoadFolderCoreAsync(string folder, bool force)
     {
-        if (!force && string.Equals(CurrentFolder, folder, StringComparison.OrdinalIgnoreCase) && Items.Count > 0)
+        if (!force && FileSystemPath.Equals(CurrentFolder, folder) && Items.Count > 0)
         {
             _ = SyncTreeSelectionAsync(folder);
             return;

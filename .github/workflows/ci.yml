@@ -35,3 +35,72 @@ jobs:
       - name: Test and build Native AOT release
         shell: pwsh
         run: ./scripts/Publish-Release.ps1
+
+  linux-release-validation:
+    name: Linux test and Native AOT package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Linux build and media dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            clang zlib1g-dev \
+            libx11-6 libice6 libsm6 libfontconfig1 \
+            libvlc-dev vlc-plugin-base vlc-plugin-video-output \
+            ffmpeg desktop-file-utils xvfb xauth
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Test and build Linux Native AOT release
+        shell: pwsh
+        run: ./scripts/Publish-Linux.ps1
+
+      - name: Inspect Linux packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          desktop-file-validate packaging/linux/imageviewer.desktop
+          test -x ImageViewer/bin/Release/net10.0/linux-x64/publish/ImageViewer
+          archives=(artifacts/ImageViewer-v*-linux-x64.tar.gz)
+          packages=(artifacts/ImageViewer-v*-linux-x64.deb)
+          test "${#archives[@]}" -eq 1
+          test "${#packages[@]}" -eq 1
+          tar -tzf "${archives[0]}" >/dev/null
+          dpkg-deb --info "${packages[0]}"
+          dpkg-deb --contents "${packages[0]}"
+
+      - name: Install Debian package
+        shell: bash
+        run: |
+          set -euo pipefail
+          packages=(artifacts/ImageViewer-v*-linux-x64.deb)
+          test "${#packages[@]}" -eq 1
+          sudo apt-get install --yes "./${packages[0]}"
+
+      - name: Smoke-test Linux Native AOT application
+        shell: bash
+        run: |
+          ffmpeg -hide_banner -loglevel error -nostdin \
+            -f lavfi -i color=c=blue:s=320x180:d=10 \
+            -c:v mpeg4 -y /tmp/imageviewer-smoke.mp4
+          set +e
+          timeout --signal=TERM --kill-after=3s 8s \
+            xvfb-run -a imageviewer /tmp/imageviewer-smoke.mp4
+          status=$?
+          set -e
+          if [ "$status" -ne 124 ]; then
+            echo "ImageViewer exited unexpectedly with status $status"
+            exit "$status"
+          fi

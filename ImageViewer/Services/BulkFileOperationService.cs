@@ -17,7 +17,7 @@ public sealed class BulkFileOperationService
         CancellationToken cancellationToken)
     {
         var sources = request.SourcePaths
-            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Distinct(FileSystemPath.Comparer)
             .ToList();
         if (request.Kind == FileOperationKind.Delete)
             return DeleteAsync(sources, progress, cancellationToken);
@@ -143,10 +143,10 @@ public sealed class BulkFileOperationService
         return new FileOperationResult(kind, successful, skipped, failures, canceled);
     }
 
-    private static Task<FileOperationResult> DeleteAsync(
+    private static async Task<FileOperationResult> DeleteAsync(
         IReadOnlyList<string> sources,
         IProgress<FileOperationProgress>? progress,
-        CancellationToken cancellationToken) => Task.Run(() =>
+        CancellationToken cancellationToken)
     {
         var successful = new List<FileOperationSuccess>();
         var failures = new List<FileOperationFailure>();
@@ -162,9 +162,18 @@ public sealed class BulkFileOperationService
             }
             try
             {
-                if (!FileOperations.DeleteToRecycleBin(source))
-                    throw new IOException("Windows could not move the item to the Recycle Bin.");
+                if (!await FileOperations.MoveToTrashAsync(source, cancellationToken)
+                        .ConfigureAwait(false))
+                {
+                    throw new IOException(
+                        $"Could not move the item to the {FileOperations.TrashDisplayName}.");
+                }
                 successful.Add(new FileOperationSuccess(source, null));
+            }
+            catch (OperationCanceledException)
+            {
+                canceled = true;
+                break;
             }
             catch (Exception ex)
             {
@@ -182,11 +191,8 @@ public sealed class BulkFileOperationService
             Array.Empty<string>(),
             failures,
             canceled);
-    }, CancellationToken.None);
+    }
 
     private static bool PathsEqual(string left, string right) =>
-        string.Equals(
-            Path.GetFullPath(left),
-            Path.GetFullPath(right),
-            StringComparison.OrdinalIgnoreCase);
+        FileSystemPath.Equals(Path.GetFullPath(left), Path.GetFullPath(right));
 }

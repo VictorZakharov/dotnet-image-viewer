@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ImageViewer.Services;
 
 namespace ImageViewer.ViewModels;
 
@@ -9,7 +10,7 @@ public partial class BrowserViewModel
     public void ApplyDeletedPaths(IReadOnlyCollection<string> paths)
     {
         if (paths.Count == 0) return;
-        var deleted = new HashSet<string>(paths, StringComparer.OrdinalIgnoreCase);
+        var deleted = new HashSet<string>(paths, FileSystemPath.Comparer);
         var focusedItem = SelectedItem;
         var focusedIndex = SelectedIndex;
         var removedItems = Items.Where(item => deleted.Contains(item.Path)).ToList();

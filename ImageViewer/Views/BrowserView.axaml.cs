@@ -20,6 +20,7 @@ public partial class BrowserView : UserControl
         InitializeComponent();
         InitializeThumbnailGrid();
         InitializeSmoothScrolling();
+        WindowsIntegrationButton.IsVisible = OperatingSystem.IsWindows();
         AddHandler(InputElement.KeyDownEvent, OnRootPreviewKeyDown, RoutingStrategies.Tunnel);
         AddHandler(InputElement.PointerPressedEvent, OnRootPointerPressed, RoutingStrategies.Tunnel);
         FolderTree.SizeChanged += OnFolderTreeSizeChanged;
