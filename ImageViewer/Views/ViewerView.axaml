@@ -18,9 +18,23 @@
       </MenuFlyout>
     </Grid.ContextFlyout>
 
-    <controls:ZoomPanImage Source="{Binding Bitmap}"
-                           Rotation="{Binding Rotation}"
-                           IsVisible="{Binding IsImage}"/>
+    <Grid IsVisible="{Binding IsImage}">
+      <controls:ZoomPanImage Source="{Binding Bitmap}"
+                             Rotation="{Binding Rotation}"
+                             IsVisible="{Binding !IsImageLoading}"/>
+
+      <StackPanel HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  Spacing="10"
+                  IsHitTestVisible="False"
+                  IsVisible="{Binding IsImageLoading}">
+        <ProgressBar IsIndeterminate="True" Width="140" Height="4"/>
+        <TextBlock Text="Loading image..."
+                   HorizontalAlignment="Center"
+                   Foreground="#8fa1c0"
+                   FontSize="12"/>
+      </StackPanel>
+    </Grid>
 
     <!-- Created in code only after the first video opens. Keeping this host
          empty for images prevents native VLC initialization on startup. -->
