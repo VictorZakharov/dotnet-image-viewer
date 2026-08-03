@@ -6,7 +6,7 @@ using Avalonia.Media;
 
 namespace ImageViewer.Controls;
 
-public partial class CropSelectionOverlay : Control
+public partial class CropSelectionOverlay : Grid
 {
     private static readonly IBrush ShadeBrush = new SolidColorBrush(Color.FromArgb(170, 0, 0, 0));
     private static readonly IBrush HandleBrush = new SolidColorBrush(Color.FromRgb(74, 174, 255));
@@ -16,6 +16,7 @@ public partial class CropSelectionOverlay : Control
 
     private Size _pixelSize;
     private Rect _selection;
+    private readonly CropSelectionAdorner _adorner;
 
     public event EventHandler? SelectionChanged;
     public event EventHandler? SelectionCommitted;
@@ -27,7 +28,10 @@ public partial class CropSelectionOverlay : Control
     {
         ClipToBounds = true;
         Focusable = true;
+        Background = Brushes.Transparent;
         Cursor = new Cursor(StandardCursorType.Cross);
+        _adorner = new CropSelectionAdorner(this) { IsHitTestVisible = false };
+        Children.Add(_adorner);
     }
 
     public void Start(int pixelWidth, int pixelHeight)
@@ -48,14 +52,14 @@ public partial class CropSelectionOverlay : Control
     {
         if (!HasImage) return;
         _selection = CropSelectionMath.Round(selection, _pixelSize);
-        InvalidateVisual();
+        _adorner.InvalidateVisual();
         if (notify) SelectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public override void Render(DrawingContext context)
+    private void RenderAdorner(DrawingContext context, Rect bounds)
     {
         if (!HasImage) return;
-        var imageRect = CropSelectionMath.FitRect(Bounds, _pixelSize);
+        var imageRect = CropSelectionMath.FitRect(bounds, _pixelSize);
         var selected = CropSelectionMath.ToViewportRect(_selection, imageRect, _pixelSize);
         DrawShade(context, imageRect, selected);
         DrawSelection(context, selected);
@@ -105,4 +109,10 @@ public partial class CropSelectionOverlay : Control
         new Point(rect.Center.X, rect.Bottom),
         rect.BottomRight
     ];
+
+    private sealed class CropSelectionAdorner(CropSelectionOverlay owner) : Control
+    {
+        public override void Render(DrawingContext context) =>
+            owner.RenderAdorner(context, Bounds);
+    }
 }

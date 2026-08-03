@@ -1,10 +1,17 @@
 using Avalonia;
+using Avalonia.Controls;
 using ImageViewer.Controls;
 
 namespace ImageViewer.Tests;
 
 public sealed class CropSelectionMathTests
 {
+    [Fact]
+    public void OverlayOwnsAFullTransparentPointerSurface()
+    {
+        Assert.True(typeof(Grid).IsAssignableFrom(typeof(CropSelectionOverlay)));
+    }
+
     [Fact]
     public void FitRectCentersImageWithoutChangingAspectRatio()
     {

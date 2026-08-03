@@ -58,43 +58,79 @@
         <Style Selector="Button.viewer-tool:pointerover">
           <Setter Property="Background" Value="#304565"/>
         </Style>
+        <Style Selector="Path.viewer-tool-icon">
+          <Setter Property="Width" Value="21"/>
+          <Setter Property="Height" Value="21"/>
+          <Setter Property="Stretch" Value="Uniform"/>
+          <Setter Property="Fill" Value="Transparent"/>
+          <Setter Property="Stroke" Value="#e7eef9"/>
+          <Setter Property="StrokeThickness" Value="1.8"/>
+          <Setter Property="StrokeLineCap" Value="Round"/>
+          <Setter Property="StrokeJoin" Value="Round"/>
+        </Style>
+        <Style Selector="Button.viewer-tool:pointerover Path.viewer-tool-icon">
+          <Setter Property="Stroke" Value="#71bdff"/>
+        </Style>
       </Border.Styles>
       <StackPanel Spacing="3">
-        <Button Classes="viewer-tool" Content="↶"
+        <Button Classes="viewer-tool"
                 Command="{Binding RotateLeftCommand}"
                 AutomationProperties.Name="Rotate left 90 degrees"
-                ToolTip.Tip="Rotate left 90°"/>
-        <Button Classes="viewer-tool" Content="↷"
+                ToolTip.Tip="Rotate left 90°">
+          <Path Classes="viewer-tool-icon"
+                Data="M 8,7 L 4,7 L 4,3 M 4,7 C 6,4.5 8.7,3 12,3 C 17,3 21,7 21,12 C 21,17 17,21 12,21 C 8.4,21 5.2,19 3.7,16"/>
+        </Button>
+        <Button Classes="viewer-tool"
                 Command="{Binding RotateRightCommand}"
                 AutomationProperties.Name="Rotate right 90 degrees"
-                ToolTip.Tip="Rotate right 90°"/>
+                ToolTip.Tip="Rotate right 90°">
+          <Path Classes="viewer-tool-icon"
+                Data="M 16,7 L 20,7 L 20,3 M 20,7 C 18,4.5 15.3,3 12,3 C 7,3 3,7 3,12 C 3,17 7,21 12,21 C 15.6,21 18.8,19 20.3,16"/>
+        </Button>
         <Border Height="1" Background="#344665" Margin="4,2"/>
-        <Button Classes="viewer-tool" Content="↔" Tag="Resize"
+        <Button Classes="viewer-tool" Tag="Resize"
                 Click="OnEditImageClicked"
                 AutomationProperties.Name="Resize image"
-                ToolTip.Tip="Resize image…"/>
-        <Button Classes="viewer-tool" Content="⌗"
+                ToolTip.Tip="Resize image…">
+          <Path Classes="viewer-tool-icon"
+                Data="M 10,4 L 4,4 L 4,10 M 4,4 L 10,10 M 14,20 L 20,20 L 20,14 M 20,20 L 14,14"/>
+        </Button>
+        <Button Classes="viewer-tool"
                 Click="OnCropToolClicked"
                 AutomationProperties.Name="Crop image"
-                ToolTip.Tip="Select an area to crop"/>
-        <Button Classes="viewer-tool" Content="⇄" Tag="Convert"
+                ToolTip.Tip="Select an area to crop">
+          <Path Classes="viewer-tool-icon"
+                Data="M 5,3 L 5,17 C 5,18.1 5.9,19 7,19 L 21,19 M 3,5 L 17,5 C 18.1,5 19,5.9 19,7 L 19,21"/>
+        </Button>
+        <Button Classes="viewer-tool" Tag="Convert"
                 Click="OnEditImageClicked"
                 AutomationProperties.Name="Convert image format"
-                ToolTip.Tip="Convert image format…"/>
-        <Button Classes="viewer-tool" Content="T" Tag="Watermark"
+                ToolTip.Tip="Convert image format…">
+          <Path Classes="viewer-tool-icon"
+                Data="M 4,7 L 18,7 M 15,4 L 18,7 L 15,10 M 20,17 L 6,17 M 9,14 L 6,17 L 9,20"/>
+        </Button>
+        <Button Classes="viewer-tool" Tag="Watermark"
                 Click="OnEditImageClicked"
                 AutomationProperties.Name="Add text watermark"
-                ToolTip.Tip="Add text watermark…"/>
-        <Button Classes="viewer-tool" Content="M−" Tag="RemoveMetadata"
-                FontSize="13"
+                ToolTip.Tip="Add text watermark…">
+          <Path Classes="viewer-tool-icon"
+                Data="M 3,5 L 15,5 M 9,5 L 9,19 M 5.5,19 L 12.5,19 M 18.5,10 C 18.5,10 15.5,14.1 15.5,16.4 C 15.5,18.2 16.8,19.5 18.5,19.5 C 20.2,19.5 21.5,18.2 21.5,16.4 C 21.5,14.1 18.5,10 18.5,10 Z"/>
+        </Button>
+        <Button Classes="viewer-tool" Tag="RemoveMetadata"
                 Click="OnEditImageClicked"
                 AutomationProperties.Name="Remove image metadata"
-                ToolTip.Tip="Remove image metadata…"/>
+                ToolTip.Tip="Remove image metadata…">
+          <Path Classes="viewer-tool-icon"
+                Data="M 3,12 L 11.5,3.5 L 20,3.5 L 20,12 L 11.5,20.5 Z M 16.5,7.5 L 16.6,7.5 M 4,4 L 20,20"/>
+        </Button>
         <Border Height="1" Background="#344665" Margin="4,2"/>
-        <Button Classes="viewer-tool" Content="i"
+        <Button Classes="viewer-tool"
                 Click="OnPropertiesClicked"
                 AutomationProperties.Name="Show image properties"
-                ToolTip.Tip="Show image properties"/>
+                ToolTip.Tip="Show image properties">
+          <Path Classes="viewer-tool-icon"
+                Data="M 12,3 A 9,9 0 1 0 12,21 A 9,9 0 1 0 12,3 M 12,11 L 12,17 M 12,7 L 12,7.1"/>
+        </Button>
       </StackPanel>
     </Border>
 
