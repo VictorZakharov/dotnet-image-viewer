@@ -20,6 +20,21 @@ public partial class BrowserViewModel
     public Task EnsureDrivesLoadedAsync() =>
         _loadDrivesTask ??= LoadDrivesAsync();
 
+    public async Task RefreshFolderTreeAsync()
+    {
+        if (_loadDrivesTask is { } pendingLoad)
+        {
+            try { await pendingLoad; }
+            catch { /* the replacement load below can recover */ }
+        }
+
+        _suppressTreeSelectionLoad = true;
+        try { SelectedTreeItem = null; }
+        finally { _suppressTreeSelectionLoad = false; }
+        _loadDrivesTask = LoadDrivesAsync();
+        await _loadDrivesTask;
+    }
+
     private async Task LoadDrivesAsync()
     {
         try
@@ -124,9 +139,11 @@ public partial class BrowserViewModel
 
     public string? SelectedPath => SelectedItem?.Path;
 
-    public async Task LoadFolderAsync(string folder)
+    public Task LoadFolderAsync(string folder) => LoadFolderCoreAsync(folder, force: false);
+
+    private async Task LoadFolderCoreAsync(string folder, bool force)
     {
-        if (string.Equals(CurrentFolder, folder, StringComparison.OrdinalIgnoreCase) && Items.Count > 0)
+        if (!force && string.Equals(CurrentFolder, folder, StringComparison.OrdinalIgnoreCase) && Items.Count > 0)
         {
             _ = SyncTreeSelectionAsync(folder);
             return;

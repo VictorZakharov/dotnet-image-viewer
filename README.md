@@ -22,11 +22,13 @@ A lightweight, ACDSee-style image and video viewer for Windows. Built on .NET 10
 ### Browser mode
 - Explorer-style folder tree with drives at the root, compact rows, accurate leaf-folder chevrons, lazy-loaded subfolders, and a resizable splitter
 - Thumbnail grid with disk-cached previews (tiered up to 512 px; cache lives under `%LOCALAPPDATA%`); subfolders stay above media files and show a 2x2 image/video preview mosaic
-- The selected file or folder has a bright blue outline and check badge that remains visible over light or dark previews
+- A single selection uses a bright blue frame; multi-selection adds visible check badges. Use `Ctrl`-click to toggle items, `Shift`-click for ranges, and `Ctrl+A` to select the current filtered grid
+- Selection survives sort and filter changes, with a toolbar summary showing the selected count and aggregate media size
 - Sort by name, date, or size — click the sort buttons or press `Ctrl+1` / `Ctrl+2` / `Ctrl+3`; click again to toggle direction
 - Type any text to filter by filename — `Backspace` edits, `Esc` clears
 - Click the current path in the toolbar to edit it Explorer-style; press Enter to navigate or Esc to revert (invalid paths surface an inline error)
-- `Del` moves the selected media file to the Recycle Bin
+- Copy, cut, paste, move, and Recycle Bin delete work on every selected file and folder, with collision choices, progress/cancel, aggregate failure details, and undo for the last move or rename
+- Drag selected files and folders onto a writable folder in the tree to move them; folder tiles participate in filesystem operations while remaining excluded from viewer/EXIF-only media actions
 - Click a file title or press `F2` to rename it inline; only the stem is edited so the extension can't be lost. Enter commits, Esc cancels, click-away commits, and starting another rename commits the pending one
 - `Ctrl+wheel` resizes thumbnails (96–512 px). The cache regenerates at the new tier so larger thumbnails stay sharp; the size persists between launches
 - Mouse-wheel scrolling is velocity-sensitive in both the folder tree and media grid: small movements stay precise while rapid input travels farther and decelerates smoothly. Fractional precision input keeps its native platform behavior
@@ -112,6 +114,14 @@ The Explorer action launches a separate ImageViewer process and hands the contai
 | Viewer  | double-click              | Fit ↔ 100%                                        |
 | Browser | `Del`                     | Move to Recycle Bin                               |
 | Browser | `F2` / click file title   | Rename selected file (Enter commits, Esc cancels) |
+| Browser | `Ctrl`-click              | Toggle an item in the selection                   |
+| Browser | `Shift`-click             | Select a range from the stable anchor             |
+| Browser | `Ctrl+A`                  | Select every item in the filtered grid            |
+| Browser | `Ctrl+C` / `Ctrl+X`       | Copy / cut selected files and folders             |
+| Browser | `Ctrl+V`                  | Paste files and folders into the current folder   |
+| Browser | `Ctrl+Z`                  | Undo the last move or rename                      |
+| Browser | `Ctrl+Space`              | Toggle the keyboard-focused item                  |
+| Browser | `Shift` + navigation      | Extend the keyboard selection                     |
 | Browser | `Ctrl` + wheel            | Resize thumbnails                                 |
 | Browser | `Backspace`               | Edit filter text                                  |
 | Browser | `Ctrl+1` `Ctrl+2` `Ctrl+3`| Sort by name / date / size                        |
@@ -146,6 +156,7 @@ ImageViewer\
 │                           single-instance pipe server
 ├── ViewModels\             MainWindow, Viewer, Browser, ThumbnailItem, FolderTreeItem
 └── Views\                  MainWindow + ViewerView + BrowserView
+ImageViewer.Tests\          Selection and safe file-operation tests
 ```
 
 ## Roadmap

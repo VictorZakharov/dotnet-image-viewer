@@ -87,6 +87,7 @@ public partial class BrowserView : UserControl
         if (_vm is not null)
         {
             _vm.TreeNodeFocused -= OnTreeNodeFocused;
+            DetachFileManagement(_vm);
             DetachSmoothScrolling(_vm);
             DetachThumbnailGrid(_vm);
         }
@@ -94,6 +95,7 @@ public partial class BrowserView : UserControl
         if (_vm is not null)
         {
             _vm.TreeNodeFocused += OnTreeNodeFocused;
+            AttachFileManagement(_vm);
             AttachSmoothScrolling(_vm);
             AttachThumbnailGrid(_vm);
         }

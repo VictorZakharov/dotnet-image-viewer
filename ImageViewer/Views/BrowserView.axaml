@@ -64,6 +64,17 @@
           <TextBlock Text="{Binding ItemsSummary}" Foreground="#8fa1c0" FontSize="12"
                      VerticalAlignment="Center"
                      IsVisible="{Binding HasFolder}"/>
+          <Border Background="#173b5f"
+                  BorderBrush="#67b7ff"
+                  BorderThickness="1"
+                  CornerRadius="3"
+                  Padding="7,2"
+                  IsVisible="{Binding HasSelection}">
+            <TextBlock Text="{Binding SelectionSummary}"
+                       AutomationProperties.Name="{Binding SelectionSummary}"
+                       Foreground="#d8edff"
+                       FontSize="11"/>
+          </Border>
           <Border Width="1" Height="20" Background="#2a3858" Margin="6,0"
                   IsVisible="{Binding HasFilter}"/>
           <TextBlock Text="Filter:" Foreground="#8fa1c0" FontSize="12"
@@ -98,6 +109,34 @@
       </Grid>
     </Border>
 
+    <Border DockPanel.Dock="Top" Background="#121c32" Height="36"
+            BorderBrush="#243049" BorderThickness="0,0,0,1"
+            IsVisible="{Binding HasFolder}">
+      <Grid Margin="14,0" ColumnDefinitions="Auto,*">
+        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+          <Button Content="Copy" Command="{Binding CopyFilesCommand}"
+                  IsEnabled="{Binding HasSelectedItems}" Padding="10,3"/>
+          <Button Content="Cut" Command="{Binding CutFilesCommand}"
+                  IsEnabled="{Binding HasSelectedItems}" Padding="10,3"/>
+          <Button Content="Paste" Command="{Binding PasteFilesCommand}" Padding="10,3"/>
+          <Button Content="Move..." Command="{Binding MoveFilesCommand}"
+                  IsEnabled="{Binding HasSelectedItems}" Padding="10,3"/>
+          <Button Content="Delete" Command="{Binding DeleteSelectedCommand}"
+                  IsEnabled="{Binding HasSelectedItems}" Padding="10,3"/>
+          <Button Content="{Binding UndoFileOperationLabel}"
+                  Command="{Binding UndoFileOperationCommand}"
+                  IsEnabled="{Binding CanUndoFileOperation}" Padding="10,3"/>
+        </StackPanel>
+        <TextBlock Grid.Column="1" Text="{Binding FileOperationStatus}"
+                   AutomationProperties.Name="{Binding FileOperationStatus}"
+                   Foreground="#8fa1c0" FontSize="11"
+                   VerticalAlignment="Center" HorizontalAlignment="Right"
+                   TextAlignment="Right" Margin="12,0,0,0"
+                   TextTrimming="CharacterEllipsis"
+                   MaxWidth="430"/>
+      </Grid>
+    </Border>
+
     <!-- Body: tree pane | splitter | thumbnails | EXIF pane (right, optional) -->
     <DockPanel>
       <views:BrowserPropertiesPane DockPanel.Dock="Right"/>
@@ -115,6 +154,9 @@
           <TreeView x:Name="FolderTree"
                     AutomationProperties.Name="Folder tree"
                     AutomationProperties.AutomationId="FolderTree"
+                    DragDrop.AllowDrop="True"
+                    DragDrop.DragOver="OnFolderTreeDragOver"
+                    DragDrop.Drop="OnFolderTreeDrop"
                     ItemsSource="{Binding DriveTree}"
                     SelectedItem="{Binding SelectedTreeItem, Mode=TwoWay}"
                     ScrollViewer.IsScrollInertiaEnabled="{Binding IsSmoothScrollingActive}"
@@ -184,22 +226,27 @@
                         BorderThickness="1"
                         CornerRadius="4"
                         Classes.selected="{Binding IsSelected}"
-                        PointerPressed="OnThumbnailPressed">
+                        PointerPressed="OnThumbnailPressed"
+                        PointerMoved="OnThumbnailPointerMoved"
+                        PointerReleased="OnThumbnailPointerReleased">
                   <Border.Styles>
                     <Style Selector="Border:pointerover">
                       <Setter Property="Background" Value="#243049"/>
                     </Style>
                     <Style Selector="Border.selected">
                       <Setter Property="Background" Value="#29496f"/>
-                      <Setter Property="BorderBrush" Value="#67b7ff"/>
-                      <Setter Property="BorderThickness" Value="3"/>
                     </Style>
                   </Border.Styles>
                   <Border.ContextFlyout>
                     <MenuFlyout>
                       <MenuItem Header="Properties"
-                                Click="OnThumbPropertiesClicked"
-                                IsVisible="{Binding IsFile}"/>
+                                 Click="OnThumbPropertiesClicked"
+                                 IsVisible="{Binding IsFile}"/>
+                      <Separator IsVisible="{Binding IsFile}"/>
+                      <MenuItem Header="Copy" Click="OnCopyFilesClicked"/>
+                      <MenuItem Header="Cut" Click="OnCutFilesClicked"/>
+                      <MenuItem Header="Move..." Click="OnMoveFilesClicked"/>
+                      <MenuItem Header="Delete" Click="OnDeleteFilesClicked"/>
                     </MenuFlyout>
                   </Border.ContextFlyout>
                   <Grid>
@@ -339,6 +386,13 @@
                         </Border>
                       </Grid>
                     </DockPanel>
+                    <!-- Explicit overlay stays visible over both bright and dark thumbnails. -->
+                    <Border BorderBrush="#21b6ff"
+                            BorderThickness="5"
+                            CornerRadius="4"
+                            IsHitTestVisible="False"
+                            IsVisible="{Binding IsSelected}"
+                            ZIndex="10"/>
                     <!-- Folder badge -->
                     <Border HorizontalAlignment="Left" VerticalAlignment="Top"
                             Margin="8,8,0,0"
@@ -375,7 +429,8 @@
                             BorderThickness="1"
                             CornerRadius="12"
                             IsHitTestVisible="False"
-                            IsVisible="{Binding IsSelected}">
+                            IsVisible="{Binding ShowSelectionCheckmark}"
+                            ZIndex="20">
                       <TextBlock Text="&#x2713;"
                                  Foreground="#07101f"
                                  FontSize="14"

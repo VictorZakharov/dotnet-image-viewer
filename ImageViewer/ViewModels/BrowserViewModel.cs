@@ -252,15 +252,9 @@ public partial class BrowserViewModel : ObservableObject, IDisposable
 
     private void ResortItems()
     {
-        var current = SelectedPath;
         var sorted = ApplySortToItems(Items);
         Items.ReplaceAll(sorted);
         ApplyFilter();
-        if (current is not null)
-        {
-            var idx = FilteredItems.ToList().FindIndex(i => i.Path == current);
-            if (idx >= 0) SelectIndex(idx);
-        }
     }
 
     partial void OnFilterTextChanged(string value)
@@ -270,7 +264,7 @@ public partial class BrowserViewModel : ObservableObject, IDisposable
 
     private void ApplyFilter()
     {
-        var current = SelectedPath;
+        var focusedItem = SelectedItem;
         ResetThumbnailRequests();
         var f = FilterText?.Trim() ?? "";
         var matches = Items.Where(item =>
@@ -278,17 +272,7 @@ public partial class BrowserViewModel : ObservableObject, IDisposable
             || Path.GetFileName(item.Path).Contains(f, StringComparison.OrdinalIgnoreCase));
         FilteredItems.ReplaceAll(matches);
         UpdateItemsSummary();
-        var newIndex = -1;
-        if (current is not null)
-        {
-            var idx = FilteredItems.ToList().FindIndex(i => i.Path == current);
-            newIndex = idx >= 0 ? idx : (FilteredItems.Count > 0 ? 0 : -1);
-        }
-        else if (FilteredItems.Count > 0)
-        {
-            newIndex = Math.Clamp(SelectedIndex, 0, FilteredItems.Count - 1);
-        }
-        SelectIndex(newIndex);
+        PreserveSelectionAfterCollectionChange(focusedItem);
 
         ThumbnailRequestsInvalidated?.Invoke();
     }
@@ -325,28 +309,6 @@ public partial class BrowserViewModel : ObservableObject, IDisposable
     public void ResizeThumbnailsBy(int delta)
     {
         ThumbnailWidth = Math.Clamp(ThumbnailWidth + delta, MinThumbnailSize, MaxThumbnailSize);
-    }
-
-    [RelayCommand]
-    private void DeleteSelected()
-    {
-        var selected = SelectedItem;
-        if (selected is null || selected.IsFolder) return;
-        var path = selected.Path;
-        if (!FileOperations.DeleteToRecycleBin(path)) return;
-
-        var item = FilteredItems[SelectedIndex];
-        int oldIndex = SelectedIndex;
-        SelectIndex(-1);
-        Items.Remove(item);
-        FilteredItems.RemoveAt(oldIndex);
-        item.Dispose();
-        ResetThumbnailRequests();
-        SelectIndex(FilteredItems.Count == 0
-            ? -1
-            : Math.Min(oldIndex, FilteredItems.Count - 1));
-        UpdateItemsSummary();
-        ThumbnailRequestsInvalidated?.Invoke();
     }
 
     public void Dispose()
