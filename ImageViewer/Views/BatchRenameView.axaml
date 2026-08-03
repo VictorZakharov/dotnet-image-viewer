@@ -1,0 +1,132 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="using:ImageViewer.Models"
+             x:Class="ImageViewer.Views.BatchRenameView"
+             x:CompileBindings="True"
+             Background="#0f1729">
+  <Grid ColumnDefinitions="350,*" ColumnSpacing="14">
+    <Border Background="#141f36" CornerRadius="6" Padding="16">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="12">
+          <TextBlock Text="Rename recipe" Foreground="#f3f7ff"
+                     FontSize="16" FontWeight="SemiBold"/>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Template" Foreground="#b3c1dd" FontSize="12"/>
+            <TextBox x:Name="TemplateBox" Text="{}{name}_{counter}"
+                     TextChanged="OnOptionsChanged"/>
+            <WrapPanel Orientation="Horizontal">
+              <Button Content="Name" Tag="{}{name}" Click="OnInsertToken" Margin="0,0,5,5" Padding="8,3"/>
+              <Button Content="Counter" Tag="{}{counter}" Click="OnInsertToken" Margin="0,0,5,5" Padding="8,3"/>
+              <Button Content="Created" Tag="{}{created:yyyyMMdd}" Click="OnInsertToken" Margin="0,0,5,5" Padding="8,3"/>
+              <Button Content="Modified" Tag="{}{modified:yyyyMMdd}" Click="OnInsertToken" Margin="0,0,5,5" Padding="8,3"/>
+              <Button Content="Taken" Tag="{}{taken:yyyyMMdd}" Click="OnInsertToken" Margin="0,0,5,5" Padding="8,3"/>
+              <Button Content="Camera" Tag="{}{camera}" Click="OnInsertToken" Margin="0,0,5,5" Padding="8,3"/>
+              <Button Content="Model" Tag="{}{model}" Click="OnInsertToken" Margin="0,0,5,5" Padding="8,3"/>
+              <Button Content="Lens" Tag="{}{lens}" Click="OnInsertToken" Margin="0,0,5,5" Padding="8,3"/>
+            </WrapPanel>
+            <TextBlock Text="Use {{ and }} for literal braces. File extensions are retained."
+                       Foreground="#7185a5" FontSize="10" TextWrapping="Wrap"/>
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Search" Foreground="#b3c1dd" FontSize="11"/>
+              <TextBox x:Name="SearchBox" TextChanged="OnOptionsChanged"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="4">
+              <TextBlock Text="Replace" Foreground="#b3c1dd" FontSize="11"/>
+              <TextBox x:Name="ReplaceBox" TextChanged="OnOptionsChanged"/>
+            </StackPanel>
+          </Grid>
+          <CheckBox x:Name="MatchCaseCheck" Content="Match search case"
+                    Click="OnOptionsChanged" FontSize="11"/>
+
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Letter case" Foreground="#b3c1dd" FontSize="11"/>
+              <ComboBox x:Name="CaseCombo" SelectionChanged="OnOptionsChanged" SelectedIndex="0">
+                <ComboBoxItem Content="Unchanged"/>
+                <ComboBoxItem Content="lowercase"/>
+                <ComboBoxItem Content="UPPERCASE"/>
+                <ComboBoxItem Content="Title Case"/>
+              </ComboBox>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="4">
+              <TextBlock Text="Start" Foreground="#b3c1dd" FontSize="11"/>
+              <NumericUpDown x:Name="CounterStartBox" Value="1" Minimum="0" Maximum="999999999"
+                             Width="85" ValueChanged="OnOptionsChanged"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Spacing="4">
+              <TextBlock Text="Padding" Foreground="#b3c1dd" FontSize="11"/>
+              <NumericUpDown x:Name="CounterPaddingBox" Value="3" Minimum="1" Maximum="12"
+                             Width="70" ValueChanged="OnOptionsChanged"/>
+            </StackPanel>
+          </Grid>
+
+          <Border Height="1" Background="#2a3858" Margin="0,4"/>
+          <TextBlock Text="Saved presets" Foreground="#f3f7ff" FontWeight="SemiBold"/>
+          <ComboBox x:Name="PresetCombo" SelectionChanged="OnPresetSelected"
+                    PlaceholderText="Choose a preset"/>
+          <TextBox x:Name="PresetNameBox" PlaceholderText="Preset name"/>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Button Content="Save" Click="OnSavePreset" Padding="12,4"/>
+            <Button Content="Remove" Click="OnRemovePreset" Padding="12,4"/>
+          </StackPanel>
+
+          <Border Background="#36202a" BorderBrush="#b65468" BorderThickness="1"
+                  CornerRadius="5" Padding="10" Margin="0,6,0,0">
+            <TextBlock Text="Batch rename changes the original file and folder paths. You will see a final confirmation before anything moves."
+                       Foreground="#ffd5dc" FontSize="11" TextWrapping="Wrap"/>
+          </Border>
+          <Button x:Name="ApplyRenameButton" Content="Rename ready items..."
+                  Click="OnApplyRename" IsEnabled="False"
+                  HorizontalAlignment="Stretch" Padding="16,8"/>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+    <Border Grid.Column="1" Background="#111a2d" CornerRadius="6" Padding="14">
+      <Grid RowDefinitions="Auto,Auto,*" RowSpacing="9">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Spacing="3">
+            <TextBlock Text="Complete rename preview" Foreground="#f3f7ff"
+                       FontSize="16" FontWeight="SemiBold"/>
+            <TextBlock x:Name="PreviewStatusText" Foreground="#8fb8eb" FontSize="11"/>
+          </StackPanel>
+          <ProgressBar x:Name="PreviewProgress" Grid.Column="1" Width="120" Height="6"
+                       IsIndeterminate="True" IsVisible="False" VerticalAlignment="Center"/>
+        </Grid>
+        <Grid Grid.Row="1" ColumnDefinitions="28,*,*,100" Margin="8,0,8,2">
+          <TextBlock Text=""/>
+          <TextBlock Grid.Column="1" Text="Current name" Foreground="#7185a5" FontSize="10"/>
+          <TextBlock Grid.Column="2" Text="Generated name" Foreground="#7185a5" FontSize="10"/>
+          <TextBlock Grid.Column="3" Text="Validation" Foreground="#7185a5" FontSize="10"/>
+        </Grid>
+        <ListBox x:Name="PreviewList" Grid.Row="2" Background="#0a0f1c"
+                 BorderThickness="0">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="models:BatchPreviewItem">
+              <Border BorderBrush="#243049" BorderThickness="0,0,0,1" Padding="8,7">
+                <Grid ColumnDefinitions="28,*,*,100" RowDefinitions="Auto,Auto">
+                  <TextBlock Text="→" Foreground="#67b7ff" FontSize="14"/>
+                  <TextBlock Grid.Column="1" Text="{Binding SourceName}" Foreground="#dce7f7"
+                             TextTrimming="CharacterEllipsis" Margin="0,0,10,0"/>
+                  <TextBlock Grid.Column="2" Text="{Binding TargetName}" Foreground="#d8edff"
+                             TextTrimming="CharacterEllipsis" Margin="0,0,10,0"/>
+                  <TextBlock Grid.Column="3" Text="{Binding StatusLabel}" Foreground="#e8c786"
+                             FontWeight="SemiBold" FontSize="11"/>
+                  <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                             Text="{Binding SourceFolder}" Foreground="#5f7494" FontSize="9"
+                             TextTrimming="CharacterEllipsis" Margin="0,2,10,0"/>
+                  <TextBlock Grid.Row="1" Grid.Column="3" Text="{Binding Message}"
+                             Foreground="#8fa1c0" FontSize="9" TextWrapping="Wrap"/>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

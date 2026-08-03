@@ -52,6 +52,7 @@ published `.sha256` file before running it.
 - Copy, cut, paste, move, and Trash/Recycle Bin delete work on every selected file and folder, with collision choices, progress/cancel, aggregate failure details, and undo for the last move or rename
 - Drag selected files and folders onto a writable folder in the tree to move them; folder tiles participate in filesystem operations while remaining excluded from viewer/EXIF-only media actions
 - Click a file title or press `F2` to rename it inline; only the stem is edited so the extension can't be lost. Enter commits, Esc cancels, click-away commits, and starting another rename commits the pending one
+- Select files or folders and choose **Batch...** to preview template-based renames or an ordered image-processing recipe before any path or output changes
 - `Ctrl+wheel` resizes thumbnails (96–512 px). The cache regenerates at the new tier so larger thumbnails stay sharp; the size persists between launches
 - Mouse-wheel scrolling is velocity-sensitive in both the folder tree and media grid: small movements stay precise while rapid input travels farther and decelerates smoothly. Fractional precision input keeps its native platform behavior
 - The **Smooth** toolbar toggle disables animated scrolling for both panes and persists between launches; Windows' reduced-motion preference overrides it on Windows
@@ -160,6 +161,48 @@ Select 2–4 images in the browser and choose **Compare...**, or use **Compare 2
 Each cell loads a cached preview first and decodes full resolution in the background, with at most two full-resolution decodes at once. The active cell has a bright frame. **Synchronized** zoom and pan keep the same normalized image region centered even when dimensions differ; turn it off for independent inspection. **Fit**, **100%**, and two-image **Blink / alternate** are available from the toolbar and keyboard. Dimensions, size, date taken, camera, lens, and exposure stay aligned under each image, with differences highlighted.
 
 Pick, Reject, and **Keep this; reject others** are comparison-session review marks. Returning to the browser or duplicate finder updates visible badges immediately, and rejected duplicate candidates become a reviewable deletion selection. Review marks are not written to media metadata. Rejected-file deletion always uses the existing confirmation, progress, and platform Trash/Recycle Bin workflow.
+
+## Batch tools
+
+Select one or more grid items and choose **Batch...**. Rename recipes accept literal
+text plus `{name}`, `{counter}`, `{created}`, `{modified}`, `{taken}`, `{camera}`,
+`{make}`, `{model}`, and `{lens}`. Date tokens accept .NET-style formats such as
+`{taken:yyyyMMdd}`; counter width, search/replace, case conversion, and named
+presets are configurable. Extensions are retained. The complete old-name to
+new-name preview blocks missing metadata, invalid names, duplicate outputs,
+existing-file collisions, and unsafe nested folder selections. Confirmed
+renames stage each directory to unique temporary names, so swaps and cycles
+commit together or roll back together.
+
+Image recipes can order resize, format conversion, 90-degree rotation, crop,
+text watermark, and metadata-cleanup steps. The default destination is a new
+`Processed` folder and retains every original. Output beside originals and
+replace-original modes are available, with Skip, Replace, or Auto-rename
+collision policies; every destructive policy gets an explicit final warning.
+RAW inputs require conversion to JPEG, PNG, WebP, or TIFF. Animated/multi-frame
+GIF and ICO processing is rejected in preview rather than silently flattening
+frames. Lossless JPEG rotation is available when `jpegtran` is on `PATH`,
+rotation is the only enabled operation, and the source EXIF orientation is
+already normalized; otherwise preview explains that the requested lossless
+operation is unsupported.
+
+Regular processing normalizes EXIF orientation before the ordered recipe, so
+the output pixels have the intended display orientation. The separately
+validated lossless-JPEG path requires orientation to be normalized already.
+With cleanup disabled,
+Magick.NET passes compatible EXIF, XMP, IPTC, comments, and ICC data to the
+selected encoder; a destination format can still omit metadata it cannot
+represent. **Remove EXIF, XMP, and IPTC** retains other profiles. **Remove all**
+strips profiles and comments, with a separate option to restore the ICC color
+profile. Created, modified, and accessed file dates are restored when requested
+and supported by the destination file system. Transparent images converted to
+JPEG are composited on white.
+
+Image work runs off the UI thread with 1–8 bounded workers. Every output is
+written and closed as a temporary sibling before its atomic commit. Canceling
+stops new work, removes incomplete temporary files, retains valid completed
+outputs, and reports failures plus files that were not started. Rename and
+processing presets are stored in the platform local application-data directory.
 
 ## Duplicate finder
 

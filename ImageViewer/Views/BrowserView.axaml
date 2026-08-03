@@ -128,6 +128,10 @@
           <Button Content="Paste" Command="{Binding PasteFilesCommand}" Padding="10,3"/>
           <Button Content="Move..." Command="{Binding MoveFilesCommand}"
                   IsEnabled="{Binding HasSelectedItems}" Padding="10,3"/>
+          <Button Content="Batch..." Click="OnBatchToolsClicked"
+                  AutomationProperties.Name="Batch rename and image processing"
+                  ToolTip.Tip="Preview batch rename and image-processing changes"
+                  IsEnabled="{Binding HasSelectedItems}" Padding="10,3"/>
           <Button Content="Compare..." Click="OnCompareSelectedClicked"
                   AutomationProperties.Name="Compare selected images"
                   ToolTip.Tip="Compare 2–4 selected images"
@@ -259,6 +263,7 @@
                       <MenuItem Header="Copy" Click="OnCopyFilesClicked"/>
                       <MenuItem Header="Cut" Click="OnCutFilesClicked"/>
                       <MenuItem Header="Move..." Click="OnMoveFilesClicked"/>
+                      <MenuItem Header="Batch tools..." Click="OnBatchToolsClicked"/>
                       <MenuItem Header="Delete" Click="OnDeleteFilesClicked"/>
                     </MenuFlyout>
                   </Border.ContextFlyout>

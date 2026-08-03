@@ -1,0 +1,141 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="using:ImageViewer.Models"
+             x:Class="ImageViewer.Views.BatchOperationEditor"
+             x:CompileBindings="True">
+  <StackPanel Spacing="9">
+    <Grid ColumnDefinitions="*,Auto,Auto">
+      <TextBlock Text="Ordered operations" Foreground="#f3f7ff"
+                 FontWeight="SemiBold" VerticalAlignment="Center"/>
+      <Button Grid.Column="1" Content="↑" Click="OnMoveUp" Padding="10,3"
+              ToolTip.Tip="Move selected operation earlier"/>
+      <Button Grid.Column="2" Content="↓" Click="OnMoveDown" Padding="10,3" Margin="5,0,0,0"
+              ToolTip.Tip="Move selected operation later"/>
+    </Grid>
+    <ListBox x:Name="OperationList" Height="150" Background="#0a0f1c">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="models:BatchProcessOperation">
+          <CheckBox Content="{Binding DisplayName}" IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                    Click="OnOperationEnabledChanged" Padding="6,4"/>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+    <Expander Header="Resize settings" IsExpanded="True">
+      <StackPanel Spacing="7" Margin="8">
+        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="7">
+          <StackPanel Spacing="3">
+            <TextBlock Text="Width" Foreground="#8fa1c0" FontSize="10"/>
+            <NumericUpDown x:Name="ResizeWidthBox" Value="1920" Minimum="1" Maximum="100000"
+                           ValueChanged="OnSettingsChanged"/>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="3">
+            <TextBlock Text="Height" Foreground="#8fa1c0" FontSize="10"/>
+            <NumericUpDown x:Name="ResizeHeightBox" Value="1080" Minimum="1" Maximum="100000"
+                           ValueChanged="OnSettingsChanged"/>
+          </StackPanel>
+          <StackPanel Grid.Column="2" Spacing="3">
+            <TextBlock Text="Mode" Foreground="#8fa1c0" FontSize="10"/>
+            <ComboBox x:Name="ResizeModeCombo" SelectedIndex="0" SelectionChanged="OnSettingsChanged">
+              <ComboBoxItem Content="Fit"/>
+              <ComboBoxItem Content="Exact"/>
+            </ComboBox>
+          </StackPanel>
+        </Grid>
+        <CheckBox x:Name="AllowUpscaleCheck" Content="Allow enlargement"
+                  Click="OnSettingsChanged" FontSize="11"/>
+      </StackPanel>
+    </Expander>
+
+    <Expander Header="Format conversion settings">
+      <Grid Margin="8" ColumnDefinitions="Auto,*" ColumnSpacing="10">
+        <TextBlock Text="Output format" Foreground="#8fa1c0" VerticalAlignment="Center"/>
+        <ComboBox x:Name="FormatCombo" Grid.Column="1" SelectedIndex="1"
+                  SelectionChanged="OnSettingsChanged">
+          <ComboBoxItem Content="Keep original"/>
+          <ComboBoxItem Content="JPEG"/>
+          <ComboBoxItem Content="PNG"/>
+          <ComboBoxItem Content="WebP"/>
+          <ComboBoxItem Content="TIFF"/>
+        </ComboBox>
+      </Grid>
+    </Expander>
+
+    <Expander Header="Rotation settings">
+      <StackPanel Margin="8" Spacing="7">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+          <TextBlock Text="Clockwise" Foreground="#8fa1c0" VerticalAlignment="Center"/>
+          <ComboBox x:Name="RotationCombo" Grid.Column="1" SelectedIndex="0"
+                    SelectionChanged="OnSettingsChanged">
+            <ComboBoxItem Content="90°"/>
+            <ComboBoxItem Content="180°"/>
+            <ComboBoxItem Content="270°"/>
+          </ComboBox>
+        </Grid>
+        <CheckBox x:Name="LosslessJpegCheck" Content="Require lossless JPEG rotation"
+                  Click="OnSettingsChanged"
+                  ToolTip.Tip="Requires jpegtran on PATH and rotation as the only enabled operation"/>
+      </StackPanel>
+    </Expander>
+
+    <Expander Header="Crop settings">
+      <Grid Margin="8" ColumnDefinitions="*,*,*,*" ColumnSpacing="6">
+        <StackPanel Spacing="3">
+          <TextBlock Text="X" Foreground="#8fa1c0" FontSize="10"/>
+          <NumericUpDown x:Name="CropXBox" Value="0" Minimum="0" Maximum="100000"
+                         ValueChanged="OnSettingsChanged"/>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Spacing="3">
+          <TextBlock Text="Y" Foreground="#8fa1c0" FontSize="10"/>
+          <NumericUpDown x:Name="CropYBox" Value="0" Minimum="0" Maximum="100000"
+                         ValueChanged="OnSettingsChanged"/>
+        </StackPanel>
+        <StackPanel Grid.Column="2" Spacing="3">
+          <TextBlock Text="Width" Foreground="#8fa1c0" FontSize="10"/>
+          <NumericUpDown x:Name="CropWidthBox" Value="1000" Minimum="1" Maximum="100000"
+                         ValueChanged="OnSettingsChanged"/>
+        </StackPanel>
+        <StackPanel Grid.Column="3" Spacing="3">
+          <TextBlock Text="Height" Foreground="#8fa1c0" FontSize="10"/>
+          <NumericUpDown x:Name="CropHeightBox" Value="1000" Minimum="1" Maximum="100000"
+                         ValueChanged="OnSettingsChanged"/>
+        </StackPanel>
+      </Grid>
+    </Expander>
+
+    <Expander Header="Watermark settings">
+      <StackPanel Margin="8" Spacing="7">
+        <TextBox x:Name="WatermarkTextBox" PlaceholderText="Watermark text"
+                 TextChanged="OnSettingsChanged"/>
+        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="7">
+          <ComboBox x:Name="WatermarkPositionCombo" SelectedIndex="4"
+                    SelectionChanged="OnSettingsChanged">
+            <ComboBoxItem Content="Top left"/>
+            <ComboBoxItem Content="Top right"/>
+            <ComboBoxItem Content="Center"/>
+            <ComboBoxItem Content="Bottom left"/>
+            <ComboBoxItem Content="Bottom right"/>
+          </ComboBox>
+          <NumericUpDown x:Name="WatermarkSizeBox" Grid.Column="1" Width="80"
+                         Value="32" Minimum="6" Maximum="300" ValueChanged="OnSettingsChanged"
+                         ToolTip.Tip="Point size"/>
+          <NumericUpDown x:Name="WatermarkOpacityBox" Grid.Column="2" Width="80"
+                         Value="70" Minimum="1" Maximum="100" ValueChanged="OnSettingsChanged"
+                         ToolTip.Tip="Opacity percent"/>
+        </Grid>
+      </StackPanel>
+    </Expander>
+
+    <Expander Header="Metadata cleanup settings">
+      <StackPanel Margin="8" Spacing="6">
+        <ComboBox x:Name="MetadataModeCombo" SelectedIndex="0"
+                  SelectionChanged="OnSettingsChanged">
+          <ComboBoxItem Content="Remove EXIF, XMP, and IPTC"/>
+          <ComboBoxItem Content="Remove all profiles and comments"/>
+        </ComboBox>
+        <TextBlock Text="Auto-orientation is normalized before ordered operations. ICC handling is controlled in Output."
+                   Foreground="#7185a5" FontSize="10" TextWrapping="Wrap"/>
+      </StackPanel>
+    </Expander>
+  </StackPanel>
+</UserControl>
