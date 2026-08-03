@@ -26,9 +26,6 @@ public partial class ImageCompareWindow
         try
         {
             await Task.WhenAll(_viewModel.Candidates.Select(LoadCandidateAsync));
-            if (!_resourcesReleased)
-                _viewModel.StatusText =
-                    "Full-resolution images loaded. Different metadata values are highlighted.";
         }
         catch (OperationCanceledException) { }
         finally
@@ -57,7 +54,7 @@ public partial class ImageCompareWindow
             if (preview is not null)
             {
                 if (IsCandidateCurrent(candidate, cancellation))
-                    candidate.ReplaceBitmap(preview, isFullResolution: false);
+                    candidate.ReplaceBitmap(preview);
                 else
                     preview.Dispose();
             }
@@ -71,7 +68,7 @@ public partial class ImageCompareWindow
                     loaded.Bitmap.Dispose();
                     return;
                 }
-                candidate.ReplaceBitmap(loaded.Bitmap, isFullResolution: true);
+                candidate.ReplaceBitmap(loaded.Bitmap);
                 candidate.Rotation = loaded.OrientationBaked
                     ? 0
                     : candidate.Metadata.OrientationRotation;

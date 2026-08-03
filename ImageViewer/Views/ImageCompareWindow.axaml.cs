@@ -54,20 +54,8 @@ public partial class ImageCompareWindow : Window
         _viewModel.KeepActiveRejectOthers();
     }
 
-    private void OnPickActive(object? sender, RoutedEventArgs e) => _viewModel.TogglePick();
-    private void OnRejectActive(object? sender, RoutedEventArgs e) => _viewModel.ToggleReject();
-    private void OnKeepActive(object? sender, RoutedEventArgs e) =>
-        _viewModel.KeepActiveRejectOthers();
-
-    private void OnSetRating(object? sender, RoutedEventArgs e)
-    {
-        if (sender is Button { Tag: { } tag } && int.TryParse(tag.ToString(), out var rating))
-            _viewModel.SetRating(rating);
-    }
-
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
     {
-        if (HandleRatingKey(e.Key)) { e.Handled = true; return; }
         switch (e.Key)
         {
             case Key.Left: _viewModel.MoveActive(-1); break;
@@ -86,23 +74,6 @@ public partial class ImageCompareWindow : Window
             default: return;
         }
         e.Handled = true;
-    }
-
-    private bool HandleRatingKey(Key key)
-    {
-        var rating = key switch
-        {
-            Key.D0 or Key.NumPad0 => 0,
-            Key.D1 or Key.NumPad1 => 1,
-            Key.D2 or Key.NumPad2 => 2,
-            Key.D3 or Key.NumPad3 => 3,
-            Key.D4 or Key.NumPad4 => 4,
-            Key.D5 or Key.NumPad5 => 5,
-            _ => -1
-        };
-        if (rating < 0) return false;
-        _viewModel.SetRating(rating);
-        return true;
     }
 
     private void OnClose(object? sender, RoutedEventArgs e) => Close();

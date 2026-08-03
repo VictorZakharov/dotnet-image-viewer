@@ -10,9 +10,9 @@
         Width="1320" Height="800" MinWidth="900" MinHeight="620"
         WindowStartupLocation="CenterOwner"
         Background="#080e1a">
-  <Grid RowDefinitions="Auto,Auto,*,Auto">
+  <Grid RowDefinitions="Auto,*">
     <Border Background="#18243d" Padding="16,10">
-      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
         <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
           <TextBlock Text="Compare images" Foreground="#f3f7ff"
                      FontSize="19" FontWeight="SemiBold"/>
@@ -21,9 +21,15 @@
           <TextBlock Text="Active:" Foreground="#6f86aa" Margin="12,0,0,0"
                      VerticalAlignment="Center"/>
           <TextBlock Text="{Binding ActiveCandidate.FileName}" Foreground="#dce8f9"
-                     FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                     FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"
+                     MaxWidth="110" TextTrimming="CharacterEllipsis"/>
         </StackPanel>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7">
+        <TextBlock Grid.Column="1"
+                   Text="←/→ active · wheel zoom · drag pan · F fit · A 100% · B blink · P/X pick/reject"
+                   Foreground="#7388aa" FontSize="8" VerticalAlignment="Center"
+                   HorizontalAlignment="Right" TextTrimming="CharacterEllipsis"/>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="7"
+                    VerticalAlignment="Center">
           <ToggleButton x:Name="SyncToggle" Content="Synchronized"
                         IsChecked="{Binding IsSynchronized, Mode=TwoWay}"
                         Click="OnSynchronizationChanged" Padding="11,5"/>
@@ -33,37 +39,14 @@
                   IsEnabled="{Binding CanBlink}" Click="OnBlink" Padding="12,5"/>
           <Button Content="Exit blink" IsVisible="{Binding IsBlinking}"
                   Click="OnExitBlink" Padding="10,5"/>
+          <Button Content="Recycle rejected..."
+                  IsEnabled="{Binding HasRejected}" Click="OnDeleteRejected" Padding="11,5"/>
+          <Button Content="Close" Click="OnClose" Padding="12,5"/>
         </StackPanel>
       </Grid>
     </Border>
 
-    <Border Grid.Row="1" Background="#111a2d" Padding="16,7"
-            BorderBrush="#2a3858" BorderThickness="0,0,0,1">
-      <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="7">
-        <Button Content="Pick" Click="OnPickActive" Padding="12,5"/>
-        <Button Grid.Column="1" Content="Reject" Click="OnRejectActive" Padding="12,5"/>
-        <Button Grid.Column="2" Content="Keep active, reject others"
-                Click="OnKeepActive" Padding="13,5"/>
-        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="3" Margin="10,0,0,0">
-          <TextBlock Text="Rating:" Foreground="#8fa1c0" VerticalAlignment="Center"/>
-          <Button Content="0" Tag="0" Click="OnSetRating" Padding="7,4"/>
-          <Button Content="1" Tag="1" Click="OnSetRating" Padding="7,4"/>
-          <Button Content="2" Tag="2" Click="OnSetRating" Padding="7,4"/>
-          <Button Content="3" Tag="3" Click="OnSetRating" Padding="7,4"/>
-          <Button Content="4" Tag="4" Click="OnSetRating" Padding="7,4"/>
-          <Button Content="5" Tag="5" Click="OnSetRating" Padding="7,4"/>
-        </StackPanel>
-        <Button Grid.Column="4" Content="Recycle rejected..."
-                IsEnabled="{Binding HasRejected}" Click="OnDeleteRejected" Padding="13,5"/>
-        <TextBlock Grid.Column="5"
-                   Text="Arrows: active · wheel: zoom · drag: pan · F: fit · A: 100% · B: blink · P/X: pick/reject"
-                   Foreground="#62789c" FontSize="9" VerticalAlignment="Center"
-                   HorizontalAlignment="Right" Margin="12,0"/>
-        <Button Grid.Column="6" Content="Close" Click="OnClose" Padding="14,5"/>
-      </Grid>
-    </Border>
-
-    <Grid Grid.Row="2" Margin="6">
+    <Grid Grid.Row="1" Margin="6">
       <ItemsControl x:Name="CandidateItems" ItemsSource="{Binding Candidates}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
@@ -95,10 +78,5 @@
         </Grid>
       </Border>
     </Grid>
-
-    <Border Grid.Row="3" Background="#18243d" Padding="14,7"
-            BorderBrush="#2a3858" BorderThickness="0,1,0,0">
-      <TextBlock Text="{Binding StatusText}" Foreground="#99adcc" FontSize="10"/>
-    </Border>
   </Grid>
 </Window>

@@ -69,11 +69,11 @@ public sealed class BrowserSelectionTests : IDisposable
         var vm = CreateViewModel(first, second);
 
         vm.ApplyCompareDecisions([
-            new CompareCandidateDecision(first.Path, CompareMark.Pick, 5),
-            new CompareCandidateDecision(second.Path, CompareMark.Reject, 1)
+            new CompareCandidateDecision(first.Path, CompareMark.Pick),
+            new CompareCandidateDecision(second.Path, CompareMark.Reject)
         ]);
 
-        Assert.Equal("PICK · ★ 5", first.CompareBadgeText);
+        Assert.Equal("PICK", first.CompareBadgeText);
         Assert.True(first.IsComparePick);
         Assert.True(second.IsCompareReject);
     }

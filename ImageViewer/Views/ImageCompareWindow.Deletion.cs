@@ -23,15 +23,9 @@ public partial class ImageCompareWindow
             .Select(candidate => candidate.Path)
             .ToList();
         if (paths.Count == 0)
-        {
-            _viewModel.StatusText = "Mark one or more candidates Reject before deleting.";
             return;
-        }
         if (paths.Count == _viewModel.Candidates.Count)
-        {
-            _viewModel.StatusText = "Keep at least one comparison candidate before deleting.";
             return;
-        }
         if (!await FileDeleteConfirmationDialog.ConfirmAsync(this, paths)) return;
 
         _deleteRunning = true;
@@ -70,9 +64,6 @@ public partial class ImageCompareWindow
         if (deleted.Count > 0)
         {
             _viewModel.RemoveDeleted(deleted);
-            _viewModel.StatusText =
-                $"Moved {deleted.Count} rejected image{(deleted.Count == 1 ? "" : "s")} " +
-                "to the Recycle Bin.";
             if (!_viewModel.CanBlink) ExitBlink();
         }
         if (result.Failures.Count > 0 || result.IsCanceled)

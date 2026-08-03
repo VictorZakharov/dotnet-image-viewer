@@ -104,7 +104,7 @@ Select 2–4 images in the browser and choose **Compare...**, or use **Compare 2
 
 Each cell loads a cached preview first and decodes full resolution in the background, with at most two full-resolution decodes at once. The active cell has a bright frame. **Synchronized** zoom and pan keep the same normalized image region centered even when dimensions differ; turn it off for independent inspection. **Fit**, **100%**, and two-image **Blink / alternate** are available from the toolbar and keyboard. Dimensions, size, date taken, camera, lens, and exposure stay aligned under each image, with differences highlighted.
 
-Pick, Reject, 0–5 rating, and **Keep active, reject others** are comparison-session review marks. Returning to the browser or duplicate finder updates visible badges immediately, and rejected duplicate candidates become a reviewable deletion selection. Portable persistent ratings, labels, and filtering remain tracked by issue #8; this compare mode does not pretend temporary review marks are saved metadata. Rejected-file deletion always uses the existing confirmation, progress, and Windows Recycle Bin workflow.
+Pick, Reject, and **Keep this; reject others** are comparison-session review marks. Returning to the browser or duplicate finder updates visible badges immediately, and rejected duplicate candidates become a reviewable deletion selection. Portable persistent labels and filtering remain tracked by issue #8; this compare mode does not pretend temporary review marks are saved metadata. Rejected-file deletion always uses the existing confirmation, progress, and Windows Recycle Bin workflow.
 
 ## Duplicate finder
 
@@ -154,7 +154,6 @@ Hard-linked paths are identified as the same physical file and excluded from rec
 | Compare | `S`                       | Toggle synchronized normalized zoom and pan       |
 | Compare | `B` / `Space`             | Enter or alternate the two-image blink view       |
 | Compare | `P` / `X` / `K`           | Pick / reject / keep active and reject others     |
-| Compare | `0`–`5`                   | Set the active image's session rating              |
 | Compare | `Delete`                  | Review rejected images for Recycle Bin deletion   |
 
 ## Tech stack

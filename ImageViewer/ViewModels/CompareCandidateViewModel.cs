@@ -29,7 +29,6 @@ public partial class CompareCandidateViewModel : ObservableObject, IDisposable
 
     [ObservableProperty] private ImageMetadata _metadata = new();
     [ObservableProperty] private bool _isLoading = true;
-    [ObservableProperty] private bool _isFullResolution;
     [ObservableProperty] private string? _loadError;
     [ObservableProperty] private bool _isActive;
     [ObservableProperty] private int _rotation;
@@ -38,10 +37,6 @@ public partial class CompareCandidateViewModel : ObservableObject, IDisposable
     [NotifyPropertyChangedFor(nameof(MarkText), nameof(HasMark))]
     private CompareMark _mark;
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(RatingText), nameof(HasRating))]
-    private int _rating;
-
     public string MarkText => Mark switch
     {
         CompareMark.Pick => "PICK",
@@ -49,9 +44,6 @@ public partial class CompareCandidateViewModel : ObservableObject, IDisposable
         _ => ""
     };
     public bool HasMark => Mark != CompareMark.Neutral;
-    public string RatingText => Rating > 0 ? new string('★', Rating) : "";
-    public bool HasRating => Rating > 0;
-    public string ResolutionText => IsFullResolution ? "Full resolution" : "Preview";
 
     public CompareCandidateViewModel(string path, Action stateChanged)
     {
@@ -59,12 +51,7 @@ public partial class CompareCandidateViewModel : ObservableObject, IDisposable
         _stateChanged = stateChanged;
     }
 
-    public void ReplaceBitmap(Bitmap bitmap, bool isFullResolution)
-    {
-        Bitmap = bitmap;
-        IsFullResolution = isFullResolution;
-        OnPropertyChanged(nameof(ResolutionText));
-    }
+    public void ReplaceBitmap(Bitmap bitmap) => Bitmap = bitmap;
 
     public void SetMetadata(ImageMetadata metadata)
     {
@@ -75,7 +62,6 @@ public partial class CompareCandidateViewModel : ObservableObject, IDisposable
     public void Dispose() => Bitmap = null;
 
     partial void OnMarkChanged(CompareMark value) => _stateChanged();
-    partial void OnRatingChanged(int value) => _stateChanged();
 
     private void BuildMetadataRows()
     {

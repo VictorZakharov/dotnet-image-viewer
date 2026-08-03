@@ -35,17 +35,11 @@ public partial class ImageCompareWindow
     {
         ApplyToTargets(control => control.ApplyViewport(
             new NormalizedImageViewport(0.5, 0.5, 1, true)));
-        _viewModel.StatusText = _viewModel.IsSynchronized
-            ? "All images fit to their cells."
-            : "Active image fit to its cell.";
     }
 
     private void ApplyActualSize()
     {
         ApplyToTargets(control => control.SetActualSize(notify: false));
-        _viewModel.StatusText = _viewModel.IsSynchronized
-            ? "All images shown at 100%."
-            : "Active image shown at 100%.";
     }
 
     private void ApplyToTargets(Action<ZoomPanImage> action)

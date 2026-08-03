@@ -16,8 +16,6 @@ public partial class ImageCompareViewModel : ObservableObject, IDisposable
     [ObservableProperty] private CompareCandidateViewModel? _activeCandidate;
     [ObservableProperty] private bool _isSynchronized = true;
     [ObservableProperty] private bool _isBlinking;
-    [ObservableProperty] private string _statusText =
-        "Pick/Reject and ratings are session review marks; portable metadata arrives with issue #8.";
 
     public int Rows => Candidates.Count <= 2 ? 1 : 2;
     public int Columns => Candidates.Count <= 1 ? 1 : 2;
@@ -69,13 +67,6 @@ public partial class ImageCompareViewModel : ObservableObject, IDisposable
             candidate.Mark = ReferenceEquals(candidate, ActiveCandidate)
                 ? CompareMark.Pick
                 : CompareMark.Reject;
-        StatusText = $"Keeping {ActiveCandidate.FileName}; the other candidates are marked Reject.";
-    }
-
-    public void SetRating(int rating)
-    {
-        if (ActiveCandidate is not null)
-            ActiveCandidate.Rating = Math.Clamp(rating, 0, 5);
     }
 
     public void RemoveDeleted(IReadOnlyList<string> paths)
@@ -109,7 +100,7 @@ public partial class ImageCompareViewModel : ObservableObject, IDisposable
 
     public ImageCompareResult CreateResult() => new(
         Candidates.Select(candidate => new CompareCandidateDecision(
-            candidate.Path, candidate.Mark, candidate.Rating)).ToList(),
+            candidate.Path, candidate.Mark)).ToList(),
         _deletedPaths.ToList());
 
     public void Dispose()

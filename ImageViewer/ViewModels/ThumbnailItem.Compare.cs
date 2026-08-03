@@ -13,29 +13,14 @@ public partial class ThumbnailItem
         nameof(IsCompareReject))]
     private CompareMark _compareMark;
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CompareBadgeText), nameof(ShowCompareBadge))]
-    private int _compareRating;
-
     public bool ShowCompareBadge => IsFile
-                                    && (CompareMark != ImageViewer.Models.CompareMark.Neutral
-                                        || CompareRating > 0);
+                                    && CompareMark != ImageViewer.Models.CompareMark.Neutral;
     public bool IsComparePick => CompareMark == ImageViewer.Models.CompareMark.Pick;
     public bool IsCompareReject => CompareMark == ImageViewer.Models.CompareMark.Reject;
-    public string CompareBadgeText
+    public string CompareBadgeText => CompareMark switch
     {
-        get
-        {
-            var mark = CompareMark switch
-            {
-                ImageViewer.Models.CompareMark.Pick => "PICK",
-                ImageViewer.Models.CompareMark.Reject => "REJECT",
-                _ => ""
-            };
-            var rating = CompareRating > 0 ? $"★ {CompareRating}" : "";
-            return string.IsNullOrEmpty(mark) ? rating
-                : string.IsNullOrEmpty(rating) ? mark
-                : $"{mark} · {rating}";
-        }
-    }
+        ImageViewer.Models.CompareMark.Pick => "PICK",
+        ImageViewer.Models.CompareMark.Reject => "REJECT",
+        _ => ""
+    };
 }

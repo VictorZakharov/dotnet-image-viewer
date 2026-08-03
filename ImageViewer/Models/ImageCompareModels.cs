@@ -12,8 +12,7 @@ public enum CompareMark
 
 public sealed record CompareCandidateDecision(
     string Path,
-    CompareMark Mark,
-    int Rating);
+    CompareMark Mark);
 
 public sealed record ImageCompareResult(
     IReadOnlyList<CompareCandidateDecision> Decisions,

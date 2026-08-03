@@ -22,9 +22,9 @@ public sealed class DuplicateGroupCompareTests
     {
         using var group = CreateGroup(3);
         group.ApplyCompareResult(new ImageCompareResult([
-            new CompareCandidateDecision("image-0.jpg", CompareMark.Reject, 2),
-            new CompareCandidateDecision("image-1.jpg", CompareMark.Pick, 5),
-            new CompareCandidateDecision("image-2.jpg", CompareMark.Reject, 1)
+            new CompareCandidateDecision("image-0.jpg", CompareMark.Reject),
+            new CompareCandidateDecision("image-1.jpg", CompareMark.Pick),
+            new CompareCandidateDecision("image-2.jpg", CompareMark.Reject)
         ], []));
 
         Assert.True(group.Files[1].IsSuggestedKeeper);

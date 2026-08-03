@@ -34,28 +34,13 @@ public partial class DuplicateFileViewModel : ObservableObject, IDisposable
     [NotifyPropertyChangedFor(nameof(CompareBadgeText), nameof(HasCompareBadge))]
     private CompareMark _compareMark;
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CompareBadgeText), nameof(HasCompareBadge))]
-    private int _compareRating;
-
-    public bool HasCompareBadge => CompareMark != ImageViewer.Models.CompareMark.Neutral
-                                   || CompareRating > 0;
-    public string CompareBadgeText
+    public bool HasCompareBadge => CompareMark != ImageViewer.Models.CompareMark.Neutral;
+    public string CompareBadgeText => CompareMark switch
     {
-        get
-        {
-            var mark = CompareMark switch
-            {
-                ImageViewer.Models.CompareMark.Pick => "PICK",
-                ImageViewer.Models.CompareMark.Reject => "REJECT",
-                _ => ""
-            };
-            var rating = CompareRating > 0 ? $"★ {CompareRating}" : "";
-            return string.IsNullOrEmpty(mark) ? rating
-                : string.IsNullOrEmpty(rating) ? mark
-                : $"{mark} · {rating}";
-        }
-    }
+        ImageViewer.Models.CompareMark.Pick => "PICK",
+        ImageViewer.Models.CompareMark.Reject => "REJECT",
+        _ => ""
+    };
 
     public DuplicateFileViewModel(
         DuplicateFileEntry entry,
@@ -77,7 +62,6 @@ public partial class DuplicateFileViewModel : ObservableObject, IDisposable
     public void ApplyDecision(CompareCandidateDecision decision)
     {
         CompareMark = decision.Mark;
-        CompareRating = decision.Rating;
         if (decision.Mark == ImageViewer.Models.CompareMark.Reject) IsSelected = true;
         else if (decision.Mark == ImageViewer.Models.CompareMark.Pick) IsSelected = false;
     }

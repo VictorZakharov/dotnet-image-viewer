@@ -4,6 +4,17 @@
              xmlns:vm="using:ImageViewer.ViewModels"
              x:Class="ImageViewer.Views.ImageCompareCellView"
              x:DataType="vm:CompareCandidateViewModel">
+  <UserControl.Styles>
+    <Style Selector="StackPanel.cell-actions">
+      <Setter Property="IsVisible" Value="False"/>
+    </Style>
+    <Style Selector="Border.compare-cell:pointerover StackPanel.cell-actions">
+      <Setter Property="IsVisible" Value="True"/>
+    </Style>
+    <Style Selector="Border.compare-cell.active StackPanel.cell-actions">
+      <Setter Property="IsVisible" Value="True"/>
+    </Style>
+  </UserControl.Styles>
   <Border Classes="compare-cell"
           Classes.active="{Binding IsActive}"
           Margin="3" Background="#0d1628"
@@ -12,14 +23,12 @@
           PointerPressed="OnCandidatePressed">
     <Border.Styles>
       <Style Selector="Border.compare-cell.active">
-        <Setter Property="BorderBrush" Value="#45a9ff"/>
-        <Setter Property="BorderThickness" Value="3"/>
         <Setter Property="Background" Value="#10203a"/>
       </Style>
     </Border.Styles>
-    <Grid RowDefinitions="34,*,Auto,38">
+    <Grid RowDefinitions="34,*,Auto">
       <Border Background="#16233b" Padding="9,0">
-        <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
           <TextBlock Text="{Binding FileName}" Foreground="#eef5ff"
                      FontSize="11" FontWeight="SemiBold"
                      VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
@@ -30,16 +39,19 @@
             <TextBlock Text="ACTIVE" Foreground="#f2f9ff"
                        FontSize="8" FontWeight="Bold"/>
           </Border>
-          <TextBlock Grid.Column="2" Text="{Binding ResolutionText}"
-                     Foreground="#7289ad" FontSize="9" VerticalAlignment="Center"/>
-          <TextBlock Grid.Column="3" Text="{Binding RatingText}"
-                     Foreground="#f1c75b" FontSize="11" VerticalAlignment="Center"
-                     IsVisible="{Binding HasRating}"/>
-          <Border Grid.Column="4" IsVisible="{Binding HasMark}"
+          <Border Grid.Column="2" IsVisible="{Binding HasMark}"
                   Background="#29496f" CornerRadius="3" Padding="6,2">
             <TextBlock Text="{Binding MarkText}" Foreground="#dceeff"
                        FontSize="9" FontWeight="Bold"/>
           </Border>
+          <StackPanel Grid.Column="3" Classes="cell-actions"
+                      Orientation="Horizontal" Spacing="5"
+                      VerticalAlignment="Center">
+            <Button Content="Pick" Click="OnPickCandidate" Padding="8,2"/>
+            <Button Content="Reject" Click="OnRejectCandidate" Padding="8,2"/>
+            <Button Content="Keep this; reject others"
+                    Click="OnKeepCandidate" Padding="9,2"/>
+          </StackPanel>
         </Grid>
       </Border>
 
@@ -86,14 +98,10 @@
         </ItemsControl.ItemTemplate>
       </ItemsControl>
 
-      <Border Grid.Row="3" Background="#121d31" Padding="7,4">
-        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-          <Button Content="Pick" Click="OnPickCandidate" Padding="10,3"/>
-          <Button Content="Reject" Click="OnRejectCandidate" Padding="10,3"/>
-          <Button Content="Keep this; reject others"
-                  Click="OnKeepCandidate" Padding="11,3"/>
-        </StackPanel>
-      </Border>
+      <!-- Match the browser grid's high-contrast single-selection frame. -->
+      <Border Grid.RowSpan="3" BorderBrush="#21b6ff" BorderThickness="5"
+              CornerRadius="4" IsHitTestVisible="False"
+              IsVisible="{Binding IsActive}" ZIndex="50"/>
     </Grid>
   </Border>
 </UserControl>

@@ -16,7 +16,6 @@ public partial class BrowserViewModel
         {
             if (!byPath.TryGetValue(item.Path, out var decision)) continue;
             item.CompareMark = decision.Mark;
-            item.CompareRating = decision.Rating;
         }
     }
 
