@@ -1,6 +1,6 @@
 # Image Viewer
 
-A lightweight, ACDSee-style image and video viewer for Windows. Built on .NET 10 and Avalonia 12.
+A lightweight, filesystem-first image and video viewer for Windows. Built on .NET 10 and Avalonia 12.
 
 > **Status**: early MVP. The viewer, browser, video playback, and Windows Explorer integration work.
 
@@ -165,6 +165,14 @@ Hard-linked paths are identified as the same physical file and excluded from rec
 - [MetadataExtractor](https://github.com/drewnoakes/metadata-extractor-dotnet) for EXIF
 - [LibVLCSharp](https://docs.videolan.me/libvlcsharp/) and LibVLC for video playback
 - Skia (via Avalonia) for common-format decode and GPU-accelerated rendering
+
+## License
+
+ImageViewer's original source code and project assets are available under the
+[MIT License](LICENSE). Third-party packages and native components retain their
+own licenses; see [Third-party notices](THIRD-PARTY-NOTICES.md). Published
+builds include these documents and the complete upstream notice files required
+for redistribution.
 
 ## Project layout
 
