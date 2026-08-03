@@ -166,6 +166,14 @@ Hard-linked paths are identified as the same physical file and excluded from rec
 - [LibVLCSharp](https://docs.videolan.me/libvlcsharp/) and LibVLC for video playback
 - Skia (via Avalonia) for common-format decode and GPU-accelerated rendering
 
+## License
+
+ImageViewer's original source code and project assets are available under the
+[MIT License](LICENSE). Third-party packages and native components retain their
+own licenses; see [Third-party notices](THIRD-PARTY-NOTICES.md). Published
+builds include these documents and the complete upstream notice files required
+for redistribution.
+
 ## Project layout
 
 ```
