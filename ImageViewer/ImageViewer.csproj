@@ -21,7 +21,7 @@
     <ApplicationIcon Condition="'$(IsWindowsBuild)' == 'true'">Assets\ImageViewer.ico</ApplicationIcon>
     <AssemblyTitle>ImageViewer</AssemblyTitle>
     <Product>ImageViewer</Product>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Description>A lightweight image and video viewer for Windows and Linux</Description>
     <Authors>Victor Zakharov</Authors>
     <Company>Victor Zakharov</Company>

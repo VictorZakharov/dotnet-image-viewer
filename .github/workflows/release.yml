@@ -1,0 +1,123 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  windows:
+    name: Build Windows package
+    runs-on: windows-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Verify tag matches project version
+        shell: pwsh
+        run: |
+          [xml]$project = Get-Content ImageViewer/ImageViewer.csproj
+          $version = $project.SelectSingleNode('/Project/PropertyGroup/Version').InnerText
+          if ($env:GITHUB_REF_NAME -ne "v$version") {
+            throw "Tag $env:GITHUB_REF_NAME does not match project version $version."
+          }
+
+      - name: Test and build Windows Native AOT package
+        shell: pwsh
+        run: ./scripts/Publish-Release.ps1
+
+      - name: Retain Windows release assets
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-release
+          path: |
+            artifacts/ImageViewer-v*-win-x64.zip
+            artifacts/ImageViewer-v*-win-x64.zip.sha256
+          if-no-files-found: error
+
+  linux:
+    name: Build Linux packages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Linux build and media dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            clang zlib1g-dev \
+            libx11-6 libice6 libsm6 libfontconfig1 \
+            libvlc-dev vlc-plugin-base vlc-plugin-video-output \
+            ffmpeg desktop-file-utils
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Verify tag matches project version
+        shell: pwsh
+        run: |
+          [xml]$project = Get-Content ImageViewer/ImageViewer.csproj
+          $version = $project.SelectSingleNode('/Project/PropertyGroup/Version').InnerText
+          if ($env:GITHUB_REF_NAME -ne "v$version") {
+            throw "Tag $env:GITHUB_REF_NAME does not match project version $version."
+          }
+
+      - name: Test and build Linux Native AOT packages
+        shell: pwsh
+        run: ./scripts/Publish-Linux.ps1
+
+      - name: Retain Linux release assets
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: linux-release
+          path: |
+            artifacts/ImageViewer-v*-linux-x64.tar.gz
+            artifacts/ImageViewer-v*-linux-x64.tar.gz.sha256
+            artifacts/ImageViewer-v*-linux-x64.deb
+            artifacts/ImageViewer-v*-linux-x64.deb.sha256
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub release
+    needs: [windows, linux]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download release assets
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Publish public preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "$GITHUB_REF_NAME"
+          artifacts/*
+          --repo "$GITHUB_REPOSITORY"
+          --verify-tag
+          --prerelease
+          --generate-notes
+          --title "ImageViewer $GITHUB_REF_NAME (Public Preview)"
