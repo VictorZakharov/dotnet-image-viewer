@@ -12,16 +12,16 @@ published notices and the reviewed dependency versions stay aligned.
 
 | Component | Version | License | Upstream |
 |---|---:|---|---|
-| Avalonia UI packages | 12.1.0 | MIT | [AvaloniaUI/Avalonia](https://github.com/AvaloniaUI/Avalonia) |
+| Avalonia UI packages | 12.1.1 | MIT | [AvaloniaUI/Avalonia](https://github.com/AvaloniaUI/Avalonia) |
 | Avalonia Controls ItemsRepeater | 12.0.0 | MIT | [AvaloniaUI/Avalonia.Controls.ItemsRepeater](https://github.com/AvaloniaUI/Avalonia.Controls.ItemsRepeater) |
 | Avalonia BuildServices | 11.3.2 | MIT | [AvaloniaUI/Avalonia.BuildServices](https://github.com/AvaloniaUI/Avalonia.BuildServices) |
 | Avalonia ANGLE Windows natives | 2.1.27548.20260419 | BSD-3-Clause-style | [AvaloniaUI/angle](https://github.com/AvaloniaUI/angle) |
-| Inter font, embedded by Avalonia.Fonts.Inter | bundled with 12.1.0 | SIL OFL-1.1 | [rsms/inter](https://github.com/rsms/inter) |
+| Inter font, embedded by Avalonia.Fonts.Inter | bundled with 12.1.1 | SIL OFL-1.1 | [rsms/inter](https://github.com/rsms/inter) |
 | CommunityToolkit.Mvvm | 8.4.2 | MIT | [CommunityToolkit/dotnet](https://github.com/CommunityToolkit/dotnet) |
 | LibVLCSharp and LibVLCSharp.Avalonia | 3.10.0 | LGPL-2.1-or-later | [VideoLAN/LibVLCSharp](https://github.com/videolan/libvlcsharp/tree/3.10.0) |
 | VideoLAN.LibVLC.Windows / LibVLC | 3.0.23.1 / 3.0.23 | LGPL-2.1-or-later | [VideoLAN source](https://download.videolan.org/pub/videolan/vlc/3.0.23/) |
 | Magick.NET | 14.16.0 | Apache-2.0 | [dlemstra/Magick.NET](https://github.com/dlemstra/Magick.NET) |
-| MetadataExtractor | 2.8.1 | Apache-2.0 | [drewnoakes/metadata-extractor-dotnet](https://github.com/drewnoakes/metadata-extractor-dotnet) |
+| MetadataExtractor | 2.9.3 | Apache-2.0 | [drewnoakes/metadata-extractor-dotnet](https://github.com/drewnoakes/metadata-extractor-dotnet) |
 | XmpCore | 6.1.10.1 | BSD | [drewnoakes/xmp-core-dotnet](https://github.com/drewnoakes/xmp-core-dotnet) |
 | SkiaSharp and Windows native assets | 3.119.4 | MIT, plus bundled notices | [mono/SkiaSharp](https://github.com/mono/SkiaSharp) |
 | HarfBuzzSharp and Windows native assets | 8.3.1.3 | MIT, plus bundled notices | [HarfBuzzSharp source](https://github.com/mono/SkiaSharp/tree/main/binding/HarfBuzzSharp) |
