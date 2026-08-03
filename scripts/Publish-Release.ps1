@@ -49,9 +49,9 @@ if ([string]::IsNullOrWhiteSpace($version) -or $version -notmatch '^[0-9A-Za-z.+
     throw "ImageViewer.csproj must contain a release-safe Version value."
 }
 
-$isWindows = $RuntimeIdentifier.StartsWith("win-", [StringComparison]::Ordinal)
-$isLinux = $RuntimeIdentifier.StartsWith("linux-", [StringComparison]::Ordinal)
-if (-not $isWindows -and -not $isLinux) {
+$isWindowsTarget = $RuntimeIdentifier.StartsWith("win-", [StringComparison]::Ordinal)
+$isLinuxTarget = $RuntimeIdentifier.StartsWith("linux-", [StringComparison]::Ordinal)
+if (-not $isWindowsTarget -and -not $isLinuxTarget) {
     throw "Release packaging currently supports Windows and Linux runtime identifiers."
 }
 
@@ -59,7 +59,7 @@ $releaseOutputRoot = Join-Path (Join-Path (Join-Path $projectDir "bin") "Release
 $publishDir = Join-Path (Join-Path $releaseOutputRoot $RuntimeIdentifier) "publish"
 $artifactsDir = Join-Path $repoRoot "artifacts"
 $stagingDir = Join-Path $artifactsDir ".release-$RuntimeIdentifier"
-$archiveExtension = if ($isWindows) { "zip" } else { "tar.gz" }
+$archiveExtension = if ($isWindowsTarget) { "zip" } else { "tar.gz" }
 $archiveName = "ImageViewer-v$version-$RuntimeIdentifier.$archiveExtension"
 $archivePath = Join-Path $artifactsDir $archiveName
 $checksumPath = "$archivePath.sha256"
@@ -78,7 +78,7 @@ Remove-DirectoryWithin -Path $publishDir -AllowedRoot $releaseOutputRoot
 dotnet publish $projectPath -c Release -r $RuntimeIdentifier --no-restore
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed." }
 
-$executableName = if ($isWindows) { "ImageViewer.exe" } else { "ImageViewer" }
+$executableName = if ($isWindowsTarget) { "ImageViewer.exe" } else { "ImageViewer" }
 foreach ($requiredFile in $executableName, "LICENSE.txt", "THIRD-PARTY-NOTICES.md") {
     if (-not (Test-Path -LiteralPath (Join-Path $publishDir $requiredFile))) {
         throw "Publish output is missing $requiredFile."
@@ -88,7 +88,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $publishDir "LICENSES") -PathType Co
     throw "Publish output is missing the LICENSES directory."
 }
 
-if ($isWindows) {
+if ($isWindowsTarget) {
     $libVlcRoot = Join-Path $publishDir "libvlc"
     $expectedLibVlcDir = Join-Path $libVlcRoot $RuntimeIdentifier
     if (-not (Test-Path -LiteralPath $expectedLibVlcDir -PathType Container)) {
@@ -119,7 +119,7 @@ try {
         throw "Release staging contains debug symbols."
     }
 
-    if ($isWindows) {
+    if ($isWindowsTarget) {
         Compress-Archive -Path (Join-Path $stagingDir "*") -DestinationPath $archivePath -CompressionLevel Optimal -Force
     }
     else {
