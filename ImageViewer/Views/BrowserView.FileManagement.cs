@@ -195,7 +195,8 @@ public partial class BrowserView
         if (consumeCutClipboard)
             await RemoveSuccessfulCutFilesAsync(result.Successful.Select(item => item.SourcePath));
 
-        await vm.ReloadAfterFileOperationAsync();
+        var changedPaths = result.Successful.Select(item => item.SourcePath).ToList();
+        await vm.ApplyFileOperationChangesAsync(kind, changedPaths);
         vm.ReportFileOperation(FormatOperationStatus(result));
         if (result.Failures.Count > 0 || result.SkippedPaths.Count > 0 || result.IsCanceled)
             await new FileOperationResultDialog(result).ShowDialog(owner);
