@@ -23,13 +23,36 @@ internal static class VideoThumbnailProvider
 
         if (!OperatingSystem.IsLinux()) return null;
 
-        return await TryExtractWithFfmpegAsync(path, dimension, seekSeconds: 1, cancellationToken)
-                   .ConfigureAwait(false)
-               ?? await TryExtractWithFfmpegAsync(path, dimension, seekSeconds: 0, cancellationToken)
-                   .ConfigureAwait(false);
+        var encoded = await TryGetLinuxPngAsync(path, dimension, cancellationToken)
+            .ConfigureAwait(false);
+        if (encoded is null) return null;
+        try
+        {
+            using var input = new MemoryStream(encoded, writable: false);
+            return new Bitmap(input);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
-    private static async Task<Bitmap?> TryExtractWithFfmpegAsync(
+    internal static async Task<byte[]?> TryGetLinuxPngAsync(
+        string path,
+        int dimension,
+        CancellationToken cancellationToken) =>
+        await TryExtractWithFfmpegAsync(
+            path,
+            dimension,
+            seekSeconds: 1,
+            cancellationToken).ConfigureAwait(false)
+        ?? await TryExtractWithFfmpegAsync(
+            path,
+            dimension,
+            seekSeconds: 0,
+            cancellationToken).ConfigureAwait(false);
+
+    private static async Task<byte[]?> TryExtractWithFfmpegAsync(
         string path,
         int dimension,
         int seekSeconds,
@@ -72,16 +95,9 @@ internal static class VideoThumbnailProvider
             return null;
         }
 
-        if (process.ExitCode != 0 || output.Length == 0) return null;
-        try
-        {
-            output.Position = 0;
-            return new Bitmap(output);
-        }
-        catch
-        {
-            return null;
-        }
+        return process.ExitCode == 0 && output.Length > 0
+            ? output.ToArray()
+            : null;
     }
 
     private static ProcessStartInfo CreateStartInfo(

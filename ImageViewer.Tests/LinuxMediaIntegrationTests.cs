@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using ImageViewer.Services;
+using ImageMagick;
 using LibVLCSharp.Shared;
 
 namespace ImageViewer.Tests;
@@ -16,14 +17,15 @@ public sealed class LinuxMediaIntegrationTests : IDisposable
         if (!OperatingSystem.IsLinux()) return;
         var video = await CreateVideoAsync();
 
-        using var thumbnail = await VideoThumbnailProvider.TryGetAsync(
+        var encoded = await VideoThumbnailProvider.TryGetLinuxPngAsync(
             video,
             128,
             CancellationToken.None);
 
-        Assert.NotNull(thumbnail);
-        Assert.InRange(thumbnail.PixelSize.Width, 1, 128);
-        Assert.InRange(thumbnail.PixelSize.Height, 1, 128);
+        Assert.NotNull(encoded);
+        using var thumbnail = new MagickImage(encoded);
+        Assert.InRange(thumbnail.Width, 1u, 128u);
+        Assert.InRange(thumbnail.Height, 1u, 128u);
     }
 
     [Fact]
