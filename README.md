@@ -240,7 +240,3 @@ ImageViewer\bin\Release\net10.0\ImageViewer.exe $stressFolder
 ```
 
 Press `End`, `Home`, `PageDown`, and `PageUp` while watching the overlay. Realized controls and pending work should remain proportional to the viewport, not the 10,000-item collection. Remove the fixture afterward with `Remove-Item -LiteralPath $stressFolder -Recurse`.
-
-## Development notes
-
-If you're working on this with Claude Code, `CLAUDE.md` at the repo root has a concise architecture map and conventions reference that's auto-loaded into every session.

@@ -40,10 +40,23 @@ Desktop.ini
 *.log
 *.tmp
 
-## Claude Code local settings
-.claude/settings.local.json
-
-## ait local logs and metrics (terminal-output reducer)
+## Local assistant and automation tooling
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+.claude/
+.codex/
+.agents/
+.gemini/
+.cursor/
+.cursorrules
+.continue/
+.windsurf/
+.windsurfrules
+.aider*
+.github/copilot-instructions.md
+.github/instructions/
+.github/prompts/
 .ait/
 
 ## Sample images dropped at repo root for local testing
