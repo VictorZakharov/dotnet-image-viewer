@@ -32,7 +32,7 @@
   <PropertyGroup>
     <CommunityToolkitVersion>8.4.2</CommunityToolkitVersion>
     <MagickNetVersion>14.16.0</MagickNetVersion>
-    <MetadataExtractorVersion>2.8.1</MetadataExtractorVersion>
+    <MetadataExtractorVersion>2.9.3</MetadataExtractorVersion>
     <AngleNativeNoticeVersion>2.1.27548.20260419</AngleNativeNoticeVersion>
     <SkiaSharpNoticeVersion>3.119.4</SkiaSharpNoticeVersion>
     <HarfBuzzSharpNoticeVersion>8.3.1.3</HarfBuzzSharpNoticeVersion>
