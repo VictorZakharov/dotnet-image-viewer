@@ -2,7 +2,20 @@
 
 A lightweight, filesystem-first image and video viewer for Windows. Built on .NET 10 and Avalonia 12.
 
-> **Status**: early MVP. The viewer, browser, video playback, and Windows Explorer integration work.
+> **Status**: public preview (`0.1.0`). The viewer, browser, video playback, and Windows Explorer integration work.
+
+## Download
+
+Prebuilt Windows packages are published on the
+[Releases](https://github.com/VictorZakharov/dotnet-image-viewer/releases) page.
+Download `ImageViewer-v0.1.0-win-x64.zip`, extract the complete archive to a
+writable folder, and run `ImageViewer.exe`. The package is self-contained, so
+installing .NET is not required.
+
+The initial preview is not code-signed. Windows may therefore show an
+unrecognized-app warning for a newly downloaded build. Verify that the archive
+came from this repository and optionally compare its SHA-256 hash with the
+published `.sha256` file before running it.
 
 ## Features
 
@@ -54,8 +67,8 @@ A lightweight, filesystem-first image and video viewer for Windows. Built on .NE
 
 ## Requirements
 
-- Windows 10 / 11
-- [.NET 10 SDK](https://dotnet.microsoft.com/download) (10.0 or newer) to build
+- Windows 10 / 11 on x64 for the prebuilt package
+- [.NET 10 SDK](https://dotnet.microsoft.com/download) (10.0 or newer) only when building from source
 
 ## Build & run
 
@@ -76,6 +89,15 @@ ImageViewer\bin\Release\net10.0\win-x64\publish\ImageViewer.exe
 ```
 
 Native AOT is self-contained and needs the Windows C++ build tools when publishing.
+
+Maintainers can build the release archive and checksum with:
+
+```powershell
+.\scripts\Publish-Release.ps1
+```
+
+The version comes from `ImageViewer.csproj`; generated files are written under
+the ignored `artifacts` directory.
 
 ## Windows Explorer integration
 
@@ -104,7 +126,7 @@ Select 2–4 images in the browser and choose **Compare...**, or use **Compare 2
 
 Each cell loads a cached preview first and decodes full resolution in the background, with at most two full-resolution decodes at once. The active cell has a bright frame. **Synchronized** zoom and pan keep the same normalized image region centered even when dimensions differ; turn it off for independent inspection. **Fit**, **100%**, and two-image **Blink / alternate** are available from the toolbar and keyboard. Dimensions, size, date taken, camera, lens, and exposure stay aligned under each image, with differences highlighted.
 
-Pick, Reject, and **Keep this; reject others** are comparison-session review marks. Returning to the browser or duplicate finder updates visible badges immediately, and rejected duplicate candidates become a reviewable deletion selection. Portable persistent labels and filtering remain tracked by issue #8; this compare mode does not pretend temporary review marks are saved metadata. Rejected-file deletion always uses the existing confirmation, progress, and Windows Recycle Bin workflow.
+Pick, Reject, and **Keep this; reject others** are comparison-session review marks. Returning to the browser or duplicate finder updates visible badges immediately, and rejected duplicate candidates become a reviewable deletion selection. Review marks are not written to media metadata. Rejected-file deletion always uses the existing confirmation, progress, and Windows Recycle Bin workflow.
 
 ## Duplicate finder
 
@@ -189,12 +211,17 @@ ImageViewer\
 ├── ViewModels\             MainWindow, Viewer, Browser, ThumbnailItem, FolderTreeItem
 └── Views\                  MainWindow + ViewerView + BrowserView
 ImageViewer.Tests\          Selection and safe file-operation tests
+scripts\Publish-Release.ps1 Local test, Native AOT publish, ZIP, and checksum
 ```
 
 ## Roadmap
 
 Known polish gaps, in rough priority order:
 - **Lossless rotate-and-save** (`R` is display-only at the moment)
+
+Planned work and product-scope decisions are tracked in
+[GitHub issues](https://github.com/VictorZakharov/dotnet-image-viewer/issues),
+with the current overview in [roadmap issue #16](https://github.com/VictorZakharov/dotnet-image-viewer/issues/16).
 
 ## Grid stress diagnostics
 

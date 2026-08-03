@@ -16,6 +16,7 @@
     <ApplicationIcon>Assets\ImageViewer.ico</ApplicationIcon>
     <AssemblyTitle>ImageViewer</AssemblyTitle>
     <Product>ImageViewer</Product>
+    <Version>0.1.0</Version>
     <Description>A lightweight image and video viewer for Windows</Description>
     <Authors>Victor Zakharov</Authors>
     <Company>Victor Zakharov</Company>

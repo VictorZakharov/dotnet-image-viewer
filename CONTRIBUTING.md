@@ -1,6 +1,7 @@
 # Contributing
 
 Contributions are welcome through GitHub issues and pull requests.
+Participation is governed by the project [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Development setup
 
