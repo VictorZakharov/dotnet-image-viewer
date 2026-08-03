@@ -40,4 +40,60 @@ public sealed class ImageViewportMathTests
         Assert.Equal(0.5, state.CenterY);
         Assert.Equal(1, state.ZoomRatio);
     }
+
+    [Fact]
+    public void FitScaleUpscalesSmallImageUntilOneAxisTouchesViewport()
+    {
+        var viewport = new Size(1000, 800);
+        var image = new Size(500, 250);
+
+        var scale = ImageViewportMath.FitScale(viewport, image);
+
+        Assert.Equal(2, scale);
+        Assert.Equal(viewport.Width, image.Width * scale);
+        Assert.True(image.Height * scale < viewport.Height);
+    }
+
+    [Fact]
+    public void ZoomAndOffsetCannotExposeBackgroundOnBothAxes()
+    {
+        var viewport = new Size(1000, 800);
+        var image = new Size(2000, 1000);
+        var zoom = ImageViewportMath.ClampZoom(viewport, image, 0.1);
+        var offset = ImageViewportMath.ConstrainOffset(
+            viewport,
+            image,
+            zoom,
+            new Vector(200, -400));
+
+        Assert.Equal(0.5, zoom);
+        Assert.Equal(0, offset.X);
+        Assert.Equal(150, offset.Y);
+    }
+
+    [Fact]
+    public void PanningCannotPullAZoomedImageInsideViewportEdges()
+    {
+        var offset = ImageViewportMath.ConstrainOffset(
+            new Size(1000, 800),
+            new Size(2000, 1000),
+            zoom: 1,
+            new Vector(200, -400));
+
+        Assert.Equal(0, offset.X);
+        Assert.Equal(-200, offset.Y);
+    }
+
+    [Fact]
+    public void SynchronizedViewportCannotApplyZoomBelowFit()
+    {
+        var viewport = new Size(1000, 800);
+        var image = new Size(2000, 1000);
+        var state = new NormalizedImageViewport(0.2, 0.8, 0.25, IsFit: false);
+
+        var applied = ImageViewportMath.Apply(viewport, image, state);
+
+        Assert.Equal(0.5, applied.Zoom);
+        Assert.Equal(new Vector(0, 150), applied.Offset);
+    }
 }
