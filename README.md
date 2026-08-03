@@ -221,7 +221,7 @@ Known polish gaps, in rough priority order:
 
 Planned work and product-scope decisions are tracked in
 [GitHub issues](https://github.com/VictorZakharov/dotnet-image-viewer/issues),
-with the current overview in [roadmap issue #16](https://github.com/VictorZakharov/dotnet-image-viewer/issues/16).
+with the current overview in [roadmap issue #3](https://github.com/VictorZakharov/dotnet-image-viewer/issues/3).
 
 ## Grid stress diagnostics
 
