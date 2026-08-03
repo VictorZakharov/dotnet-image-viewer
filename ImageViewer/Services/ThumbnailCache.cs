@@ -57,27 +57,33 @@ public sealed class ThumbnailCache
         await _semaphore.WaitAsync(ct).ConfigureAwait(false);
         try
         {
+            if (isVideo)
+            {
+                var thumbnail = await VideoThumbnailProvider.TryGetAsync(
+                    imagePath,
+                    dim,
+                    ct).ConfigureAwait(false);
+                if (thumbnail is null) return null;
+
+                try
+                {
+                    Directory.CreateDirectory(_cacheDir);
+                    await using var output = File.Create(thumbPath);
+                    thumbnail.Save(output, PngBitmapEncoderOptions.Default);
+                }
+                catch
+                {
+                    // Cache write failure is non-fatal.
+                }
+
+                return thumbnail;
+            }
+
             return await Task.Run(() =>
             {
                 try
                 {
                     ct.ThrowIfCancellationRequested();
-                    if (isVideo)
-                    {
-                        var thumbnail = ShellThumbnailProvider.TryGet(imagePath, dim);
-                        if (thumbnail is null) return null;
-
-                        try
-                        {
-                            Directory.CreateDirectory(_cacheDir);
-                            using var output = File.Create(thumbPath);
-                            thumbnail.Save(output, PngBitmapEncoderOptions.Default);
-                        }
-                        catch { /* cache write failure is non-fatal */ }
-
-                        return thumbnail;
-                    }
-
                     using var img = new MagickImage(imagePath);
                     ct.ThrowIfCancellationRequested();
                     img.AutoOrient();
@@ -136,7 +142,7 @@ public sealed class ThumbnailCache
 
     private static string ComputeKey(string path, DateTime mtime, long size, int dim)
     {
-        var input = $"{path.ToLowerInvariant()}|{mtime.Ticks}|{size}|{dim}";
+        var input = $"{FileSystemPath.NormalizeForCache(path)}|{mtime.Ticks}|{size}|{dim}";
         var bytes = Encoding.UTF8.GetBytes(input);
         var hash = SHA1.HashData(bytes);
         return Convert.ToHexString(hash).ToLowerInvariant();

@@ -1,4 +1,5 @@
 using ImageViewer.Models;
+using ImageViewer.Services;
 using System.Runtime.InteropServices;
 
 namespace ImageViewer.Tests;
@@ -37,10 +38,14 @@ public sealed class DuplicateScannerExactTests : IDisposable
     [Fact]
     public async Task HardLinkIsExcludedFromReclaimableCopies()
     {
-        if (!OperatingSystem.IsWindows()) return;
         var original = _folder.CreateFile("original.jpg", "same data");
         var alias = Path.Combine(_folder.Root, "hard-link.jpg");
-        Assert.True(CreateHardLink(alias, original, IntPtr.Zero));
+        if (OperatingSystem.IsWindows())
+            Assert.True(CreateHardLinkWindows(alias, original, IntPtr.Zero));
+        else if (OperatingSystem.IsLinux())
+            Assert.Equal(0, CreateHardLinkLinux(original, alias));
+        else
+            return;
         _folder.CreateFile("copy.jpg", "same data");
 
         var result = await _folder.ScanAsync(DuplicateScanMode.Exact);
@@ -49,8 +54,8 @@ public sealed class DuplicateScannerExactTests : IDisposable
         var group = Assert.Single(result.Groups);
         Assert.Equal(2, group.Files.Count);
         Assert.Equal(1, group.Files.Count(file =>
-            string.Equals(file.Path, alias, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(file.Path, original, StringComparison.OrdinalIgnoreCase)));
+            FileSystemPath.Equals(file.Path, alias)
+            || FileSystemPath.Equals(file.Path, original)));
     }
 
     [Fact]
@@ -70,10 +75,19 @@ public sealed class DuplicateScannerExactTests : IDisposable
 
     public void Dispose() => _folder.Dispose();
 
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    [DllImport(
+        "kernel32.dll",
+        EntryPoint = "CreateHardLinkW",
+        CharSet = CharSet.Unicode,
+        SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool CreateHardLink(
+    private static extern bool CreateHardLinkWindows(
         string fileName,
         string existingFileName,
         IntPtr securityAttributes);
+
+    [DllImport("libc", EntryPoint = "link", SetLastError = true)]
+    private static extern int CreateHardLinkLinux(
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string existingFileName,
+        [MarshalAs(UnmanagedType.LPUTF8Str)] string fileName);
 }

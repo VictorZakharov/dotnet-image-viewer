@@ -20,7 +20,7 @@ public sealed partial class DuplicateScanner
         CancellationToken cancellationToken)
     {
         var files = new List<CandidateFile>();
-        var identities = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var identities = new Dictionary<string, string>(StringComparer.Ordinal);
         var roots = NormalizeRoots(requestedRoots, errors);
         var pending = new Stack<string>(roots.Reverse());
 
@@ -92,11 +92,7 @@ public sealed partial class DuplicateScanner
 
     private static bool IsSameOrChild(string path, string possibleParent)
     {
-        if (string.Equals(path, possibleParent, StringComparison.OrdinalIgnoreCase)) return true;
-        var prefix = Path.EndsInDirectorySeparator(possibleParent)
-            ? possibleParent
-            : possibleParent + Path.DirectorySeparatorChar;
-        return path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+        return FileSystemPath.IsSameOrChild(path, possibleParent);
     }
 
     private static string[] ReadDirectories(

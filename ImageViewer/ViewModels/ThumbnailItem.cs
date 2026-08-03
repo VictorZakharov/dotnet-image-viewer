@@ -238,7 +238,7 @@ public partial class ThumbnailItem : ObservableObject, IDisposable
             if (string.IsNullOrEmpty(dir)) { IsRenaming = false; return false; }
 
             var target = System.IO.Path.Combine(dir, requestedStem + ext);
-            if (File.Exists(target) && !string.Equals(target, Path, StringComparison.OrdinalIgnoreCase))
+            if (File.Exists(target) && !FileSystemPath.Equals(target, Path))
             {
                 IsRenaming = false;
                 return false;

@@ -34,7 +34,7 @@ public partial class DuplicateFinderWindow
 
         _fileOperationRunning = true;
         var progressDialog = new FileOperationProgressDialog(
-            "Moving duplicate images to the Recycle Bin");
+            $"Moving duplicate images to the {FileOperations.TrashDisplayName}");
         progressDialog.Show(this);
         FileOperationResult result;
         try

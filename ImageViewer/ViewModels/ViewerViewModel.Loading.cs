@@ -56,7 +56,7 @@ public partial class ViewerViewModel
         {
             var folder = Path.GetDirectoryName(path);
             if (folder is not null &&
-                (!string.Equals(folder, _currentFolder, StringComparison.OrdinalIgnoreCase)
+                (!FileSystemPath.Equals(folder, _currentFolder)
                  || _folderMedia.Count == 0))
             {
                 var folderMedia = await FolderScanner.ScanAsync(folder, ct);
@@ -68,7 +68,7 @@ public partial class ViewerViewModel
 
             if (!IsActiveLoad(loadCts)) return;
             _currentIndex = _folderMedia.FindIndex(entry =>
-                string.Equals(entry.Path, path, StringComparison.OrdinalIgnoreCase));
+                FileSystemPath.Equals(entry.Path, path));
             UpdateStatus();
 
             var metadata = await Task.Run(() => ExifReader.Read(path), ct);

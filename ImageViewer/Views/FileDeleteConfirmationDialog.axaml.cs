@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using ImageViewer.Services;
 
 namespace ImageViewer.Views;
 
@@ -12,6 +13,9 @@ public partial class FileDeleteConfirmationDialog : Window
     public FileDeleteConfirmationDialog()
     {
         InitializeComponent();
+        TrashDescriptionText.Text =
+            $"The selected files and folders will be moved to the {FileOperations.TrashDisplayName}.";
+        ConfirmButton.Content = $"Move to {FileOperations.TrashDisplayName}";
     }
 
     public FileDeleteConfirmationDialog(IReadOnlyList<string> paths)

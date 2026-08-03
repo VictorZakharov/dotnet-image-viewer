@@ -6,6 +6,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
+using ImageViewer.Services;
 using ImageViewer.ViewModels;
 
 namespace ImageViewer.Views;
@@ -110,10 +111,9 @@ public partial class BrowserView
         if (_draggedPaths.Any(path => Directory.Exists(path) &&
             IsSameOrDescendant(normalizedDestination, NormalizePath(path)))) return false;
 
-        return _draggedPaths.Any(path => !string.Equals(
+        return _draggedPaths.Any(path => !FileSystemPath.Equals(
             NormalizePath(Path.GetDirectoryName(path) ?? ""),
-            normalizedDestination,
-            StringComparison.OrdinalIgnoreCase));
+            normalizedDestination));
     }
 
     private static FolderTreeItem? FindFolderTarget(Visual? source)
@@ -130,8 +130,7 @@ public partial class BrowserView
         Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
     private static bool IsSameOrDescendant(string candidate, string parent) =>
-        string.Equals(candidate, parent, StringComparison.OrdinalIgnoreCase) ||
-        candidate.StartsWith(parent + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+        FileSystemPath.IsSameOrChild(candidate, parent);
 
     private void ClearItemDrag()
     {

@@ -217,7 +217,7 @@ public partial class BrowserView
     {
         FileOperationKind.Copy => "Copying items",
         FileOperationKind.Move => "Moving items",
-        _ => "Moving items to the Recycle Bin"
+        _ => $"Moving items to the {FileOperations.TrashDisplayName}"
     };
 
     private static string FormatOperationStatus(FileOperationResult result) =>

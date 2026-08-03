@@ -6,7 +6,7 @@ namespace ImageViewer.Services;
 
 public sealed class FileClipboardState
 {
-    private readonly HashSet<string> _paths = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _paths = new(FileSystemPath.Comparer);
 
     public bool IsCut { get; private set; }
     public IReadOnlyCollection<string> Paths => _paths;

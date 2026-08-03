@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ImageViewer.Services;
 
 namespace ImageViewer.Models;
 
@@ -95,7 +96,7 @@ internal static class DuplicateModelExtensions
     {
         long total = 0;
         foreach (var file in files)
-            if (!string.Equals(file.Path, keeperPath, StringComparison.OrdinalIgnoreCase))
+            if (!FileSystemPath.Equals(file.Path, keeperPath))
                 total += file.SizeBytes;
         return total;
     }

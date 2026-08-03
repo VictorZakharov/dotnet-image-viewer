@@ -31,14 +31,14 @@ public partial class BrowserView
         if (compare.Result is not { } result) return;
 
         var remainingSelection = selectedPaths
-            .Except(result.DeletedPaths, StringComparer.OrdinalIgnoreCase)
+            .Except(result.DeletedPaths, FileSystemPath.Comparer)
             .ToList();
         if (result.DeletedPaths.Count > 0)
             await viewModel.ReloadAfterFileOperationAsync();
         viewModel.ApplyCompareDecisions(result.Decisions);
         viewModel.RestoreSelectionByPaths(remainingSelection, focusedPath);
         viewModel.ReportFileOperation(result.DeletedPaths.Count > 0
-            ? $"Compare closed · {result.DeletedPaths.Count} moved to the Recycle Bin"
+            ? $"Compare closed · {result.DeletedPaths.Count} moved to the {FileOperations.TrashDisplayName}"
             : "Compare closed · selection restored");
     }
 }
