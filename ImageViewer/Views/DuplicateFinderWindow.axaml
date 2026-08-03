@@ -30,33 +30,40 @@
     <Border Grid.Row="1" Background="#121c32" Padding="18,10"
             BorderBrush="#263755" BorderThickness="0,0,0,1">
       <Grid RowDefinitions="Auto,Auto" RowSpacing="9">
-        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="10">
+        <StackPanel Orientation="Horizontal" Spacing="10"
+                    HorizontalAlignment="Left" VerticalAlignment="Center">
           <TextBlock Text="Match:" Foreground="#8fa1c0" VerticalAlignment="Center"/>
-          <ComboBox x:Name="ModePicker" Grid.Column="1" SelectedIndex="0"
-                    SelectionChanged="OnModeChanged" MinWidth="190">
+          <ComboBox x:Name="ModePicker" SelectedIndex="0" Width="190" Height="36"
+                    VerticalContentAlignment="Center" SelectionChanged="OnModeChanged">
             <ComboBoxItem Content="Exact (byte-for-byte)"/>
             <ComboBoxItem Content="Visually similar"/>
           </ComboBox>
-          <StackPanel x:Name="ThresholdPanel" Grid.Column="2"
-                      Orientation="Horizontal" Spacing="8" IsVisible="False">
-            <TextBlock Text="Threshold:" Foreground="#8fa1c0" VerticalAlignment="Center"/>
+          <StackPanel x:Name="ThresholdPanel" Orientation="Horizontal" Spacing="8"
+                      Height="36" VerticalAlignment="Center" IsVisible="False">
+            <TextBlock Text="Threshold:" Foreground="#8fa1c0"
+                       VerticalAlignment="Center" Margin="0,4,0,0"/>
             <Slider x:Name="SimilaritySlider" Width="130" Minimum="0" Maximum="20"
-                    Value="8" TickFrequency="1" IsSnapToTickEnabled="True"/>
+                    Value="8" TickFrequency="1" IsSnapToTickEnabled="True"
+                    VerticalAlignment="Center">
+              <Slider.RenderTransform>
+                <TranslateTransform Y="-6"/>
+              </Slider.RenderTransform>
+            </Slider>
             <TextBlock Text="{Binding #SimilaritySlider.Value, StringFormat={}{0:0}}"
-                       Foreground="#e7eef9" Width="20" VerticalAlignment="Center"/>
+                       Foreground="#e7eef9" Width="20" VerticalAlignment="Center"
+                       Margin="0,4,0,0"/>
           </StackPanel>
-          <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8">
-            <TextBlock Text="Sort:" Foreground="#8fa1c0" VerticalAlignment="Center"/>
-            <ComboBox x:Name="SortPicker" SelectedIndex="0"
-                      SelectionChanged="OnSortChanged" MinWidth="160">
-              <ComboBoxItem Content="Reclaimable space"/>
-              <ComboBoxItem Content="Group size"/>
-              <ComboBoxItem Content="Newest date"/>
-            </ComboBox>
-            <Button x:Name="ScanButton" Content="Start scan" Click="OnStartScan"
-                    Padding="18,6"/>
-          </StackPanel>
-        </Grid>
+          <Border Width="1" Height="24" Background="#30415f" Margin="4,0"/>
+          <TextBlock Text="Sort:" Foreground="#8fa1c0" VerticalAlignment="Center"/>
+          <ComboBox x:Name="SortPicker" SelectedIndex="0" Width="170" Height="36"
+                    VerticalContentAlignment="Center" SelectionChanged="OnSortChanged">
+            <ComboBoxItem Content="Reclaimable space"/>
+            <ComboBoxItem Content="Group size"/>
+            <ComboBoxItem Content="Newest date"/>
+          </ComboBox>
+          <Button x:Name="ScanButton" Content="Start scan" Click="OnStartScan"
+                  Height="36" Padding="18,6"/>
+        </StackPanel>
         <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8"
               IsVisible="{Binding IsScanning}">
           <StackPanel Spacing="4">

@@ -127,6 +127,10 @@
           <Button Content="Paste" Command="{Binding PasteFilesCommand}" Padding="10,3"/>
           <Button Content="Move..." Command="{Binding MoveFilesCommand}"
                   IsEnabled="{Binding HasSelectedItems}" Padding="10,3"/>
+          <Button Content="Compare..." Click="OnCompareSelectedClicked"
+                  AutomationProperties.Name="Compare selected images"
+                  ToolTip.Tip="Compare 2–4 selected images"
+                  IsEnabled="{Binding HasSelectedItems}" Padding="10,3"/>
           <Button Content="Delete" Command="{Binding DeleteSelectedCommand}"
                   IsEnabled="{Binding HasSelectedItems}" Padding="10,3"/>
           <Button Content="{Binding UndoFileOperationLabel}"
@@ -413,6 +417,33 @@
                                  FontSize="9"
                                  FontWeight="Bold"
                                  Foreground="#1a2030"/>
+                    </Border>
+                    <!-- Session-only compare/culling badge; issue #8 will persist these marks. -->
+                    <Border HorizontalAlignment="Left" VerticalAlignment="Top"
+                            Margin="8,8,0,0"
+                            Classes="compare-badge"
+                            Classes.pick="{Binding IsComparePick}"
+                            Classes.reject="{Binding IsCompareReject}"
+                            Background="#c9233654"
+                            BorderBrush="#78a9df"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            Padding="6,2"
+                            IsHitTestVisible="False"
+                            IsVisible="{Binding ShowCompareBadge}"
+                            ZIndex="15">
+                      <Border.Styles>
+                        <Style Selector="Border.compare-badge.pick">
+                          <Setter Property="Background" Value="#d4214d3b"/>
+                          <Setter Property="BorderBrush" Value="#75d6a6"/>
+                        </Style>
+                        <Style Selector="Border.compare-badge.reject">
+                          <Setter Property="Background" Value="#d45b2834"/>
+                          <Setter Property="BorderBrush" Value="#ff8a9b"/>
+                        </Style>
+                      </Border.Styles>
+                      <TextBlock Text="{Binding CompareBadgeText}"
+                                 Foreground="#f2f7ff" FontSize="9" FontWeight="Bold"/>
                     </Border>
                     <!-- Extension pill -->
                     <Border HorizontalAlignment="Right" VerticalAlignment="Top"

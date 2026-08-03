@@ -1,0 +1,82 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:ImageViewer.Controls"
+        xmlns:views="using:ImageViewer.Views"
+        xmlns:vm="using:ImageViewer.ViewModels"
+        x:Class="ImageViewer.Views.ImageCompareWindow"
+        x:DataType="vm:ImageCompareViewModel"
+        Title="Compare images"
+        Icon="/Assets/ImageViewer.png"
+        Width="1320" Height="800" MinWidth="900" MinHeight="620"
+        WindowStartupLocation="CenterOwner"
+        Background="#080e1a">
+  <Grid RowDefinitions="Auto,*">
+    <Border Background="#18243d" Padding="16,10">
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <TextBlock Text="Compare images" Foreground="#f3f7ff"
+                     FontSize="19" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding CandidateSummary}" Foreground="#8fa6ca"
+                     FontSize="11" VerticalAlignment="Center"/>
+          <TextBlock Text="Active:" Foreground="#6f86aa" Margin="12,0,0,0"
+                     VerticalAlignment="Center"/>
+          <TextBlock Text="{Binding ActiveCandidate.FileName}" Foreground="#dce8f9"
+                     FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"
+                     MaxWidth="110" TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+        <TextBlock Grid.Column="1"
+                   Text="←/→ active · wheel zoom · drag pan · F fit · A 100% · B blink · P/X pick/reject"
+                   Foreground="#7388aa" FontSize="8" VerticalAlignment="Center"
+                   HorizontalAlignment="Right" TextTrimming="CharacterEllipsis"/>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="7"
+                    VerticalAlignment="Center">
+          <ToggleButton x:Name="SyncToggle" Content="Synchronized"
+                        IsChecked="{Binding IsSynchronized, Mode=TwoWay}"
+                        Click="OnSynchronizationChanged" Padding="11,5"/>
+          <Button Content="Fit" Click="OnFit" Padding="12,5"/>
+          <Button Content="100%" Click="OnActualSize" Padding="12,5"/>
+          <Button x:Name="BlinkButton" Content="Blink / alternate"
+                  IsEnabled="{Binding CanBlink}" Click="OnBlink" Padding="12,5"/>
+          <Button Content="Exit blink" IsVisible="{Binding IsBlinking}"
+                  Click="OnExitBlink" Padding="10,5"/>
+          <Button Content="Recycle rejected..."
+                  IsEnabled="{Binding HasRejected}" Click="OnDeleteRejected" Padding="11,5"/>
+          <Button Content="Close" Click="OnClose" Padding="12,5"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="1" Margin="6">
+      <ItemsControl x:Name="CandidateItems" ItemsSource="{Binding Candidates}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid Rows="{Binding Rows}" Columns="{Binding Columns}"/>
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:CompareCandidateViewModel">
+            <views:ImageCompareCellView/>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <Border x:Name="BlinkOverlay" IsVisible="{Binding IsBlinking}"
+              Background="#050912" BorderBrush="#45a9ff" BorderThickness="2"
+              CornerRadius="5" Margin="3">
+        <Grid>
+          <controls:ZoomPanImage x:Name="BlinkImage"
+                                 ViewportChanged="OnBlinkViewportChanged"/>
+          <Border Background="#d916233b" CornerRadius="3" Padding="10,5"
+                  HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12">
+            <TextBlock x:Name="BlinkLabel" Foreground="#eef5ff"
+                       FontSize="11" FontWeight="SemiBold"/>
+          </Border>
+          <TextBlock Text="Press B or Space to alternate · Esc to exit blink"
+                     Foreground="#d7e5f8" Background="#c916233b"
+                     Padding="10,5" HorizontalAlignment="Center"
+                     VerticalAlignment="Bottom" Margin="0,0,0,12"/>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</Window>

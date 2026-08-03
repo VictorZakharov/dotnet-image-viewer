@@ -23,8 +23,13 @@
           <TextBlock Grid.Column="2" Text="{Binding KeeperRule}"
                      Foreground="#9db0cf" FontSize="10"
                      VerticalAlignment="Center" TextWrapping="Wrap" Margin="8,0"/>
-          <Button Grid.Column="3" Content="Select suggested duplicates"
-                  Click="OnSelectSuggested" Padding="10,4" VerticalAlignment="Center"/>
+          <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="7">
+            <Button Content="Compare 2–4..."
+                    ToolTip.Tip="Compare the suggested keeper with checked files; otherwise use the first alternatives"
+                    Click="OnCompare" Padding="10,4" VerticalAlignment="Center"/>
+            <Button Content="Select suggested duplicates"
+                    Click="OnSelectSuggested" Padding="10,4" VerticalAlignment="Center"/>
+          </StackPanel>
         </Grid>
       </Border>
 
@@ -57,6 +62,11 @@
                     </Border>
                     <TextBlock Text="{Binding MatchText}" Foreground="#d7a85d"
                                FontSize="10" VerticalAlignment="Center"/>
+                    <Border IsVisible="{Binding HasCompareBadge}"
+                            Background="#29496f" CornerRadius="3" Padding="6,1">
+                      <TextBlock Text="{Binding CompareBadgeText}" Foreground="#dceeff"
+                                 FontSize="9" FontWeight="Bold"/>
+                    </Border>
                   </StackPanel>
                   <TextBlock Grid.Row="1" Text="{Binding Path}" ToolTip.Tip="{Binding Path}"
                              Foreground="#8297ba" FontSize="10"

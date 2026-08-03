@@ -1,4 +1,5 @@
 using ImageViewer.Services;
+using ImageViewer.Models;
 using ImageViewer.ViewModels;
 
 namespace ImageViewer.Tests;
@@ -42,6 +43,39 @@ public sealed class BrowserSelectionTests : IDisposable
         Assert.Equal(2, vm.SelectedCount);
         Assert.Equal(1, vm.SelectedFileCount);
         Assert.Equal(new[] { folder.Path, file.Path }, vm.SelectedPaths);
+    }
+
+    [Fact]
+    public void CompareReturnRestoresPathsAndFocusedImage()
+    {
+        var first = CreateFileItem("first.jpg");
+        var second = CreateFileItem("second.jpg");
+        var third = CreateFileItem("third.jpg");
+        var vm = CreateViewModel(first, second, third);
+
+        vm.RestoreSelectionByPaths([first.Path, third.Path], third.Path);
+
+        Assert.Equal(2, vm.SelectedCount);
+        Assert.Equal(third.Path, vm.SelectedPath);
+        Assert.Contains(first.Path, vm.SelectedPaths);
+        Assert.Contains(third.Path, vm.SelectedPaths);
+    }
+
+    [Fact]
+    public void CompareDecisionsImmediatelyUpdateBrowserBadges()
+    {
+        var first = CreateFileItem("first.jpg");
+        var second = CreateFileItem("second.jpg");
+        var vm = CreateViewModel(first, second);
+
+        vm.ApplyCompareDecisions([
+            new CompareCandidateDecision(first.Path, CompareMark.Pick),
+            new CompareCandidateDecision(second.Path, CompareMark.Reject)
+        ]);
+
+        Assert.Equal("PICK", first.CompareBadgeText);
+        Assert.True(first.IsComparePick);
+        Assert.True(second.IsCompareReject);
     }
 
     public void Dispose()

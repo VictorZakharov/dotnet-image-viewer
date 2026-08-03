@@ -1,0 +1,107 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:ImageViewer.Controls"
+             xmlns:vm="using:ImageViewer.ViewModels"
+             x:Class="ImageViewer.Views.ImageCompareCellView"
+             x:DataType="vm:CompareCandidateViewModel">
+  <UserControl.Styles>
+    <Style Selector="StackPanel.cell-actions">
+      <Setter Property="IsVisible" Value="False"/>
+    </Style>
+    <Style Selector="Border.compare-cell:pointerover StackPanel.cell-actions">
+      <Setter Property="IsVisible" Value="True"/>
+    </Style>
+    <Style Selector="Border.compare-cell.active StackPanel.cell-actions">
+      <Setter Property="IsVisible" Value="True"/>
+    </Style>
+  </UserControl.Styles>
+  <Border Classes="compare-cell"
+          Classes.active="{Binding IsActive}"
+          Margin="3" Background="#0d1628"
+          BorderBrush="#293a5a" BorderThickness="1"
+          CornerRadius="5" ClipToBounds="True"
+          PointerPressed="OnCandidatePressed">
+    <Border.Styles>
+      <Style Selector="Border.compare-cell.active">
+        <Setter Property="Background" Value="#10203a"/>
+      </Style>
+    </Border.Styles>
+    <Grid RowDefinitions="34,*,Auto">
+      <Border Background="#16233b" Padding="9,0">
+        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+          <TextBlock Text="{Binding FileName}" Foreground="#eef5ff"
+                     FontSize="11" FontWeight="SemiBold"
+                     VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+          <Border Grid.Column="1" IsVisible="{Binding IsActive}"
+                  Background="#17639a" BorderBrush="#63bdff"
+                  BorderThickness="1" CornerRadius="3" Padding="6,1"
+                  VerticalAlignment="Center">
+            <TextBlock Text="ACTIVE" Foreground="#f2f9ff"
+                       FontSize="8" FontWeight="Bold"/>
+          </Border>
+          <Border Grid.Column="2" IsVisible="{Binding HasMark}"
+                  Background="#29496f" CornerRadius="3" Padding="6,2">
+            <TextBlock Text="{Binding MarkText}" Foreground="#dceeff"
+                       FontSize="9" FontWeight="Bold"/>
+          </Border>
+          <StackPanel Grid.Column="3" Classes="cell-actions"
+                      Orientation="Horizontal" Spacing="5"
+                      VerticalAlignment="Center">
+            <Button Content="Pick" Click="OnPickCandidate" Padding="8,2"/>
+            <Button Content="Reject" Click="OnRejectCandidate" Padding="8,2"/>
+            <Button Content="Keep this; reject others"
+                    Click="OnKeepCandidate" Padding="9,2"/>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <Grid Grid.Row="1" Background="#050912">
+        <controls:ZoomPanImage Source="{Binding Bitmap}"
+                               Rotation="{Binding Rotation}"
+                               ViewportChanged="OnViewportChanged"
+                               GotFocus="OnImageFocused"/>
+        <StackPanel IsVisible="{Binding IsLoading}" Spacing="7"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+          <ProgressBar IsIndeterminate="True" Width="120" Height="4"/>
+          <TextBlock Text="Loading full resolution..."
+                     Foreground="#7890b5" FontSize="10"/>
+        </StackPanel>
+        <TextBlock Text="{Binding LoadError}" IsVisible="{Binding LoadError}"
+                   Foreground="#ff9a9a" FontSize="11" TextWrapping="Wrap"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Margin="20"/>
+      </Grid>
+
+      <ItemsControl Grid.Row="2" ItemsSource="{Binding MetadataRows}" Margin="8,5">
+        <ItemsControl.Styles>
+          <Style Selector="TextBlock.metadata-value.different">
+            <Setter Property="Foreground" Value="#f1bf68"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+          </Style>
+        </ItemsControl.Styles>
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid Columns="2" Rows="3"/>
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:CompareMetadataRow">
+            <Grid ColumnDefinitions="Auto,*" Margin="5,1" ColumnSpacing="6">
+              <TextBlock Text="{Binding Label}" Foreground="#677fa4" FontSize="9"/>
+              <TextBlock Grid.Column="1" Text="{Binding Value}"
+                         Classes="metadata-value"
+                         Classes.different="{Binding IsDifferent}"
+                         Foreground="#aebed8" FontSize="9"
+                         TextTrimming="CharacterEllipsis"/>
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- Match the browser grid's high-contrast single-selection frame. -->
+      <Border Grid.RowSpan="3" BorderBrush="#21b6ff" BorderThickness="5"
+              CornerRadius="4" IsHitTestVisible="False"
+              IsVisible="{Binding IsActive}" ZIndex="50"/>
+    </Grid>
+  </Border>
+</UserControl>

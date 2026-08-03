@@ -24,11 +24,23 @@ public partial class DuplicateFileViewModel : ObservableObject, IDisposable
     public string ModifiedText => $"Modified {Entry.ModifiedUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss}";
     public string AccessedText => $"Accessed {Entry.AccessedUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss}";
     public string MetadataText => BuildMetadataText();
-    public bool IsSuggestedKeeper { get; }
     public string MatchText { get; }
 
     [ObservableProperty] private bool _isSelected;
     [ObservableProperty] private Bitmap? _thumbnail;
+    [ObservableProperty] private bool _isSuggestedKeeper;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CompareBadgeText), nameof(HasCompareBadge))]
+    private CompareMark _compareMark;
+
+    public bool HasCompareBadge => CompareMark != ImageViewer.Models.CompareMark.Neutral;
+    public string CompareBadgeText => CompareMark switch
+    {
+        ImageViewer.Models.CompareMark.Pick => "PICK",
+        ImageViewer.Models.CompareMark.Reject => "REJECT",
+        _ => ""
+    };
 
     public DuplicateFileViewModel(
         DuplicateFileEntry entry,
@@ -45,6 +57,13 @@ public partial class DuplicateFileViewModel : ObservableObject, IDisposable
             : entry.ContentHash == keeper.ContentHash
                 ? "Byte-identical to keeper"
                 : "Visual match";
+    }
+
+    public void ApplyDecision(CompareCandidateDecision decision)
+    {
+        CompareMark = decision.Mark;
+        if (decision.Mark == ImageViewer.Models.CompareMark.Reject) IsSelected = true;
+        else if (decision.Mark == ImageViewer.Models.CompareMark.Pick) IsSelected = false;
     }
 
     partial void OnIsSelectedChanged(bool value) => _selectionChanged();

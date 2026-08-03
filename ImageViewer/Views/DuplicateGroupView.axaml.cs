@@ -13,4 +13,11 @@ public partial class DuplicateGroupView : UserControl
         if (DataContext is DuplicateGroupViewModel group)
             group.SelectSuggestedDuplicates();
     }
+
+    private async void OnCompare(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is DuplicateGroupViewModel group
+            && TopLevel.GetTopLevel(this) is DuplicateFinderWindow owner)
+            await owner.CompareGroupAsync(group);
+    }
 }
