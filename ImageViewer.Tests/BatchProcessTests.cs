@@ -165,6 +165,9 @@ public sealed class BatchProcessTests
             progress: null,
             CancellationToken.None);
 
+        Assert.True(
+            result.Failures.Count == 0,
+            string.Join(Environment.NewLine, result.Failures.Select(failure => failure.Error)));
         var target = Assert.Single(result.Successful).TargetPath;
         Assert.Equal((20u, 40u), folder.Dimensions(target));
     }

@@ -82,6 +82,9 @@ public sealed partial class BatchImageProcessor
 
     private static void ApplyWatermark(MagickImage image, BatchProcessOperation operation)
     {
+        image.Settings.Font = WatermarkFontResolver.FontName
+            ?? throw new NotSupportedException(
+                "Watermarking requires a font that ImageMagick can discover on this system.");
         var alpha = (byte)Math.Round(255 * Math.Clamp(operation.WatermarkOpacity, 1, 100) / 100d);
         image.Settings.FontPointsize = Math.Clamp(operation.WatermarkPointSize, 6, 300);
         image.Settings.FillColor = new MagickColor(255, 255, 255, alpha);

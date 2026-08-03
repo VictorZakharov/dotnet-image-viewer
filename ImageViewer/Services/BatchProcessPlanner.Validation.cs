@@ -34,6 +34,8 @@ public sealed partial class BatchProcessPlanner
             operation.Kind == BatchProcessOperationKind.Watermark);
         if (watermark is not null && string.IsNullOrWhiteSpace(watermark.WatermarkText))
             return "Watermark text is empty.";
+        if (watermark is not null && WatermarkFontResolver.FontName is null)
+            return "Watermarking requires a discoverable system font.";
         return null;
     }
 
