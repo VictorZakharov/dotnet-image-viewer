@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
@@ -40,6 +38,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
     private bool _isPlaying;
 
     [ObservableProperty] private bool _isVideoLoading;
+    [ObservableProperty] private bool _isImageLoading;
     [ObservableProperty] private string? _playbackError;
     [ObservableProperty] private double _playbackPosition;
     [ObservableProperty] private string _currentTimeLabel = "00:00";
@@ -75,88 +74,11 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
     public bool HasAnyExifData => Metadata?.HasAnyExif == true;
     public string? SlideshowStatus => IsSlideshowRunning ? "Slideshow" : null;
 
-    private List<MediaScanEntry> _folderMedia = new();
-    private string? _currentFolder;
-    private int _currentIndex = -1;
-    private CancellationTokenSource? _loadCts;
     private DispatcherTimer? _slideshowTimer;
     private LibVLC? _libVlc;
     private Media? _currentMedia;
     private bool _updatingPlaybackPosition;
     private bool _disposed;
-
-    public ViewerViewModel(AppSettings settings)
-    {
-        Settings = settings;
-        ShowExifOverlay = settings.ShowExifOverlay;
-    }
-
-    public async Task LoadAsync(string path)
-    {
-        _loadCts?.Cancel();
-        _loadCts = new CancellationTokenSource();
-        var ct = _loadCts.Token;
-
-        FilePath = path;
-        PlaybackError = null;
-        Metadata = null;
-        Rotation = 0;
-
-        var isVideo = MediaFileTypes.IsVideo(path);
-        IsVideo = isVideo;
-        if (isVideo)
-        {
-            StopSlideshow();
-            Bitmap = null;
-        }
-        else
-        {
-            StopVideo();
-        }
-
-        try
-        {
-            var folder = Path.GetDirectoryName(path);
-            if (folder is not null &&
-                (!string.Equals(folder, _currentFolder, StringComparison.OrdinalIgnoreCase)
-                 || _folderMedia.Count == 0))
-            {
-                _currentFolder = folder;
-                _folderMedia = await FolderScanner.ScanAsync(folder, ct);
-            }
-
-            _currentIndex = _folderMedia.FindIndex(entry =>
-                string.Equals(entry.Path, path, StringComparison.OrdinalIgnoreCase));
-            UpdateStatus();
-
-            Metadata = await Task.Run(() => ExifReader.Read(path), ct);
-            if (ct.IsCancellationRequested) return;
-
-            if (isVideo)
-            {
-                StartVideo(path);
-            }
-            else
-            {
-                var loaded = await ImageLoader.LoadAsync(path, ct);
-                if (ct.IsCancellationRequested) return;
-
-                Bitmap = loaded.Bitmap;
-                Rotation = loaded.OrientationBaked ? 0 : (Metadata?.OrientationRotation ?? 0);
-            }
-
-            UpdateStatus();
-        }
-        catch (OperationCanceledException)
-        {
-            // Expected when a newer load supersedes this one.
-        }
-        catch (Exception ex)
-        {
-            if (isVideo)
-                PlaybackError = $"Could not play this video: {ex.Message}";
-        }
-    }
 
     private void EnsureVideoPlayer()
     {
