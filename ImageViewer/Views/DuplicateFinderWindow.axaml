@@ -1,0 +1,119 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:ImageViewer.Views"
+        xmlns:vm="using:ImageViewer.ViewModels"
+        x:Class="ImageViewer.Views.DuplicateFinderWindow"
+        x:DataType="vm:DuplicateFinderViewModel"
+        Title="Find duplicate images"
+        Icon="/Assets/ImageViewer.png"
+        Width="1120" Height="780" MinWidth="860" MinHeight="560"
+        WindowStartupLocation="CenterOwner"
+        Background="#0f1729">
+  <Grid RowDefinitions="Auto,Auto,*,Auto">
+    <Border Background="#17223a" Padding="18,14">
+      <Grid RowDefinitions="Auto,Auto" RowSpacing="12">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+          <StackPanel>
+            <TextBlock Text="Find duplicate images" Foreground="#f3f7ff"
+                       FontSize="21" FontWeight="SemiBold"/>
+            <TextBlock Text="Exact matching is byte-verified. Similar matching uses an adjustable perceptual hash."
+                       Foreground="#91a6c8" FontSize="11"/>
+          </StackPanel>
+          <Button Grid.Column="1" Content="Choose folders..." Click="OnChooseFolders"
+                  Padding="13,6" VerticalAlignment="Center"/>
+        </Grid>
+        <TextBlock Grid.Row="1" Text="{Binding RootsSummary}" ToolTip.Tip="{Binding RootsSummary}"
+                   Foreground="#bdcbe1" FontSize="11" TextTrimming="CharacterEllipsis"/>
+      </Grid>
+    </Border>
+
+    <Border Grid.Row="1" Background="#121c32" Padding="18,10"
+            BorderBrush="#263755" BorderThickness="0,0,0,1">
+      <Grid RowDefinitions="Auto,Auto" RowSpacing="9">
+        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="10">
+          <TextBlock Text="Match:" Foreground="#8fa1c0" VerticalAlignment="Center"/>
+          <ComboBox x:Name="ModePicker" Grid.Column="1" SelectedIndex="0"
+                    SelectionChanged="OnModeChanged" MinWidth="190">
+            <ComboBoxItem Content="Exact (byte-for-byte)"/>
+            <ComboBoxItem Content="Visually similar"/>
+          </ComboBox>
+          <StackPanel x:Name="ThresholdPanel" Grid.Column="2"
+                      Orientation="Horizontal" Spacing="8" IsVisible="False">
+            <TextBlock Text="Threshold:" Foreground="#8fa1c0" VerticalAlignment="Center"/>
+            <Slider x:Name="SimilaritySlider" Width="130" Minimum="0" Maximum="20"
+                    Value="8" TickFrequency="1" IsSnapToTickEnabled="True"/>
+            <TextBlock Text="{Binding #SimilaritySlider.Value, StringFormat={}{0:0}}"
+                       Foreground="#e7eef9" Width="20" VerticalAlignment="Center"/>
+          </StackPanel>
+          <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="Sort:" Foreground="#8fa1c0" VerticalAlignment="Center"/>
+            <ComboBox x:Name="SortPicker" SelectedIndex="0"
+                      SelectionChanged="OnSortChanged" MinWidth="160">
+              <ComboBoxItem Content="Reclaimable space"/>
+              <ComboBoxItem Content="Group size"/>
+              <ComboBoxItem Content="Newest date"/>
+            </ComboBox>
+            <Button x:Name="ScanButton" Content="Start scan" Click="OnStartScan"
+                    Padding="18,6"/>
+          </StackPanel>
+        </Grid>
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8"
+              IsVisible="{Binding IsScanning}">
+          <StackPanel Spacing="4">
+            <ProgressBar Height="5" Minimum="0" Maximum="100"
+                         Value="{Binding ProgressValue}"
+                         IsIndeterminate="{Binding IsProgressIndeterminate}"/>
+            <TextBlock Text="{Binding ProgressText}" Foreground="#8fa1c0" FontSize="10"
+                       TextTrimming="CharacterEllipsis"/>
+          </StackPanel>
+          <Button x:Name="PauseButton" Grid.Column="1" Content="Pause"
+                  Click="OnPauseScan" Padding="12,4"/>
+          <Button Grid.Column="2" Content="Cancel" Click="OnCancelScan" Padding="12,4"/>
+        </Grid>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="2">
+      <ScrollViewer IsVisible="{Binding HasGroups}"
+                    VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ItemsControl ItemsSource="{Binding Groups}" Margin="16,14,16,6">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:DuplicateGroupViewModel">
+              <views:DuplicateGroupView/>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+      <StackPanel IsVisible="{Binding !HasGroups}" Spacing="9"
+                  HorizontalAlignment="Center" VerticalAlignment="Center" Margin="30">
+        <TextBlock Text="No duplicate groups to review" Foreground="#9aacca"
+                   FontSize="18" HorizontalAlignment="Center"/>
+        <TextBlock Text="Choose folders and start an exact or visually similar scan."
+                   Foreground="#667c9f" FontSize="12" HorizontalAlignment="Center"/>
+      </StackPanel>
+    </Grid>
+
+    <Border Grid.Row="3" Background="#17223a" Padding="16,10"
+            BorderBrush="#263755" BorderThickness="0,1,0,0">
+      <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="7">
+        <StackPanel>
+          <TextBlock Text="{Binding StatusText}" Foreground="#aebed8" FontSize="11"/>
+          <TextBlock Text="{Binding SelectionSummary}" Foreground="#e7eef9"
+                     FontSize="12" FontWeight="SemiBold"/>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Content="Clear selection" Click="OnClearSelection" Padding="12,5"/>
+          <Button Content="Move selected to Recycle Bin" Click="OnDeleteSelected"
+                  IsEnabled="{Binding CanDelete}" Padding="16,6"/>
+          <Button Content="Close" Click="OnClose" Padding="14,6"/>
+        </StackPanel>
+        <Expander Grid.Row="1" Grid.ColumnSpan="2"
+                  Header="Scan details (hard links and read errors)"
+                  IsVisible="{Binding HasScanDetails}" Margin="0,3,0,0">
+          <ListBox ItemsSource="{Binding ScanDetails}" MaxHeight="120"
+                   Background="#0c1425" FontSize="10"/>
+        </Expander>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>
