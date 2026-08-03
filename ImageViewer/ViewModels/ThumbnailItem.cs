@@ -40,6 +40,7 @@ public partial class ThumbnailItem : ObservableObject, IDisposable
     [ObservableProperty] private Bitmap? _thumbnail;
     [ObservableProperty] private bool _isFolderPreviewLoading;
     [ObservableProperty] private bool _isSelected;
+    [ObservableProperty] private bool _showSelectionCheckmark;
     private int _folderPreviewLoadCount;
     private int _thumbnailTier;
     private int _folderThumbnailTier;

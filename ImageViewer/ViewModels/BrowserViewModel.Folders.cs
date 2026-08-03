@@ -124,9 +124,11 @@ public partial class BrowserViewModel
 
     public string? SelectedPath => SelectedItem?.Path;
 
-    public async Task LoadFolderAsync(string folder)
+    public Task LoadFolderAsync(string folder) => LoadFolderCoreAsync(folder, force: false);
+
+    private async Task LoadFolderCoreAsync(string folder, bool force)
     {
-        if (string.Equals(CurrentFolder, folder, StringComparison.OrdinalIgnoreCase) && Items.Count > 0)
+        if (!force && string.Equals(CurrentFolder, folder, StringComparison.OrdinalIgnoreCase) && Items.Count > 0)
         {
             _ = SyncTreeSelectionAsync(folder);
             return;

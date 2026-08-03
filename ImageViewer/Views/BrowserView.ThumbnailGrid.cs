@@ -158,13 +158,21 @@ public partial class BrowserView
 
     private void OnThumbnailPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is not Border { DataContext: ThumbnailItem item }) return;
+        if (sender is not Border border || border.DataContext is not ThumbnailItem item) return;
         if (DataContext is not BrowserViewModel vm) return;
         if (IsInsideTextBox(e.Source as Visual)) return;
 
         var properties = e.GetCurrentPoint(this).Properties;
         if (!properties.IsLeftButtonPressed && !properties.IsRightButtonPressed) return;
-        vm.SelectItem(item);
+        if (properties.IsRightButtonPressed)
+            vm.SelectForContextMenu(item);
+        else
+            vm.SelectItem(
+                item,
+                toggle: e.KeyModifiers.HasFlag(KeyModifiers.Control),
+                extend: e.KeyModifiers.HasFlag(KeyModifiers.Shift));
+        if (properties.IsLeftButtonPressed && item.IsFile)
+            PrepareFileDrag(e, border);
         FocusThumbnailGrid();
     }
 
@@ -190,6 +198,19 @@ public partial class BrowserView
         var total = vm.FilteredItems.Count;
         if (total == 0) return;
 
+        if (e.Key == Key.A && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+        {
+            vm.SelectAll();
+            e.Handled = true;
+            return;
+        }
+        if (e.Key == Key.Space && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+        {
+            vm.ToggleFocusedSelection();
+            e.Handled = true;
+            return;
+        }
+
         var perRow = ItemsPerRow(vm);
         var index = Math.Max(0, vm.SelectedIndex);
         var newIndex = GetNavigationTarget(e.Key, index, total, perRow, RowsPerPage(vm));
@@ -198,7 +219,10 @@ public partial class BrowserView
 
         if (newIndex != index)
         {
-            vm.SelectIndex(newIndex);
+            vm.NavigateSelection(
+                newIndex,
+                extend: e.KeyModifiers.HasFlag(KeyModifiers.Shift),
+                preserveSelection: e.KeyModifiers.HasFlag(KeyModifiers.Control));
             ScrollIndexIntoView(newIndex);
         }
         e.Handled = true;

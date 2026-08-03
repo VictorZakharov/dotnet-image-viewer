@@ -7,44 +7,11 @@ namespace ImageViewer.ViewModels;
 public partial class BrowserViewModel
 {
     private ThumbnailItem? _renamingItem;
-    private ThumbnailItem? _selectedVisualItem;
 
     public void OpenSelected()
     {
         if (SelectedPath is { } p)
             OpenRequested?.Invoke(p);
-    }
-
-    public void SelectIndex(int index)
-    {
-        var clamped = FilteredItems.Count == 0
-            ? -1
-            : Math.Clamp(index, -1, FilteredItems.Count - 1);
-        if (SelectedIndex == clamped)
-        {
-            SyncSelectedVisual();
-            return;
-        }
-
-        SelectedIndex = clamped;
-    }
-
-    public void SelectItem(ThumbnailItem item)
-    {
-        var index = FilteredItems.IndexOf(item);
-        if (index >= 0) SelectIndex(index);
-    }
-
-    private void SyncSelectedVisual()
-    {
-        var selected = SelectedItem;
-        if (ReferenceEquals(selected, _selectedVisualItem)) return;
-
-        if (_selectedVisualItem is not null)
-            _selectedVisualItem.IsSelected = false;
-        _selectedVisualItem = selected;
-        if (_selectedVisualItem is not null)
-            _selectedVisualItem.IsSelected = true;
     }
 
     public void BeginRenameSelected()
@@ -57,7 +24,12 @@ public partial class BrowserViewModel
         {
             var prev = _renamingItem;
             _renamingItem = null;
-            if (prev.TryCommitRename(out _)) ResortItems();
+            var oldPath = prev.Path;
+            if (prev.TryCommitRename(out var newPath))
+            {
+                ReportRename(oldPath, newPath);
+                ResortItems();
+            }
         }
 
         _renamingItem = target;
@@ -67,9 +39,14 @@ public partial class BrowserViewModel
 
     public void CommitRename(ThumbnailItem item)
     {
-        var committed = item.TryCommitRename(out _);
+        var oldPath = item.Path;
+        var committed = item.TryCommitRename(out var newPath);
         if (ReferenceEquals(_renamingItem, item)) _renamingItem = null;
-        if (committed) ResortItems();
+        if (committed)
+        {
+            ReportRename(oldPath, newPath);
+            ResortItems();
+        }
     }
 
     public void CancelRename(ThumbnailItem item)
@@ -80,8 +57,6 @@ public partial class BrowserViewModel
 
     partial void OnSelectedIndexChanged(int value)
     {
-        SyncSelectedVisual();
-
         if (_renamingItem is not null)
         {
             var newItem = (value >= 0 && value < FilteredItems.Count) ? FilteredItems[value] : null;
@@ -92,7 +67,12 @@ public partial class BrowserViewModel
                 Dispatcher.UIThread.Post(() =>
                 {
                     if (!prev.IsRenaming) return;
-                    if (prev.TryCommitRename(out _)) ResortItems();
+                    var oldPath = prev.Path;
+                    if (prev.TryCommitRename(out var newPath))
+                    {
+                        ReportRename(oldPath, newPath);
+                        ResortItems();
+                    }
                 });
             }
         }

@@ -1,0 +1,25 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ImageViewer.Views.FileOperationProgressDialog"
+        x:CompileBindings="False"
+        Title="File operation"
+        Icon="/Assets/ImageViewer.png"
+        Width="520" Height="220"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="#0f1729">
+  <Grid RowDefinitions="Auto,Auto,Auto" Margin="24" RowSpacing="16">
+    <StackPanel Spacing="5">
+      <TextBlock x:Name="HeadingText" Foreground="#f3f7ff"
+                 FontSize="18" FontWeight="SemiBold"/>
+      <TextBlock x:Name="CurrentFileText" Foreground="#8fa1c0"
+                 FontSize="11" TextTrimming="CharacterEllipsis"/>
+    </StackPanel>
+    <StackPanel Grid.Row="1" Spacing="6">
+      <ProgressBar x:Name="OperationProgressBar" Minimum="0" Maximum="100" Height="8"/>
+      <TextBlock x:Name="ProgressText" Foreground="#b3c1dd" FontSize="11"/>
+    </StackPanel>
+    <Button Grid.Row="2" Content="Cancel" Click="OnCancel"
+            HorizontalAlignment="Right" Padding="18,6"/>
+  </Grid>
+</Window>

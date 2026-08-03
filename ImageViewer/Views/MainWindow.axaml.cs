@@ -243,6 +243,35 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (e.Source is not TextBox && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+        {
+            switch (e.Key)
+            {
+                case Key.A:
+                    browser.SelectAll();
+                    e.Handled = true;
+                    return;
+                case Key.C:
+                    browser.CopyFilesCommand.Execute(null);
+                    e.Handled = true;
+                    return;
+                case Key.X:
+                    browser.CutFilesCommand.Execute(null);
+                    e.Handled = true;
+                    return;
+                case Key.V:
+                    browser.PasteFilesCommand.Execute(null);
+                    e.Handled = true;
+                    return;
+                case Key.Z:
+                    browser.UndoFileOperationCommand.Execute(null);
+                    e.Handled = true;
+                    return;
+            }
+        }
+
+        if (e.Source is TextBox) return;
+
         switch (e.Key)
         {
             case Key.Delete:
@@ -292,6 +321,13 @@ public partial class MainWindow : Window
 
     private void OnDragOver(object? sender, DragEventArgs e)
     {
+        if (_browserView?.IsInternalFileDragActive == true)
+        {
+            e.DragEffects = DragDropEffects.None;
+            e.Handled = true;
+            return;
+        }
+
         e.DragEffects = e.DataTransfer.Formats.Contains(DataFormat.File)
             ? DragDropEffects.Copy
             : DragDropEffects.None;
@@ -299,6 +335,12 @@ public partial class MainWindow : Window
 
     private void OnDrop(object? sender, DragEventArgs e)
     {
+        if (_browserView?.IsInternalFileDragActive == true)
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (DataContext is not MainWindowViewModel vm) return;
         var files = e.DataTransfer.TryGetFiles();
         if (files is null) return;

@@ -1,0 +1,41 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ImageViewer.Views.FileCollisionDialog"
+        x:CompileBindings="False"
+        Title="File name collision"
+        Icon="/Assets/ImageViewer.png"
+        Width="620" Height="330"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="#0f1729">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="24" RowSpacing="18">
+    <StackPanel Spacing="5">
+      <TextBlock Text="A file with this name already exists"
+                 Foreground="#f3f7ff" FontSize="19" FontWeight="SemiBold"/>
+      <TextBlock Text="Choose what ImageViewer should do with this collision."
+                 Foreground="#8fa1c0" FontSize="12"/>
+    </StackPanel>
+
+    <Border Grid.Row="1" Background="#162038" CornerRadius="6" Padding="14">
+      <StackPanel Spacing="9">
+        <TextBlock Text="Source" Foreground="#8fa1c0" FontSize="10"/>
+        <TextBlock x:Name="SourcePathText" Foreground="#e7eef9"
+                   TextWrapping="Wrap" FontSize="12"/>
+        <TextBlock Text="Existing destination" Foreground="#8fa1c0" FontSize="10"/>
+        <TextBlock x:Name="DestinationPathText" Foreground="#e8c786"
+                   TextWrapping="Wrap" FontSize="12"/>
+        <CheckBox x:Name="ApplyToRemainingCheckBox"
+                  Content="Use this choice for remaining collisions"
+                  FontSize="11"/>
+      </StackPanel>
+    </Border>
+
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+      <Button Grid.Column="1" Content="Skip" Click="OnSkip" Padding="15,6"/>
+      <Button x:Name="ReplaceButton" Grid.Column="2" Content="Replace"
+              Click="OnReplace" Padding="15,6"/>
+      <Button Grid.Column="3" Content="Rename incoming" Click="OnRename" Padding="15,6"/>
+      <Button Grid.Column="4" Content="Cancel operation" Click="OnCancel" Padding="15,6"/>
+    </Grid>
+  </Grid>
+</Window>

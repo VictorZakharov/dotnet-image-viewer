@@ -1,0 +1,26 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ImageViewer.Views.FileOperationResultDialog"
+        x:CompileBindings="False"
+        Title="File operation result"
+        Icon="/Assets/ImageViewer.png"
+        Width="660" Height="430"
+        MinWidth="520" MinHeight="320"
+        WindowStartupLocation="CenterOwner"
+        Background="#0f1729">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="24" RowSpacing="16">
+    <StackPanel Spacing="5">
+      <TextBlock x:Name="HeadingText" Foreground="#f3f7ff"
+                 FontSize="19" FontWeight="SemiBold"/>
+      <TextBlock x:Name="SummaryText" Foreground="#b3c1dd" FontSize="12"/>
+    </StackPanel>
+    <Border Grid.Row="1" Background="#162038" CornerRadius="6" Padding="12">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <TextBlock x:Name="DetailsText" Foreground="#ffaaaa"
+                   FontFamily="Consolas" FontSize="11" TextWrapping="Wrap"/>
+      </ScrollViewer>
+    </Border>
+    <Button Grid.Row="2" Content="Close" Click="OnClose"
+            HorizontalAlignment="Right" Padding="20,6"/>
+  </Grid>
+</Window>
