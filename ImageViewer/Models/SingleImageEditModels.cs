@@ -13,6 +13,13 @@ public enum SingleImageEditKind
     RemoveMetadata
 }
 
+public enum PendingImageEditChoice
+{
+    Cancel,
+    Discard,
+    Save
+}
+
 public sealed record SingleImageEditResult(
     string SourcePath,
     string OutputPath,

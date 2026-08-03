@@ -1,0 +1,79 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:ImageViewer.Controls"
+        x:Class="ImageViewer.Views.ConversionCompareWindow"
+        x:CompileBindings="True"
+        Title="Compare conversion"
+        Icon="/Assets/ImageViewer.png"
+        Width="1280" Height="780" MinWidth="860" MinHeight="560"
+        WindowStartupLocation="CenterOwner"
+        Background="#080e1a">
+  <Grid RowDefinitions="Auto,*">
+    <Border Background="#18243d" Padding="16,10">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+        <StackPanel Spacing="2" VerticalAlignment="Center">
+          <TextBlock Text="Original and converted" Foreground="#f3f7ff"
+                     FontSize="19" FontWeight="SemiBold"/>
+          <TextBlock Text="Pan and zoom are synchronized for a direct quality check."
+                     Foreground="#8298bc" FontSize="10"/>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7"
+                    VerticalAlignment="Center">
+          <Button Content="Fit" Click="OnFit" Padding="12,5"/>
+          <Button Content="100%" Click="OnActualSize" Padding="12,5"/>
+          <Button Content="Back" Click="OnBack" Padding="12,5"/>
+          <Button x:Name="UseConversionButton" Content="Use conversion"
+                  Click="OnUseConversion" Padding="16,5"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="6" Margin="6">
+      <Border Background="#050912" BorderBrush="#293a58" BorderThickness="1"
+              CornerRadius="5" ClipToBounds="True">
+        <Grid RowDefinitions="Auto,*">
+          <Border Background="#121d33" Padding="12,8">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock x:Name="OriginalNameText" Foreground="#e5edf9"
+                         FontSize="12" FontWeight="SemiBold"
+                         TextTrimming="CharacterEllipsis"/>
+              <TextBlock x:Name="OriginalSizeText" Grid.Column="1"
+                         Foreground="#8fa6ca" FontSize="11"/>
+            </Grid>
+          </Border>
+          <controls:ZoomPanImage x:Name="OriginalImage" Grid.Row="1"
+                                 ViewportChanged="OnOriginalViewportChanged"/>
+        </Grid>
+      </Border>
+
+      <Border Grid.Column="1" Background="#050912"
+              BorderBrush="#45a9ff" BorderThickness="1"
+              CornerRadius="5" ClipToBounds="True">
+        <Grid RowDefinitions="Auto,*">
+          <Border Background="#13243d" Padding="12,8">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock x:Name="ConvertedNameText" Foreground="#e5edf9"
+                         FontSize="12" FontWeight="SemiBold"
+                         TextTrimming="CharacterEllipsis"/>
+              <TextBlock x:Name="ConvertedSizeText" Grid.Column="1"
+                         Foreground="#71bdff" FontSize="11"/>
+            </Grid>
+          </Border>
+          <controls:ZoomPanImage x:Name="ConvertedImage" Grid.Row="1"
+                                 ViewportChanged="OnConvertedViewportChanged"/>
+        </Grid>
+      </Border>
+
+      <Border x:Name="LoadingPanel" Grid.ColumnSpan="2"
+              HorizontalAlignment="Center" VerticalAlignment="Center"
+              Background="#e6121c32" CornerRadius="6" Padding="18,12">
+        <StackPanel Spacing="8">
+          <ProgressBar Width="150" Height="4" IsIndeterminate="True"/>
+          <TextBlock x:Name="LoadingText" Text="Loading comparison..."
+                     Foreground="#dce8f9" FontSize="11"
+                     HorizontalAlignment="Center"/>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</Window>

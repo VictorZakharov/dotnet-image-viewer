@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using ImageViewer.Models;
@@ -9,7 +10,9 @@ namespace ImageViewer.Views;
 
 public partial class SingleImageEditDialog
 {
-    private async void OnApply(object? sender, RoutedEventArgs e)
+    private async void OnApply(object? sender, RoutedEventArgs e) => await ApplyAsync();
+
+    private async Task ApplyAsync()
     {
         if (_isBusy) return;
         CancelPreview();

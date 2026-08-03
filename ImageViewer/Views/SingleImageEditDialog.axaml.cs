@@ -15,6 +15,7 @@ public partial class SingleImageEditDialog : Window
     private readonly BatchProcessPlanner _planner = new();
     private readonly BatchImageProcessor _processor = new();
     private IReadOnlyList<BatchPreviewItem> _preview = Array.Empty<BatchPreviewItem>();
+    private ConversionPreview? _conversionPreview;
     private CancellationTokenSource? _previewCancellation;
     private string _sourcePath = "";
     private SingleImageEditKind _kind;
@@ -51,6 +52,7 @@ public partial class SingleImageEditDialog : Window
         ResizePanel.IsVisible = _kind == SingleImageEditKind.Resize;
         CropPanel.IsVisible = _kind == SingleImageEditKind.Crop;
         ConvertPanel.IsVisible = _kind == SingleImageEditKind.Convert;
+        ConversionPreviewPanel.IsVisible = _kind == SingleImageEditKind.Convert;
         WatermarkPanel.IsVisible = _kind == SingleImageEditKind.Watermark;
         MetadataPanel.IsVisible = _kind == SingleImageEditKind.RemoveMetadata;
 
@@ -103,7 +105,7 @@ public partial class SingleImageEditDialog : Window
             "",
             SuffixBox.Text ?? "",
             replace ? BatchOverwritePolicy.Replace : BatchOverwritePolicy.AutoRename,
-            ToInt(QualityBox, 90),
+            (int)Math.Round(QualitySlider.Value),
             PreserveDatesCheck.IsChecked == true,
             PreserveIccCheck.IsChecked == true,
             MaxConcurrency: 1,
@@ -154,6 +156,12 @@ public partial class SingleImageEditDialog : Window
     private void OnOptionsChanged(object? sender, NumericUpDownValueChangedEventArgs e) => OptionsChanged();
     private void OnOptionsChanged(object? sender, RoutedEventArgs e) => OptionsChanged();
 
+    private void OnQualityChanged(object? sender, RoutedEventArgs e)
+    {
+        QualityValueText.Text = Math.Round(QualitySlider.Value).ToString();
+        OptionsChanged();
+    }
+
     private void OptionsChanged()
     {
         if (!_initialized || _isBusy) return;
@@ -175,7 +183,7 @@ public partial class SingleImageEditDialog : Window
     {
         SingleImageEditKind.Resize => "Scale this image to fit within a box, or stretch it to exact dimensions.",
         SingleImageEditKind.Crop => "Enter a pixel rectangle within the displayed, auto-oriented image bounds.",
-        SingleImageEditKind.Convert => "Write the image using a different file format and encoding quality.",
+        SingleImageEditKind.Convert => "Choose a format and quality, then compare the encoded result with the original before saving.",
         SingleImageEditKind.Watermark => "Add a text watermark at a chosen position.",
         SingleImageEditKind.RemoveMetadata => "Remove private camera and descriptive metadata from the output.",
         _ => "Rotate the image pixels and normalize its display orientation."

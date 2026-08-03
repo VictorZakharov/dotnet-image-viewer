@@ -19,6 +19,19 @@ public partial class BrowserView
         if (!Enum.TryParse<SingleImageEditKind>(command, out var kind)) return;
 
         viewModel.SelectForContextMenu(item);
+        if (kind is SingleImageEditKind.RotateLeft
+            or SingleImageEditKind.RotateRight
+            or SingleImageEditKind.Crop)
+        {
+            if (owner is MainWindow mainWindow
+                && await mainWindow.OpenCanvasImageToolAsync(item.Path, kind))
+                return;
+
+            viewModel.ReportFileOperation("The image could not be opened for editing.");
+            FocusThumbnailGrid();
+            return;
+        }
+
         try
         {
             var result = await new SingleImageEditDialog(item.Path, kind)

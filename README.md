@@ -36,7 +36,8 @@ published `.sha256` file before running it.
 - `←` / `→` (or `↑` / `↓`) navigate to the previous / next media file in the folder
 - Built-in video playback with seek, play/pause, mute, and volume controls
 - `Space` toggles video playback; video automatically pauses when returning to the browser
-- `R` rotates images (per session; doesn't modify the file)
+- A compact left tool rail provides rotate, visual crop, resize, convert, watermark, metadata cleanup, and properties; hover any icon for its label, and fullscreen hides the rail
+- `R` rotates the current image immediately in the viewer; leaving the image offers **Save**, **Discard**, or **Cancel**
 - `F` or `F11` fullscreen
 - `I` toggles an EXIF metadata overlay (camera, lens, exposure, dimensions, file size)
 - `Space` or `F5` starts an image slideshow with a configurable interval
@@ -53,7 +54,7 @@ published `.sha256` file before running it.
 - Copy, cut, paste, move, and Trash/Recycle Bin delete work on every selected file and folder, with collision choices, progress/cancel, aggregate failure details, and undo for the last move or rename
 - Drag selected files and folders onto a writable folder in the tree to move them; folder tiles participate in filesystem operations while remaining excluded from viewer/EXIF-only media actions
 - Click a file title or press `F2` to rename it inline; only the stem is edited so the extension can't be lost. Enter commits, Esc cancels, click-away commits, and starting another rename commits the pending one
-- Right-click an image and use **Edit** to rotate, resize, crop, convert, watermark, or remove metadata; the same commands are directly available in the full-image viewer
+- Right-click an image and use **Edit** to rotate, resize, crop, convert, watermark, or remove metadata; rotate and crop open directly on the full-image canvas
 - `Ctrl+wheel` resizes thumbnails (96–512 px). The cache regenerates at the new tier so larger thumbnails stay sharp; the size persists between launches
 - Mouse-wheel scrolling is velocity-sensitive in both the folder tree and media grid: small movements stay precise while rapid input travels farther and decelerates smoothly. Fractional precision input keeps its native platform behavior
 - The **Smooth** toolbar toggle disables animated scrolling for both panes and persists between launches; Windows' reduced-motion preference overrides it on Windows
@@ -165,11 +166,19 @@ Pick, Reject, and **Keep this; reject others** are comparison-session review mar
 
 ## Image editing
 
-Right-click an image in the browser and open **Edit**, or right-click anywhere
-in the full-image viewer, to rotate left/right, resize, crop, convert to JPEG,
-PNG, WebP, or TIFF, add a text watermark, or remove metadata. Each focused
-dialog validates its dimensions, format, filename, and operation support before
-enabling the action.
+Right-click an image in the browser and open **Edit**, or use the icon rail in
+the full-image viewer, to rotate left/right, resize, crop, convert to JPEG, PNG,
+WebP, or TIFF, add a text watermark, or remove metadata. Rotate works in place
+without opening a dialog. Crop draws and resizes a rule-of-thirds selection on
+the image canvas. These pending canvas edits only touch the file after choosing
+**Save** when leaving; **Discard** preserves the original and **Cancel** returns
+to editing.
+
+Conversion uses a full-width quality slider and generates an encoded preview
+with an approximate output size. **Compare original and converted...** opens a
+two-pane full-resolution check with synchronized cursor-centered zoom and pan,
+plus Fit and 100% controls, before saving. Other focused dialogs validate their
+dimensions, format, filename, and operation support before enabling the action.
 
 Edits create an auto-renamed copy beside the original by default. Replacing the
 original is an explicit option with a second destructive-action confirmation.
@@ -202,7 +211,7 @@ Hard-linked paths are identified as the same physical file and excluded from rec
 | Global  | `Esc`                     | Exit fullscreen → return to browser → clear filter (never closes) |
 | Global  | `Ctrl+O`                  | Open folder picker                                |
 | Viewer  | `←` `→` `↑` `↓`           | Previous / next media file                        |
-| Viewer  | `R`                       | Rotate image display                              |
+| Viewer  | `R`                       | Rotate right; offer save/discard when leaving     |
 | Viewer  | `F` / `F11`               | Fullscreen                                        |
 | Viewer  | `I`                       | EXIF overlay                                      |
 | Viewer  | `Space`                   | Play/pause video, or toggle image slideshow       |
@@ -275,9 +284,6 @@ scripts/Publish-Linux.ps1   Linux archive and Debian package build
 ```
 
 ## Roadmap
-
-Known polish gaps, in rough priority order:
-- **Lossless rotate-and-save** (`R` is display-only at the moment)
 
 Planned work and product-scope decisions are tracked in
 [GitHub issues](https://github.com/VictorZakharov/dotnet-image-viewer/issues),

@@ -133,6 +133,7 @@ public partial class MainWindow : Window
     private void OnClosing(object? sender, WindowClosingEventArgs e)
     {
         if (DataContext is not MainWindowViewModel vm) return;
+        if (DeferCloseForPendingEdits(e)) return;
 
         vm.StopViewerSlideshow();
         if (_trackedVm is not null)
@@ -169,7 +170,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OnKeyDown(object? sender, KeyEventArgs e)
+    private async void OnKeyDown(object? sender, KeyEventArgs e)
     {
         if (DataContext is not MainWindowViewModel vm) return;
         var browser = vm.BrowserVM;
@@ -183,17 +184,24 @@ public partial class MainWindow : Window
             case Key.Escape:
                 if (viewer?.IsFullscreen == true)
                     viewer.ToggleFullscreenCommand.Execute(null);
+                else if (viewer?.IsCropping == true)
+                    _viewerView?.CancelCrop();
                 else if (viewer is not null && vm.CloseViewerOnEscape)
                     Close();
                 else if (viewer is not null)
-                    vm.ToggleModeCommand.Execute(null);
+                    await LeaveViewerAsync();
                 else if (!string.IsNullOrEmpty(browser.FilterText))
                     browser.FilterText = "";
                 e.Handled = true;
                 return;
 
             case Key.Enter:
-                vm.ToggleModeCommand.Execute(null);
+                if (viewer?.IsCropping == true)
+                    await (_viewerView?.ApplyCropAsync() ?? Task.CompletedTask);
+                else if (viewer is not null)
+                    await LeaveViewerAsync();
+                else
+                    vm.ToggleModeCommand.Execute(null);
                 e.Handled = true;
                 return;
 
@@ -209,12 +217,22 @@ public partial class MainWindow : Window
             {
                 case Key.Left:
                 case Key.Up:
-                    viewer.PreviousCommand.Execute(null);
+                    if (viewer.IsCropping)
+                    {
+                        e.Handled = true;
+                        break;
+                    }
+                    await NavigateViewerAsync(next: false);
                     e.Handled = true;
                     break;
                 case Key.Right:
                 case Key.Down:
-                    viewer.NextCommand.Execute(null);
+                    if (viewer.IsCropping)
+                    {
+                        e.Handled = true;
+                        break;
+                    }
+                    await NavigateViewerAsync(next: true);
                     e.Handled = true;
                     break;
                 case Key.R:
@@ -333,7 +351,7 @@ public partial class MainWindow : Window
             : DragDropEffects.None;
     }
 
-    private void OnDrop(object? sender, DragEventArgs e)
+    private async void OnDrop(object? sender, DragEventArgs e)
     {
         if (_browserView?.IsInternalItemDragActive == true)
         {
@@ -349,6 +367,8 @@ public partial class MainWindow : Window
             var path = f.TryGetLocalPath();
             if (!string.IsNullOrEmpty(path))
             {
+                if (!await ResolvePendingImageEditsAsync(reloadCurrentImage: false))
+                    return;
                 vm.Open(path);
                 return;
             }
@@ -365,7 +385,8 @@ public partial class MainWindow : Window
         if (folders.Count == 0) return;
         var path = folders[0].TryGetLocalPath();
         if (string.IsNullOrEmpty(path)) return;
-        if (DataContext is MainWindowViewModel vm)
+        if (DataContext is MainWindowViewModel vm
+            && await ResolvePendingImageEditsAsync(reloadCurrentImage: false))
             vm.Open(path);
     }
 }

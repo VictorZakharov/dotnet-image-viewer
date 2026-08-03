@@ -169,17 +169,23 @@
               <TextBox x:Name="SuffixBox" Grid.Column="1"
                        TextChanged="OnOptionsChanged"/>
             </Grid>
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
               <CheckBox x:Name="PreserveDatesCheck"
                         Content="Preserve original file dates"
                         Click="OnOptionsChanged"/>
-              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+              <Grid Grid.Column="1" ColumnDefinitions="Auto,150,30" ColumnSpacing="7"
+                    VerticalAlignment="Center">
                 <TextBlock Text="Quality" Foreground="#8fa1c0"
                            VerticalAlignment="Center"/>
-                <NumericUpDown x:Name="QualityBox" Width="76"
-                               Minimum="1" Maximum="100" Value="90"
-                               ValueChanged="OnOptionsChanged"/>
-              </StackPanel>
+                <Slider x:Name="QualitySlider" Grid.Column="1"
+                        Minimum="1" Maximum="100" Value="90"
+                        TickFrequency="1" IsSnapToTickEnabled="True"
+                        ValueChanged="OnQualityChanged"
+                        VerticalAlignment="Center"/>
+                <TextBlock x:Name="QualityValueText" Grid.Column="2" Text="90"
+                           Foreground="#dce8f9" HorizontalAlignment="Right"
+                           VerticalAlignment="Center"/>
+              </Grid>
             </Grid>
             <Border x:Name="DestructiveWarning" Background="#36202a"
                     BorderBrush="#b65468" BorderThickness="1"
@@ -198,6 +204,22 @@
                        Width="100" Height="5" IsIndeterminate="True"
                        IsVisible="False" VerticalAlignment="Center"/>
         </Grid>
+        <Border x:Name="ConversionPreviewPanel" Background="#13243d"
+                BorderBrush="#31577d" BorderThickness="1"
+                CornerRadius="5" Padding="11" IsVisible="False">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+            <StackPanel Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Encoded preview" Foreground="#e5edf9"
+                         FontSize="11" FontWeight="SemiBold"/>
+              <TextBlock x:Name="ConversionSizeText" Foreground="#8fb8eb"
+                         FontSize="11"/>
+            </StackPanel>
+            <Button x:Name="CompareConversionButton" Grid.Column="1"
+                    Content="Compare original and converted..."
+                    Click="OnCompareConversion" IsEnabled="False"
+                    Padding="12,5" VerticalAlignment="Center"/>
+          </Grid>
+        </Border>
         <TextBlock Foreground="#7185a5" FontSize="10" TextWrapping="Wrap"
                    Text="The image is auto-oriented before editing. Copies are auto-renamed if their generated filename already exists."/>
       </StackPanel>

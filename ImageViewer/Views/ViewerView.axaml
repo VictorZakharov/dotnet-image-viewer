@@ -12,31 +12,9 @@
              Background="#070b16">
 
   <Grid>
-    <Grid.ContextFlyout>
-      <MenuFlyout>
-        <MenuItem Header="Rotate left..." Tag="RotateLeft"
-                  Click="OnEditImageClicked" IsVisible="{Binding IsImage}"/>
-        <MenuItem Header="Rotate right..." Tag="RotateRight"
-                  Click="OnEditImageClicked" IsVisible="{Binding IsImage}"/>
-        <Separator IsVisible="{Binding IsImage}"/>
-        <MenuItem Header="Resize..." Tag="Resize"
-                  Click="OnEditImageClicked" IsVisible="{Binding IsImage}"/>
-        <MenuItem Header="Crop..." Tag="Crop"
-                  Click="OnEditImageClicked" IsVisible="{Binding IsImage}"/>
-        <MenuItem Header="Convert format..." Tag="Convert"
-                  Click="OnEditImageClicked" IsVisible="{Binding IsImage}"/>
-        <MenuItem Header="Add watermark..." Tag="Watermark"
-                  Click="OnEditImageClicked" IsVisible="{Binding IsImage}"/>
-        <MenuItem Header="Remove metadata..." Tag="RemoveMetadata"
-                  Click="OnEditImageClicked" IsVisible="{Binding IsImage}"/>
-        <Separator IsVisible="{Binding IsImage}"/>
-        <MenuItem Header="Properties" Click="OnPropertiesClicked"
-                  IsVisible="{Binding IsImage}"/>
-      </MenuFlyout>
-    </Grid.ContextFlyout>
-
     <Grid IsVisible="{Binding IsImage}">
-      <controls:ZoomPanImage Source="{Binding Bitmap}"
+      <controls:ZoomPanImage x:Name="ViewerImage"
+                             Source="{Binding Bitmap}"
                              Rotation="{Binding Rotation}"
                              IsVisible="{Binding !IsImageLoading}"/>
 
@@ -51,7 +29,96 @@
                    Foreground="#8fa1c0"
                    FontSize="12"/>
       </StackPanel>
+      <controls:CropSelectionOverlay x:Name="CropOverlay"
+                                     IsVisible="{Binding IsCropping}"
+                                     SelectionChanged="OnCropSelectionChanged"/>
     </Grid>
+
+    <!-- Compact image tools stay discoverable without taking canvas space.
+         Fullscreen is presentation-only, so the rail disappears there. -->
+    <Border HorizontalAlignment="Left"
+            VerticalAlignment="Center"
+            Margin="12,0,0,32"
+            Padding="5"
+            Background="#e6121c32"
+            BorderBrush="#344665"
+            BorderThickness="1"
+            CornerRadius="7"
+            IsVisible="{Binding ShowImageTools}">
+      <Border.Styles>
+        <Style Selector="Button.viewer-tool">
+          <Setter Property="Width" Value="42"/>
+          <Setter Property="Height" Value="42"/>
+          <Setter Property="Padding" Value="0"/>
+          <Setter Property="FontSize" Value="19"/>
+          <Setter Property="Background" Value="Transparent"/>
+          <Setter Property="BorderThickness" Value="0"/>
+          <Setter Property="CornerRadius" Value="4"/>
+        </Style>
+        <Style Selector="Button.viewer-tool:pointerover">
+          <Setter Property="Background" Value="#304565"/>
+        </Style>
+      </Border.Styles>
+      <StackPanel Spacing="3">
+        <Button Classes="viewer-tool" Content="↶"
+                Command="{Binding RotateLeftCommand}"
+                AutomationProperties.Name="Rotate left 90 degrees"
+                ToolTip.Tip="Rotate left 90°"/>
+        <Button Classes="viewer-tool" Content="↷"
+                Command="{Binding RotateRightCommand}"
+                AutomationProperties.Name="Rotate right 90 degrees"
+                ToolTip.Tip="Rotate right 90°"/>
+        <Border Height="1" Background="#344665" Margin="4,2"/>
+        <Button Classes="viewer-tool" Content="↔" Tag="Resize"
+                Click="OnEditImageClicked"
+                AutomationProperties.Name="Resize image"
+                ToolTip.Tip="Resize image…"/>
+        <Button Classes="viewer-tool" Content="⌗"
+                Click="OnCropToolClicked"
+                AutomationProperties.Name="Crop image"
+                ToolTip.Tip="Select an area to crop"/>
+        <Button Classes="viewer-tool" Content="⇄" Tag="Convert"
+                Click="OnEditImageClicked"
+                AutomationProperties.Name="Convert image format"
+                ToolTip.Tip="Convert image format…"/>
+        <Button Classes="viewer-tool" Content="T" Tag="Watermark"
+                Click="OnEditImageClicked"
+                AutomationProperties.Name="Add text watermark"
+                ToolTip.Tip="Add text watermark…"/>
+        <Button Classes="viewer-tool" Content="M−" Tag="RemoveMetadata"
+                FontSize="13"
+                Click="OnEditImageClicked"
+                AutomationProperties.Name="Remove image metadata"
+                ToolTip.Tip="Remove image metadata…"/>
+        <Border Height="1" Background="#344665" Margin="4,2"/>
+        <Button Classes="viewer-tool" Content="i"
+                Click="OnPropertiesClicked"
+                AutomationProperties.Name="Show image properties"
+                ToolTip.Tip="Show image properties"/>
+      </StackPanel>
+    </Border>
+
+    <Border HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
+            Margin="0,0,0,48"
+            Padding="12,8"
+            Background="#ed121c32"
+            BorderBrush="#45a9ff"
+            BorderThickness="1"
+            CornerRadius="6"
+            IsVisible="{Binding IsCropping}">
+      <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+        <TextBlock Text="Crop" Foreground="#f3f7ff" FontWeight="SemiBold"
+                   VerticalAlignment="Center"/>
+        <TextBlock x:Name="CropSelectionText" Foreground="#9fc9ef"
+                   VerticalAlignment="Center"/>
+        <TextBlock Text="Drag edges or draw a new area"
+                   Foreground="#7185a5" FontSize="10" VerticalAlignment="Center"/>
+        <Button Content="Full image" Click="OnResetCropClicked" Padding="10,4"/>
+        <Button Content="Cancel" Click="OnCancelCropClicked" Padding="10,4"/>
+        <Button Content="Apply crop" Click="OnApplyCropClicked" Padding="12,4"/>
+      </StackPanel>
+    </Border>
 
     <!-- Created in code only after the first video opens. Keeping this host
          empty for images prevents native VLC initialization on startup. -->

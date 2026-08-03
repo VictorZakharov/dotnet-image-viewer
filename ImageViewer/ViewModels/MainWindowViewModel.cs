@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ImageViewer.Services;
@@ -53,6 +54,33 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     {
         _viewerVm?.InvalidateFolderMedia();
         Open(path, CloseViewerOnEscape);
+    }
+
+    public async Task<bool> OpenImageForCanvasEditAsync(string path)
+    {
+        try
+        {
+            if (!File.Exists(path) || !MediaFileTypes.IsImage(path)) return false;
+
+            CloseViewerOnEscape = false;
+            CurrentImagePath = path;
+            var directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory))
+            {
+                CurrentFolder = directory;
+                Settings.LastFolder = directory;
+            }
+
+            var load = ViewerVM.LoadAsync(path);
+            IsViewerMode = true;
+            await load;
+            return ViewerVM.Bitmap is not null
+                   && FileSystemPath.Equals(ViewerVM.FilePath, path);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private void Open(string path, bool closeViewerOnEscape)

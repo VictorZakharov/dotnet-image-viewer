@@ -44,6 +44,7 @@ public partial class ViewerViewModel
 
     public async Task LoadAsync(string path)
     {
+        ResetEditSession();
         var loadCts = new CancellationTokenSource();
         var previousLoad = _loadCts;
         _loadCts = loadCts;
@@ -58,7 +59,7 @@ public partial class ViewerViewModel
         var isVideo = MediaFileTypes.IsVideo(path);
         IsVideo = isVideo;
         IsImageLoading = !isVideo;
-        Bitmap = null;
+        ReplaceBitmap(null);
 
         if (isVideo)
             StopSlideshow();
@@ -101,7 +102,7 @@ public partial class ViewerViewModel
                     return;
                 }
 
-                Bitmap = loaded.Bitmap;
+                ReplaceBitmap(loaded.Bitmap);
                 Rotation = loaded.OrientationBaked ? 0 : (Metadata?.OrientationRotation ?? 0);
             }
 
