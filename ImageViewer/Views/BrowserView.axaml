@@ -128,10 +128,6 @@
           <Button Content="Paste" Command="{Binding PasteFilesCommand}" Padding="10,3"/>
           <Button Content="Move..." Command="{Binding MoveFilesCommand}"
                   IsEnabled="{Binding HasSelectedItems}" Padding="10,3"/>
-          <Button Content="Batch..." Click="OnBatchToolsClicked"
-                  AutomationProperties.Name="Batch rename and image processing"
-                  ToolTip.Tip="Preview batch rename and image-processing changes"
-                  IsEnabled="{Binding HasSelectedItems}" Padding="10,3"/>
           <Button Content="Compare..." Click="OnCompareSelectedClicked"
                   AutomationProperties.Name="Compare selected images"
                   ToolTip.Tip="Compare 2–4 selected images"
@@ -256,6 +252,24 @@
                   </Border.Styles>
                   <Border.ContextFlyout>
                     <MenuFlyout>
+                      <MenuItem Header="Edit" IsVisible="{Binding IsImage}">
+                        <MenuItem Header="Rotate left..." Tag="RotateLeft"
+                                  Click="OnEditImageClicked"/>
+                        <MenuItem Header="Rotate right..." Tag="RotateRight"
+                                  Click="OnEditImageClicked"/>
+                        <Separator/>
+                        <MenuItem Header="Resize..." Tag="Resize"
+                                  Click="OnEditImageClicked"/>
+                        <MenuItem Header="Crop..." Tag="Crop"
+                                  Click="OnEditImageClicked"/>
+                        <MenuItem Header="Convert format..." Tag="Convert"
+                                  Click="OnEditImageClicked"/>
+                        <MenuItem Header="Add watermark..." Tag="Watermark"
+                                  Click="OnEditImageClicked"/>
+                        <MenuItem Header="Remove metadata..." Tag="RemoveMetadata"
+                                  Click="OnEditImageClicked"/>
+                      </MenuItem>
+                      <Separator IsVisible="{Binding IsImage}"/>
                       <MenuItem Header="Properties"
                                  Click="OnThumbPropertiesClicked"
                                  IsVisible="{Binding IsFile}"/>
@@ -263,7 +277,6 @@
                       <MenuItem Header="Copy" Click="OnCopyFilesClicked"/>
                       <MenuItem Header="Cut" Click="OnCutFilesClicked"/>
                       <MenuItem Header="Move..." Click="OnMoveFilesClicked"/>
-                      <MenuItem Header="Batch tools..." Click="OnBatchToolsClicked"/>
                       <MenuItem Header="Delete" Click="OnDeleteFilesClicked"/>
                     </MenuFlyout>
                   </Border.ContextFlyout>

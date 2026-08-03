@@ -49,6 +49,12 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     public void OpenDirect(string path) => Open(path, closeViewerOnEscape: true);
 
+    public void OpenEditedImage(string path)
+    {
+        _viewerVm?.InvalidateFolderMedia();
+        Open(path, CloseViewerOnEscape);
+    }
+
     private void Open(string path, bool closeViewerOnEscape)
     {
         try

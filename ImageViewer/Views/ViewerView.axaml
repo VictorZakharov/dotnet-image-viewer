@@ -14,7 +14,24 @@
   <Grid>
     <Grid.ContextFlyout>
       <MenuFlyout>
-        <MenuItem Header="Properties" Click="OnPropertiesClicked"/>
+        <MenuItem Header="Rotate left..." Tag="RotateLeft"
+                  Click="OnEditImageClicked" IsVisible="{Binding IsImage}"/>
+        <MenuItem Header="Rotate right..." Tag="RotateRight"
+                  Click="OnEditImageClicked" IsVisible="{Binding IsImage}"/>
+        <Separator IsVisible="{Binding IsImage}"/>
+        <MenuItem Header="Resize..." Tag="Resize"
+                  Click="OnEditImageClicked" IsVisible="{Binding IsImage}"/>
+        <MenuItem Header="Crop..." Tag="Crop"
+                  Click="OnEditImageClicked" IsVisible="{Binding IsImage}"/>
+        <MenuItem Header="Convert format..." Tag="Convert"
+                  Click="OnEditImageClicked" IsVisible="{Binding IsImage}"/>
+        <MenuItem Header="Add watermark..." Tag="Watermark"
+                  Click="OnEditImageClicked" IsVisible="{Binding IsImage}"/>
+        <MenuItem Header="Remove metadata..." Tag="RemoveMetadata"
+                  Click="OnEditImageClicked" IsVisible="{Binding IsImage}"/>
+        <Separator IsVisible="{Binding IsImage}"/>
+        <MenuItem Header="Properties" Click="OnPropertiesClicked"
+                  IsVisible="{Binding IsImage}"/>
       </MenuFlyout>
     </Grid.ContextFlyout>
 

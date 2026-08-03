@@ -29,6 +29,19 @@ public partial class ViewerViewModel
         ShowExifOverlay = settings.ShowExifOverlay;
     }
 
+    public async Task ReloadFolderAndImageAsync(string path)
+    {
+        InvalidateFolderMedia();
+        await LoadAsync(path);
+    }
+
+    public void InvalidateFolderMedia()
+    {
+        _currentFolder = null;
+        _folderMedia.Clear();
+        _currentIndex = -1;
+    }
+
     public async Task LoadAsync(string path)
     {
         var loadCts = new CancellationTokenSource();
