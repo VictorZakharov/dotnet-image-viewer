@@ -40,12 +40,18 @@
           </ComboBox>
           <StackPanel x:Name="ThresholdPanel" Orientation="Horizontal" Spacing="8"
                       Height="36" VerticalAlignment="Center" IsVisible="False">
-            <TextBlock Text="Threshold:" Foreground="#8fa1c0" VerticalAlignment="Center"/>
+            <TextBlock Text="Threshold:" Foreground="#8fa1c0"
+                       VerticalAlignment="Center" Margin="0,4,0,0"/>
             <Slider x:Name="SimilaritySlider" Width="130" Minimum="0" Maximum="20"
                     Value="8" TickFrequency="1" IsSnapToTickEnabled="True"
-                    VerticalAlignment="Center"/>
+                    VerticalAlignment="Center">
+              <Slider.RenderTransform>
+                <TranslateTransform Y="-6"/>
+              </Slider.RenderTransform>
+            </Slider>
             <TextBlock Text="{Binding #SimilaritySlider.Value, StringFormat={}{0:0}}"
-                       Foreground="#e7eef9" Width="20" VerticalAlignment="Center"/>
+                       Foreground="#e7eef9" Width="20" VerticalAlignment="Center"
+                       Margin="0,4,0,0"/>
           </StackPanel>
           <Border Width="1" Height="24" Background="#30415f" Margin="4,0"/>
           <TextBlock Text="Sort:" Foreground="#8fa1c0" VerticalAlignment="Center"/>
