@@ -48,26 +48,15 @@ public partial class ZoomPanImage : Control
         ClipToBounds = true;
         SizeChanged += (_, _) =>
         {
-            if (_fitMode) InvalidateVisual();
+            ConstrainManualViewport();
+            InvalidateVisual();
         };
         DoubleTapped += OnDoubleTappedHandler;
     }
 
     public void ResetView() => ResetViewCore(true);
 
-    public void SetActualSize()
-    {
-        var src = Source;
-        if (src is null) return;
-        var displaySize = GetRotatedSize(src.Size, Rotation);
-        _zoom = 1.0;
-        _offset = new Vector(
-            (Bounds.Width - displaySize.Width) / 2.0,
-            (Bounds.Height - displaySize.Height) / 2.0);
-        _fitMode = false;
-        InvalidateVisual();
-        RaiseViewportChanged();
-    }
+    public void SetActualSize() => SetActualSize(notify: true);
 
     public override void Render(DrawingContext context)
     {
@@ -86,8 +75,7 @@ public partial class ZoomPanImage : Control
 
         if (_fitMode)
         {
-            double scale = Math.Min(bounds.Width / displaySize.Width, bounds.Height / displaySize.Height);
-            scale = Math.Min(scale, 1.0); // don't upscale small images by default
+            double scale = ImageViewportMath.FitScale(bounds.Size, displaySize);
             drawW = displaySize.Width * scale;
             drawH = displaySize.Height * scale;
             offset = new Vector((bounds.Width - drawW) / 2.0, (bounds.Height - drawH) / 2.0);
@@ -132,6 +120,11 @@ public partial class ZoomPanImage : Control
     {
         var src = Source;
         if (src is null) return;
+        if (_fitMode && e.Delta.Y <= 0)
+        {
+            e.Handled = true;
+            return;
+        }
 
         EnsureManualMode();
 
@@ -139,10 +132,10 @@ public partial class ZoomPanImage : Control
         double factor = e.Delta.Y > 0 ? wheelStep : 1.0 / wheelStep;
 
         var displaySize = GetRotatedSize(src.Size, Rotation);
-        double fitScale = Math.Min(Bounds.Width / displaySize.Width, Bounds.Height / displaySize.Height);
-        double minZoom = Math.Max(fitScale * 0.5, 0.05);
-        const double maxZoom = 32.0;
-        double newZoom = Math.Clamp(_zoom * factor, minZoom, maxZoom);
+        double newZoom = ImageViewportMath.ClampZoom(
+            Bounds.Size,
+            displaySize,
+            _zoom * factor);
         if (Math.Abs(newZoom - _zoom) < 0.0001)
         {
             e.Handled = true;
@@ -155,6 +148,7 @@ public partial class ZoomPanImage : Control
             cursor.X - (cursor.X - _offset.X) * ratio,
             cursor.Y - (cursor.Y - _offset.Y) * ratio);
         _zoom = newZoom;
+        ConstrainManualViewport();
 
         InvalidateVisual();
         RaiseViewportChanged();
@@ -184,6 +178,7 @@ public partial class ZoomPanImage : Control
         if (!_panning) return;
         var cur = e.GetPosition(this);
         _offset = _panStartOffset + (cur - _panStart);
+        ConstrainManualViewport();
         InvalidateVisual();
         RaiseViewportChanged();
     }
@@ -199,8 +194,10 @@ public partial class ZoomPanImage : Control
 
     private void OnDoubleTappedHandler(object? sender, TappedEventArgs e)
     {
-        if (Source is null) return;
-        if (_fitMode || Math.Abs(_zoom - 1.0) > 0.01)
+        if (Source is not { } source) return;
+        var displaySize = GetRotatedSize(source.Size, Rotation);
+        var actualZoom = ImageViewportMath.ClampZoom(Bounds.Size, displaySize, 1);
+        if (_fitMode || Math.Abs(_zoom - actualZoom) > 0.01)
             SetActualSize();
         else
             ResetView();
@@ -213,8 +210,7 @@ public partial class ZoomPanImage : Control
         var src = Source;
         if (src is null) return;
         var displaySize = GetRotatedSize(src.Size, Rotation);
-        double fitScale = Math.Min(Bounds.Width / displaySize.Width, Bounds.Height / displaySize.Height);
-        fitScale = Math.Min(fitScale, 1.0);
+        double fitScale = ImageViewportMath.FitScale(Bounds.Size, displaySize);
         double dispW = displaySize.Width * fitScale;
         double dispH = displaySize.Height * fitScale;
         _zoom = fitScale;

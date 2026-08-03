@@ -39,7 +39,7 @@ public partial class ZoomPanImage
             Bounds.Size,
             GetRotatedSize(source.Size, Rotation),
             state);
-        _zoom = Math.Clamp(applied.Zoom, 0.01, 32);
+        _zoom = applied.Zoom;
         _offset = applied.Offset;
         _fitMode = false;
         InvalidateVisual();
@@ -51,10 +51,10 @@ public partial class ZoomPanImage
         var source = Source;
         if (source is null) return;
         var displaySize = GetRotatedSize(source.Size, Rotation);
-        _zoom = 1;
+        _zoom = ImageViewportMath.ClampZoom(Bounds.Size, displaySize, 1);
         _offset = new Vector(
-            (Bounds.Width - displaySize.Width) / 2,
-            (Bounds.Height - displaySize.Height) / 2);
+            (Bounds.Width - displaySize.Width * _zoom) / 2,
+            (Bounds.Height - displaySize.Height * _zoom) / 2);
         _fitMode = false;
         InvalidateVisual();
         if (notify) RaiseViewportChanged();
@@ -67,6 +67,18 @@ public partial class ZoomPanImage
         _fitMode = true;
         InvalidateVisual();
         if (notify) RaiseViewportChanged();
+    }
+
+    private void ConstrainManualViewport()
+    {
+        if (_fitMode || Source is not { } source) return;
+        var displaySize = GetRotatedSize(source.Size, Rotation);
+        _zoom = ImageViewportMath.ClampZoom(Bounds.Size, displaySize, _zoom);
+        _offset = ImageViewportMath.ConstrainOffset(
+            Bounds.Size,
+            displaySize,
+            _zoom,
+            _offset);
     }
 
     private void RaiseViewportChanged() => ViewportChanged?.Invoke(this, EventArgs.Empty);
