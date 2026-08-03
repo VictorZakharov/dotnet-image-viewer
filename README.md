@@ -1,6 +1,6 @@
 # Image Viewer
 
-A lightweight, ACDSee-style image and video viewer for Windows. Built on .NET 10 and Avalonia 12.
+A lightweight, filesystem-first image and video viewer for Windows. Built on .NET 10 and Avalonia 12.
 
 > **Status**: early MVP. The viewer, browser, video playback, and Windows Explorer integration work.
 
