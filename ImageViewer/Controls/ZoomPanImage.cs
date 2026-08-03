@@ -7,7 +7,7 @@ using Avalonia.Media.Imaging;
 
 namespace ImageViewer.Controls;
 
-public class ZoomPanImage : Control
+public partial class ZoomPanImage : Control
 {
     public static readonly StyledProperty<Bitmap?> SourceProperty =
         AvaloniaProperty.Register<ZoomPanImage, Bitmap?>(nameof(Source));
@@ -38,8 +38,8 @@ public class ZoomPanImage : Control
     static ZoomPanImage()
     {
         AffectsRender<ZoomPanImage>(SourceProperty, RotationProperty);
-        SourceProperty.Changed.AddClassHandler<ZoomPanImage>((c, _) => c.ResetView());
-        RotationProperty.Changed.AddClassHandler<ZoomPanImage>((c, _) => c.ResetView());
+        SourceProperty.Changed.AddClassHandler<ZoomPanImage>((c, _) => c.ResetViewCore(false));
+        RotationProperty.Changed.AddClassHandler<ZoomPanImage>((c, _) => c.ResetViewCore(false));
     }
 
     public ZoomPanImage()
@@ -53,13 +53,7 @@ public class ZoomPanImage : Control
         DoubleTapped += OnDoubleTappedHandler;
     }
 
-    public void ResetView()
-    {
-        _zoom = 1.0;
-        _offset = default;
-        _fitMode = true;
-        InvalidateVisual();
-    }
+    public void ResetView() => ResetViewCore(true);
 
     public void SetActualSize()
     {
@@ -72,6 +66,7 @@ public class ZoomPanImage : Control
             (Bounds.Height - displaySize.Height) / 2.0);
         _fitMode = false;
         InvalidateVisual();
+        RaiseViewportChanged();
     }
 
     public override void Render(DrawingContext context)
@@ -162,6 +157,7 @@ public class ZoomPanImage : Control
         _zoom = newZoom;
 
         InvalidateVisual();
+        RaiseViewportChanged();
         e.Handled = true;
     }
 
@@ -170,6 +166,7 @@ public class ZoomPanImage : Control
         var pt = e.GetCurrentPoint(this);
         if (Source is not null && pt.Properties.IsLeftButtonPressed)
         {
+            Focus();
             EnsureManualMode();
             _panning = true;
             _panStart = e.GetPosition(this);
@@ -188,6 +185,7 @@ public class ZoomPanImage : Control
         var cur = e.GetPosition(this);
         _offset = _panStartOffset + (cur - _panStart);
         InvalidateVisual();
+        RaiseViewportChanged();
     }
 
     protected override void OnPointerReleased(PointerReleasedEventArgs e)

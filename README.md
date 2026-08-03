@@ -38,6 +38,7 @@ A lightweight, ACDSee-style image and video viewer for Windows. Built on .NET 10
 - Each thumbnail shows its file extension as a coloured pill in the top-right corner (JPG amber, PNG green, GIF magenta, BMP gold, WEBP cyan, TIFF violet, RAW red)
 - Right-click any media thumbnail (or media in the viewer) → **Properties** opens a side-pane with EXIF date-taken data where available plus created, modified, and accessed file dates
 - **Duplicates...** scans one or more folders for byte-identical or visually similar images, with reviewable keeper suggestions and Recycle Bin deletion
+- Select 2–4 images and choose **Compare...** for a dedicated side-by-side view; similar-image groups also open compare directly and apply the chosen keeper back to their review selection
 - The folder tree expands and centers on the active folder when one is opened from the viewer, drag-drop, or CLI; long names truncate with a tooltip
 - `Enter` or double-click opens the selected image/video or navigates into the selected folder
 - Drag-and-drop a file or folder anywhere on the window
@@ -97,6 +98,14 @@ Registration stores the exact path of the executable that ran `--register`. If y
 
 The Explorer action launches a separate ImageViewer process and hands the containing folder to the existing instance. It is a static registry verb, not an in-process shell extension; on Windows 11 it can appear under **Show more options**.
 
+## Compare mode
+
+Select 2–4 images in the browser and choose **Compare...**, or use **Compare 2–4...** on an exact/similar duplicate group. Videos and folders are rejected with a clear status message. The original browser selection is restored on return, excluding any files deliberately moved to the Recycle Bin.
+
+Each cell loads a cached preview first and decodes full resolution in the background, with at most two full-resolution decodes at once. The active cell has a bright frame. **Synchronized** zoom and pan keep the same normalized image region centered even when dimensions differ; turn it off for independent inspection. **Fit**, **100%**, and two-image **Blink / alternate** are available from the toolbar and keyboard. Dimensions, size, date taken, camera, lens, and exposure stay aligned under each image, with differences highlighted.
+
+Pick, Reject, 0–5 rating, and **Keep active, reject others** are comparison-session review marks. Returning to the browser or duplicate finder updates visible badges immediately, and rejected duplicate candidates become a reviewable deletion selection. Portable persistent ratings, labels, and filtering remain tracked by issue #8; this compare mode does not pretend temporary review marks are saved metadata. Rejected-file deletion always uses the existing confirmation, progress, and Windows Recycle Bin workflow.
+
 ## Duplicate finder
 
 Open **Duplicates...** from the browser toolbar and choose one or more folders. Exact mode first groups by size and SHA-256, then compares the bytes before reporting a match. Similar mode uses a 64-bit perceptual dHash; its distance threshold is adjustable from 0 (closest) to 20 (broadest), and every result is clearly labelled as exact or visually similar.
@@ -140,6 +149,13 @@ Hard-linked paths are identified as the same physical file and excluded from rec
 | Browser | `Home` / `End`            | First / last thumbnail                            |
 | Browser | right-click               | Properties → EXIF pane                            |
 | Browser | `Enter` / double-click    | Open selected media or folder                     |
+| Compare | `←` / `→`                 | Move the unambiguous active comparison cell       |
+| Compare | `F` / `A`                 | Fit / show 100%                                   |
+| Compare | `S`                       | Toggle synchronized normalized zoom and pan       |
+| Compare | `B` / `Space`             | Enter or alternate the two-image blink view       |
+| Compare | `P` / `X` / `K`           | Pick / reject / keep active and reject others     |
+| Compare | `0`–`5`                   | Set the active image's session rating              |
+| Compare | `Delete`                  | Review rejected images for Recycle Bin deletion   |
 
 ## Tech stack
 

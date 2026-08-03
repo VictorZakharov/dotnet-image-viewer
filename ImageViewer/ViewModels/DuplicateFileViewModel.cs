@@ -24,11 +24,38 @@ public partial class DuplicateFileViewModel : ObservableObject, IDisposable
     public string ModifiedText => $"Modified {Entry.ModifiedUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss}";
     public string AccessedText => $"Accessed {Entry.AccessedUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss}";
     public string MetadataText => BuildMetadataText();
-    public bool IsSuggestedKeeper { get; }
     public string MatchText { get; }
 
     [ObservableProperty] private bool _isSelected;
     [ObservableProperty] private Bitmap? _thumbnail;
+    [ObservableProperty] private bool _isSuggestedKeeper;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CompareBadgeText), nameof(HasCompareBadge))]
+    private CompareMark _compareMark;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CompareBadgeText), nameof(HasCompareBadge))]
+    private int _compareRating;
+
+    public bool HasCompareBadge => CompareMark != ImageViewer.Models.CompareMark.Neutral
+                                   || CompareRating > 0;
+    public string CompareBadgeText
+    {
+        get
+        {
+            var mark = CompareMark switch
+            {
+                ImageViewer.Models.CompareMark.Pick => "PICK",
+                ImageViewer.Models.CompareMark.Reject => "REJECT",
+                _ => ""
+            };
+            var rating = CompareRating > 0 ? $"★ {CompareRating}" : "";
+            return string.IsNullOrEmpty(mark) ? rating
+                : string.IsNullOrEmpty(rating) ? mark
+                : $"{mark} · {rating}";
+        }
+    }
 
     public DuplicateFileViewModel(
         DuplicateFileEntry entry,
@@ -45,6 +72,14 @@ public partial class DuplicateFileViewModel : ObservableObject, IDisposable
             : entry.ContentHash == keeper.ContentHash
                 ? "Byte-identical to keeper"
                 : "Visual match";
+    }
+
+    public void ApplyDecision(CompareCandidateDecision decision)
+    {
+        CompareMark = decision.Mark;
+        CompareRating = decision.Rating;
+        if (decision.Mark == ImageViewer.Models.CompareMark.Reject) IsSelected = true;
+        else if (decision.Mark == ImageViewer.Models.CompareMark.Pick) IsSelected = false;
     }
 
     partial void OnIsSelectedChanged(bool value) => _selectionChanged();
