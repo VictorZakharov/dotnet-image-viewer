@@ -35,9 +35,8 @@ transitive restore graph, but the current distributed application targets
 
 ## Test-only dependencies
 
-The test project uses Microsoft VSTest packages 17.14.1 (MIT), xUnit 2.9.3 and
-xUnit Visual Studio runner 3.1.5 (Apache-2.0), and Newtonsoft.Json 13.0.3
-(MIT, transitively through the test platform). They are not included in the
+The test project uses Microsoft VSTest packages 18.8.1 (MIT), xUnit 2.9.3 and
+xUnit Visual Studio runner 3.1.5 (Apache-2.0). They are not included in the
 application publish output.
 
 ## Included license material
