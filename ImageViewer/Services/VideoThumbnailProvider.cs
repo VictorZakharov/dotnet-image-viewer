@@ -110,11 +110,19 @@ internal static class VideoThumbnailProvider
         startInfo.ArgumentList.Add(path);
         startInfo.ArgumentList.Add("-frames:v");
         startInfo.ArgumentList.Add("1");
+        startInfo.ArgumentList.Add("-an");
+        startInfo.ArgumentList.Add("-sn");
+        startInfo.ArgumentList.Add("-dn");
         startInfo.ArgumentList.Add("-vf");
         startInfo.ArgumentList.Add(
             $"scale={dimension}:{dimension}:force_original_aspect_ratio=decrease");
         startInfo.ArgumentList.Add("-f");
         startInfo.ArgumentList.Add("image2pipe");
+        // Folder mosaics can launch several extractions at once. The PNG
+        // encoder otherwise creates its own worker pool for every process and
+        // can fail under container/user thread limits.
+        startInfo.ArgumentList.Add("-threads:v");
+        startInfo.ArgumentList.Add("1");
         startInfo.ArgumentList.Add("-vcodec");
         startInfo.ArgumentList.Add("png");
         startInfo.ArgumentList.Add("pipe:1");
