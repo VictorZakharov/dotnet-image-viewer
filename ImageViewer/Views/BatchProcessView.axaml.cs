@@ -76,6 +76,7 @@ public partial class BatchProcessView : UserControl
 
     private void OnOutputModeChanged(object? sender, SelectionChangedEventArgs e)
     {
+        if (!_initialized) return;
         UpdateOutputControls();
         SchedulePreview();
     }
@@ -101,6 +102,7 @@ public partial class BatchProcessView : UserControl
 
     private void OptionsChanged()
     {
+        if (!_initialized) return;
         UpdateOutputControls();
         SchedulePreview();
     }

@@ -15,9 +15,19 @@ public partial class BrowserView
         var paths = viewModel.SelectedPaths.ToList();
         if (paths.Count == 0) return;
 
-        var changed = await new BatchToolsWindow(paths, viewModel.CurrentFolder)
-            .ShowDialog<bool>(owner);
-        if (changed) await viewModel.ReloadAfterFileOperationAsync();
-        FocusThumbnailGrid();
+        try
+        {
+            var changed = await new BatchToolsWindow(paths, viewModel.CurrentFolder)
+                .ShowDialog<bool>(owner);
+            if (changed) await viewModel.ReloadAfterFileOperationAsync();
+        }
+        catch (Exception ex)
+        {
+            viewModel.ReportFileOperation($"Batch tools could not open: {ex.Message}");
+        }
+        finally
+        {
+            FocusThumbnailGrid();
+        }
     }
 }
