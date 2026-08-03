@@ -1,23 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using ImageViewer.Models;
 
 namespace ImageViewer.ViewModels;
 
 public partial class BrowserViewModel
 {
-    public Task ApplyFileOperationChangesAsync(
-        FileOperationKind kind,
-        IReadOnlyCollection<string> paths)
-    {
-        if (kind != FileOperationKind.Delete)
-            return ReloadAfterFileOperationAsync();
-        ApplyDeletedPaths(paths);
-        return Task.CompletedTask;
-    }
-
     public void ApplyDeletedPaths(IReadOnlyCollection<string> paths)
     {
         if (paths.Count == 0) return;
@@ -33,7 +21,7 @@ public partial class BrowserViewModel
         }
 
         RestoreSelectionAfterDelete(focusedItem, focusedIndex);
-        ReconcileThumbnailsAfterDelete();
+        ReconcileThumbnailsAfterCollectionChange();
         UpdateItemsSummary();
         RemoveDeletedTreeNodes(DriveTree, deleted);
         ThumbnailRequestsInvalidated?.Invoke();
@@ -60,7 +48,7 @@ public partial class BrowserViewModel
         SyncSelectionVisuals();
     }
 
-    private void ReconcileThumbnailsAfterDelete()
+    private void ReconcileThumbnailsAfterCollectionChange()
     {
         if (_viewportValid && FilteredItems.Count == 0)
             _viewportValid = false;
