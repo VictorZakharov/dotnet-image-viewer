@@ -89,6 +89,11 @@
 
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
                     VerticalAlignment="Center">
+          <Button Content="Duplicates..."
+                  AutomationProperties.Name="Find duplicate images"
+                  ToolTip.Tip="Find exact or visually similar duplicate images"
+                  Click="OnFindDuplicatesClicked"
+                  Padding="10,4"/>
           <Button Content="Explorer..."
                   AutomationProperties.Name="Windows and Explorer integration"
                   ToolTip.Tip="Windows file associations and Explorer integration"

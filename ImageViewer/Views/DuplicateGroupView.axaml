@@ -1,0 +1,87 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ImageViewer.ViewModels"
+             x:Class="ImageViewer.Views.DuplicateGroupView"
+             x:DataType="vm:DuplicateGroupViewModel"
+             Background="Transparent">
+  <Border Margin="0,0,0,12"
+          Background="#151f35"
+          BorderBrush="#2b3b5d"
+          BorderThickness="1"
+          CornerRadius="7">
+    <Grid RowDefinitions="Auto,Auto">
+      <Border Padding="14,11" Background="#1a2742" CornerRadius="7,7,0,0">
+        <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="10">
+          <Border Background="#334766" CornerRadius="3" Padding="7,3">
+            <TextBlock Text="{Binding KindText}"
+                       Foreground="#f3f7ff" FontWeight="SemiBold" FontSize="10"/>
+          </Border>
+          <StackPanel Grid.Column="1" VerticalAlignment="Center">
+            <TextBlock Text="{Binding GroupSummary}" Foreground="#e7eef9" FontSize="12"/>
+            <TextBlock Text="{Binding SimilarityText}" Foreground="#86a0c7" FontSize="10"/>
+          </StackPanel>
+          <TextBlock Grid.Column="2" Text="{Binding KeeperRule}"
+                     Foreground="#9db0cf" FontSize="10"
+                     VerticalAlignment="Center" TextWrapping="Wrap" Margin="8,0"/>
+          <Button Grid.Column="3" Content="Select suggested duplicates"
+                  Click="OnSelectSuggested" Padding="10,4" VerticalAlignment="Center"/>
+        </Grid>
+      </Border>
+
+      <ItemsControl Grid.Row="1" ItemsSource="{Binding Files}" Margin="10,6,10,10">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:DuplicateFileViewModel">
+            <Border Margin="0,4" Padding="8"
+                    Background="#10192b" BorderBrush="#263755"
+                    BorderThickness="1" CornerRadius="5">
+              <Grid ColumnDefinitions="Auto,96,*,Auto" ColumnSpacing="10">
+                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                          VerticalAlignment="Center"
+                          ToolTip.Tip="Select this file for the Recycle Bin"/>
+                <Border Grid.Column="1" Width="96" Height="72"
+                        Background="#070b16" CornerRadius="3">
+                  <Grid>
+                    <TextBlock Text="Preview" Foreground="#445573" FontSize="10"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Image Source="{Binding Thumbnail}" Stretch="Uniform"/>
+                  </Grid>
+                </Border>
+                <Grid Grid.Column="2" RowDefinitions="Auto,Auto,Auto" RowSpacing="3">
+                  <StackPanel Orientation="Horizontal" Spacing="7">
+                    <TextBlock Text="{Binding FileName}" Foreground="#f3f7ff"
+                               FontWeight="SemiBold" FontSize="12"/>
+                    <Border IsVisible="{Binding IsSuggestedKeeper}"
+                            Background="#214d3b" CornerRadius="3" Padding="6,1">
+                      <TextBlock Text="SUGGESTED KEEPER" Foreground="#8ee0b6"
+                                 FontSize="9" FontWeight="SemiBold"/>
+                    </Border>
+                    <TextBlock Text="{Binding MatchText}" Foreground="#d7a85d"
+                               FontSize="10" VerticalAlignment="Center"/>
+                  </StackPanel>
+                  <TextBlock Grid.Row="1" Text="{Binding Path}" ToolTip.Tip="{Binding Path}"
+                             Foreground="#8297ba" FontSize="10"
+                             TextTrimming="CharacterEllipsis"/>
+                  <TextBlock Grid.Row="2" Text="{Binding MetadataText}"
+                             Foreground="#7086aa" FontSize="10"
+                             TextTrimming="CharacterEllipsis"/>
+                </Grid>
+                <Grid Grid.Column="3" ColumnDefinitions="Auto,Auto" ColumnSpacing="16">
+                  <StackPanel Spacing="2" MinWidth="110">
+                    <TextBlock Text="{Binding DimensionsText}" Foreground="#d3deee" FontSize="10"/>
+                    <TextBlock Text="{Binding SizeText}" Foreground="#d3deee" FontSize="10"/>
+                    <TextBlock Text="{Binding TakenText}" Foreground="#8196b8" FontSize="9"/>
+                  </StackPanel>
+                  <StackPanel Grid.Column="1" Spacing="2" MinWidth="170">
+                    <TextBlock Text="{Binding CreatedText}" Foreground="#8196b8" FontSize="9"/>
+                    <TextBlock Text="{Binding ModifiedText}" Foreground="#8196b8" FontSize="9"/>
+                    <TextBlock Text="{Binding AccessedText}" Foreground="#8196b8" FontSize="9"/>
+                  </StackPanel>
+                </Grid>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Grid>
+  </Border>
+</UserControl>

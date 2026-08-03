@@ -37,6 +37,7 @@ A lightweight, ACDSee-style image and video viewer for Windows. Built on .NET 10
 - Thumbnail and folder-mosaic work is visible-first, limited to four concurrent loads, and cancelled when it becomes stale; a top progress strip covers grid work and folder tiles show their own spinners
 - Each thumbnail shows its file extension as a coloured pill in the top-right corner (JPG amber, PNG green, GIF magenta, BMP gold, WEBP cyan, TIFF violet, RAW red)
 - Right-click any media thumbnail (or media in the viewer) → **Properties** opens a side-pane with EXIF date-taken data where available plus created, modified, and accessed file dates
+- **Duplicates...** scans one or more folders for byte-identical or visually similar images, with reviewable keeper suggestions and Recycle Bin deletion
 - The folder tree expands and centers on the active folder when one is opened from the viewer, drag-drop, or CLI; long names truncate with a tooltip
 - `Enter` or double-click opens the selected image/video or navigates into the selected folder
 - Drag-and-drop a file or folder anywhere on the window
@@ -95,6 +96,14 @@ Plain `--register` registers both groups. Re-running it with a category selectio
 Registration stores the exact path of the executable that ran `--register`. If you move a portable build, run `--register` again from the new location to repair its commands. Run `--unregister` before deleting the final copy. Unregister removes ImageViewer-owned capabilities, ProgIDs, Open-with entries, and context actions; it does not touch media files, settings, caches, or registry values owned by other applications.
 
 The Explorer action launches a separate ImageViewer process and hands the containing folder to the existing instance. It is a static registry verb, not an in-process shell extension; on Windows 11 it can appear under **Show more options**.
+
+## Duplicate finder
+
+Open **Duplicates...** from the browser toolbar and choose one or more folders. Exact mode first groups by size and SHA-256, then compares the bytes before reporting a match. Similar mode uses a 64-bit perceptual dHash; its distance threshold is adjustable from 0 (closest) to 20 (broadest), and every result is clearly labelled as exact or visually similar.
+
+Results include thumbnails, full paths, dimensions, EXIF date taken, created/modified/accessed dates, camera metadata, and file sizes. Sort by reclaimable space, group size, or newest date. **Select suggested duplicates** uses the displayed keeper rule, but the initial selection is always empty and can be changed freely. A group must retain at least one file, and every removal goes through the normal review prompt and Windows Recycle Bin workflow.
+
+Hard-linked paths are identified as the same physical file and excluded from reclaimable totals. Individual read failures appear under **Scan details** without stopping other files. Pause, cancel, and restart are safe: completed hashes are cached in `%LOCALAPPDATA%\ImageViewer\duplicate-hashes.json` and reused only while file identity, size, and modified time still match.
 
 ## Keyboard shortcuts
 
