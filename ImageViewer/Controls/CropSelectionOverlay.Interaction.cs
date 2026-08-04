@@ -10,6 +10,7 @@ public partial class CropSelectionOverlay
     private CropResizeEdges _resizeEdges;
     private Point _dragStart;
     private Rect _dragStartSelection;
+    private StandardCursorType? _currentCursorType;
 
     protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
@@ -28,9 +29,13 @@ public partial class CropSelectionOverlay
             : viewportSelection.Contains(viewportPoint)
                 ? CropDragMode.Move
                 : CropDragMode.New;
-        Cursor = new Cursor(_dragMode == CropDragMode.Move
-            ? StandardCursorType.SizeAll
-            : StandardCursorType.Cross);
+        SetCursor(_dragMode switch
+        {
+            CropDragMode.Resize => CropCursorResolver.Resolve(
+                _resizeEdges, insideSelection: true),
+            CropDragMode.Move => StandardCursorType.SizeAll,
+            _ => StandardCursorType.Cross
+        });
         e.Pointer.Capture(this);
         e.Handled = true;
     }
@@ -42,13 +47,7 @@ public partial class CropSelectionOverlay
         var viewportPoint = e.GetPosition(this);
         if (_dragMode == CropDragMode.None)
         {
-            var rect = CropSelectionMath.ToViewportRect(_selection, imageRect, _pixelSize);
-            var edges = HitEdges(viewportPoint, rect);
-            Cursor = new Cursor(edges != CropResizeEdges.None
-                ? StandardCursorType.Cross
-                : rect.Contains(viewportPoint)
-                    ? StandardCursorType.SizeAll
-                    : StandardCursorType.Cross);
+            UpdateHoverCursor(viewportPoint, imageRect);
             return;
         }
 
@@ -70,8 +69,8 @@ public partial class CropSelectionOverlay
         if (_dragMode == CropDragMode.None) return;
         _dragMode = CropDragMode.None;
         _resizeEdges = CropResizeEdges.None;
-        Cursor = new Cursor(StandardCursorType.Cross);
         e.Pointer.Capture(null);
+        UpdateHoverCursor(e.GetPosition(this));
         SelectionCommitted?.Invoke(this, EventArgs.Empty);
         e.Handled = true;
     }
@@ -86,6 +85,21 @@ public partial class CropSelectionOverlay
         if (Math.Abs(point.Y - rect.Top) <= tolerance) edges |= CropResizeEdges.Top;
         else if (Math.Abs(point.Y - rect.Bottom) <= tolerance) edges |= CropResizeEdges.Bottom;
         return edges;
+    }
+
+    private void UpdateHoverCursor(Point point, Rect? imageRect = null)
+    {
+        var image = imageRect ?? CropSelectionMath.FitRect(Bounds, _pixelSize);
+        var selection = CropSelectionMath.ToViewportRect(_selection, image, _pixelSize);
+        var edges = HitEdges(point, selection);
+        SetCursor(CropCursorResolver.Resolve(edges, selection.Contains(point)));
+    }
+
+    private void SetCursor(StandardCursorType type)
+    {
+        if (_currentCursorType == type) return;
+        _currentCursorType = type;
+        Cursor = new Cursor(type);
     }
 
     private enum CropDragMode

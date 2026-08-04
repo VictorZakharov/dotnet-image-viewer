@@ -29,7 +29,7 @@ public partial class CropSelectionOverlay : Grid
         ClipToBounds = true;
         Focusable = true;
         Background = Brushes.Transparent;
-        Cursor = new Cursor(StandardCursorType.Cross);
+        SetCursor(StandardCursorType.Cross);
         _adorner = new CropSelectionAdorner(this) { IsHitTestVisible = false };
         Children.Add(_adorner);
     }

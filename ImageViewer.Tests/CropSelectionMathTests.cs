@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using ImageViewer.Controls;
 
 namespace ImageViewer.Tests;
@@ -10,6 +11,29 @@ public sealed class CropSelectionMathTests
     public void OverlayOwnsAFullTransparentPointerSurface()
     {
         Assert.True(typeof(Grid).IsAssignableFrom(typeof(CropSelectionOverlay)));
+    }
+
+    [Theory]
+    [InlineData(CropResizeEdges.Left, StandardCursorType.LeftSide)]
+    [InlineData(CropResizeEdges.Right, StandardCursorType.RightSide)]
+    [InlineData(CropResizeEdges.Top, StandardCursorType.TopSide)]
+    [InlineData(CropResizeEdges.Bottom, StandardCursorType.BottomSide)]
+    [InlineData(CropResizeEdges.Left | CropResizeEdges.Top, StandardCursorType.TopLeftCorner)]
+    [InlineData(CropResizeEdges.Right | CropResizeEdges.Top, StandardCursorType.TopRightCorner)]
+    [InlineData(CropResizeEdges.Left | CropResizeEdges.Bottom, StandardCursorType.BottomLeftCorner)]
+    [InlineData(CropResizeEdges.Right | CropResizeEdges.Bottom, StandardCursorType.BottomRightCorner)]
+    public void CropEdgesUseDirectionalResizeCursors(
+        CropResizeEdges edges,
+        StandardCursorType expected) =>
+        Assert.Equal(expected, CropCursorResolver.Resolve(edges, insideSelection: true));
+
+    [Fact]
+    public void CropInteriorUsesPanAndExteriorUsesCrosshair()
+    {
+        Assert.Equal(StandardCursorType.SizeAll,
+            CropCursorResolver.Resolve(CropResizeEdges.None, insideSelection: true));
+        Assert.Equal(StandardCursorType.Cross,
+            CropCursorResolver.Resolve(CropResizeEdges.None, insideSelection: false));
     }
 
     [Fact]
