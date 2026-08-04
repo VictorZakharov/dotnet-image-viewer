@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using ImageViewer.Models;
 using ImageViewer.Services;
 
 namespace ImageViewer.ViewModels;
@@ -10,6 +11,8 @@ namespace ImageViewer.ViewModels;
 public partial class ViewerViewModel
 {
     private readonly Func<string, CancellationToken, Task<LoadedImage>> _imageLoader;
+    private readonly Func<string, CancellationToken, Task<List<MediaScanEntry>>> _folderScanner;
+    private readonly Func<string, CancellationToken, Task<ImageMetadata>> _metadataLoader;
     private List<MediaScanEntry> _folderMedia = new();
     private string? _currentFolder;
     private int _currentIndex = -1;
@@ -22,10 +25,15 @@ public partial class ViewerViewModel
 
     internal ViewerViewModel(
         AppSettings settings,
-        Func<string, CancellationToken, Task<LoadedImage>> imageLoader)
+        Func<string, CancellationToken, Task<LoadedImage>> imageLoader,
+        Func<string, CancellationToken, Task<List<MediaScanEntry>>>? folderScanner = null,
+        Func<string, CancellationToken, Task<ImageMetadata>>? metadataLoader = null)
     {
         Settings = settings;
         _imageLoader = imageLoader;
+        _folderScanner = folderScanner ?? FolderScanner.ScanAsync;
+        _metadataLoader = metadataLoader
+                          ?? ((path, ct) => Task.Run(() => ExifReader.Read(path), ct));
         ShowExifOverlay = settings.ShowExifOverlay;
     }
 
@@ -66,47 +74,65 @@ public partial class ViewerViewModel
         else
             StopVideo();
 
+        Task<LoadedImage>? imageTask = null;
+        var imageWasAdopted = false;
         try
         {
             var folder = Path.GetDirectoryName(path);
-            if (folder is not null &&
-                (!FileSystemPath.Equals(folder, _currentFolder)
-                 || _folderMedia.Count == 0))
+            var hasFolderNavigation = folder is not null
+                                      && FileSystemPath.Equals(folder, _currentFolder)
+                                      && _folderMedia.Count > 0;
+            if (!hasFolderNavigation)
             {
-                var folderMedia = await FolderScanner.ScanAsync(folder, ct);
-                if (!IsActiveLoad(loadCts)) return;
-
-                _currentFolder = folder;
-                _folderMedia = folderMedia;
+                _currentFolder = null;
+                _folderMedia.Clear();
+                _currentIndex = -1;
             }
-
-            if (!IsActiveLoad(loadCts)) return;
-            _currentIndex = _folderMedia.FindIndex(entry =>
-                FileSystemPath.Equals(entry.Path, path));
-            UpdateStatus();
-
-            var metadata = await Task.Run(() => ExifReader.Read(path), ct);
-            if (!IsActiveLoad(loadCts)) return;
-            Metadata = metadata;
+            else
+            {
+                _currentIndex = _folderMedia.FindIndex(entry =>
+                    FileSystemPath.Equals(entry.Path, path));
+            }
 
             if (isVideo)
             {
+                var metadata = await _metadataLoader(path, ct);
+                if (!IsActiveLoad(loadCts)) return;
+                Metadata = metadata;
                 StartVideo(path);
             }
             else
             {
-                var loaded = await _imageLoader(path, ct);
+                var metadataTask = _metadataLoader(path, ct);
+                imageTask = _imageLoader(path, ct);
+                await Task.WhenAll(metadataTask, imageTask);
                 if (!IsActiveLoad(loadCts))
-                {
-                    loaded.Bitmap.Dispose();
                     return;
-                }
 
+                Metadata = metadataTask.Result;
+                var loaded = imageTask.Result;
                 ReplaceBitmap(loaded.Bitmap);
+                imageWasAdopted = true;
                 Rotation = loaded.OrientationBaked ? 0 : (Metadata?.OrientationRotation ?? 0);
+                IsImageLoading = false;
             }
 
             UpdateStatus();
+
+            // Folder navigation is useful for Previous/Next, but it must never
+            // delay the image explicitly requested by the user. Populate it
+            // only after that image is visible.
+            if (!hasFolderNavigation && folder is not null)
+            {
+                var folderMedia = await _folderScanner(folder, ct);
+                if (!IsActiveLoad(loadCts)) return;
+
+                _currentFolder = folder;
+                _folderMedia = folderMedia;
+                _currentIndex = _folderMedia.FindIndex(entry =>
+                    FileSystemPath.Equals(entry.Path, path));
+                UpdateStatus();
+            }
         }
         catch (OperationCanceledException)
         {
@@ -119,6 +145,9 @@ public partial class ViewerViewModel
         }
         finally
         {
+            if (!imageWasAdopted && imageTask?.Status == TaskStatus.RanToCompletion)
+                imageTask.Result.Bitmap.Dispose();
+
             if (ReferenceEquals(_loadCts, loadCts))
             {
                 _loadCts = null;
