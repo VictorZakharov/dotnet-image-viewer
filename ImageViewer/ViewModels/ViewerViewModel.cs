@@ -137,6 +137,9 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task Next()
     {
+        var pathBeforeWait = FilePath;
+        await _navigationReady;
+        if (!FileSystemPath.Equals(FilePath, pathBeforeWait)) return;
         if (_folderMedia.Count == 0) return;
         _currentIndex = (_currentIndex + 1) % _folderMedia.Count;
         await LoadAsync(_folderMedia[_currentIndex].Path);
@@ -145,6 +148,9 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task Previous()
     {
+        var pathBeforeWait = FilePath;
+        await _navigationReady;
+        if (!FileSystemPath.Equals(FilePath, pathBeforeWait)) return;
         if (_folderMedia.Count == 0) return;
         _currentIndex = (_currentIndex - 1 + _folderMedia.Count) % _folderMedia.Count;
         await LoadAsync(_folderMedia[_currentIndex].Path);

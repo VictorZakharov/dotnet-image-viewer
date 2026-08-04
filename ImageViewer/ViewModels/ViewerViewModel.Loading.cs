@@ -17,6 +17,7 @@ public partial class ViewerViewModel
     private string? _currentFolder;
     private int _currentIndex = -1;
     private CancellationTokenSource? _loadCts;
+    private Task _navigationReady = Task.CompletedTask;
 
     public ViewerViewModel(AppSettings settings)
         : this(settings, ImageLoader.LoadAsync)
@@ -75,6 +76,7 @@ public partial class ViewerViewModel
             StopVideo();
 
         Task<LoadedImage>? imageTask = null;
+        TaskCompletionSource? navigationReady = null;
         var imageWasAdopted = false;
         try
         {
@@ -87,9 +89,20 @@ public partial class ViewerViewModel
                 _currentFolder = null;
                 _folderMedia.Clear();
                 _currentIndex = -1;
+                if (folder is not null)
+                {
+                    navigationReady = new TaskCompletionSource(
+                        TaskCreationOptions.RunContinuationsAsynchronously);
+                    _navigationReady = navigationReady.Task;
+                }
+                else
+                {
+                    _navigationReady = Task.CompletedTask;
+                }
             }
             else
             {
+                _navigationReady = Task.CompletedTask;
                 _currentIndex = _folderMedia.FindIndex(entry =>
                     FileSystemPath.Equals(entry.Path, path));
             }
@@ -155,6 +168,7 @@ public partial class ViewerViewModel
                     IsImageLoading = false;
             }
 
+            navigationReady?.TrySetResult();
             loadCts.Dispose();
         }
     }

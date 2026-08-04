@@ -53,10 +53,11 @@ public sealed class ViewerImageLoadingTests
         Assert.False(viewModel.IsImageLoading);
         Assert.False(load.IsCompleted);
 
-        releaseScan.TrySetResult();
-        await load.WaitAsync(TimeSpan.FromSeconds(5));
+        var navigate = viewModel.NextCommand.ExecuteAsync(null);
+        Assert.False(navigate.IsCompleted);
 
-        await viewModel.NextCommand.ExecuteAsync(null);
+        releaseScan.TrySetResult();
+        await Task.WhenAll(load, navigate).WaitAsync(TimeSpan.FromSeconds(5));
         Assert.Equal(second, viewModel.FilePath);
     }
 

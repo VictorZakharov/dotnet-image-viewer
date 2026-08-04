@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -25,7 +26,11 @@ public partial class MainWindow : Window
         InitializeComponent();
         Opened += OnOpened;
         Closing += OnClosing;
-        KeyDown += OnKeyDown;
+        AddHandler(
+            InputElement.KeyDownEvent,
+            OnKeyDown,
+            RoutingStrategies.Tunnel,
+            handledEventsToo: true);
         TextInput += OnTextInput;
 
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
@@ -217,23 +222,17 @@ public partial class MainWindow : Window
             {
                 case Key.Left:
                 case Key.Up:
-                    if (viewer.IsCropping)
-                    {
-                        e.Handled = true;
-                        break;
-                    }
-                    await NavigateViewerAsync(next: false);
                     e.Handled = true;
+                    if (viewer.IsCropping)
+                        break;
+                    await NavigateViewerAsync(next: false);
                     break;
                 case Key.Right:
                 case Key.Down:
-                    if (viewer.IsCropping)
-                    {
-                        e.Handled = true;
-                        break;
-                    }
-                    await NavigateViewerAsync(next: true);
                     e.Handled = true;
+                    if (viewer.IsCropping)
+                        break;
+                    await NavigateViewerAsync(next: true);
                     break;
                 case Key.R:
                     viewer.RotateRightCommand.Execute(null);
