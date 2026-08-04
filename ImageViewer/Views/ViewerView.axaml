@@ -9,6 +9,7 @@
              x:Class="ImageViewer.Views.ViewerView"
              x:DataType="vm:ViewerViewModel"
              Focusable="True"
+             FocusAdorner="{x:Null}"
              Background="#070b16">
 
   <Grid>
@@ -16,6 +17,7 @@
       <controls:ZoomPanImage x:Name="ViewerImage"
                              Source="{Binding Bitmap}"
                              Rotation="{Binding Rotation}"
+                             FocusAdorner="{x:Null}"
                              IsVisible="{Binding !IsImageLoading}"/>
 
       <StackPanel HorizontalAlignment="Center"

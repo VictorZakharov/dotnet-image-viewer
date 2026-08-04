@@ -82,8 +82,8 @@ public partial class MainWindow
     {
         if (DataContext is not MainWindowViewModel { IsViewerMode: true } main) return;
         if (!await ResolvePendingImageEditsAsync(reloadCurrentImage: false)) return;
-        if (next) main.ViewerVM.NextCommand.Execute(null);
-        else main.ViewerVM.PreviousCommand.Execute(null);
+        if (next) await main.ViewerVM.NextCommand.ExecuteAsync(null);
+        else await main.ViewerVM.PreviousCommand.ExecuteAsync(null);
     }
 
     private bool DeferCloseForPendingEdits(WindowClosingEventArgs e)
