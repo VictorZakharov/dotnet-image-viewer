@@ -22,13 +22,15 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
     private string? _filePath;
 
     [ObservableProperty] private int _rotation;
-    [ObservableProperty] private bool _isFullscreen;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowImageTools))]
+    private bool _isFullscreen;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowImageInfoOverlay))]
     private bool _showExifOverlay;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsImage), nameof(InfoPanelLabel), nameof(ShowImageInfoOverlay))]
+    [NotifyPropertyChangedFor(nameof(IsImage), nameof(InfoPanelLabel), nameof(ShowImageInfoOverlay), nameof(ShowImageTools))]
     private bool _isVideo;
 
     [ObservableProperty] private MediaPlayer? _videoPlayer;
@@ -49,6 +51,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
     private bool _isMuted;
 
     public bool IsImage => !IsVideo;
+    public bool ShowImageTools => IsImage && !IsFullscreen && !IsCropping;
     public bool ShowImageInfoOverlay => IsImage && ShowExifOverlay;
     public string PlayPauseLabel => IsPlaying ? "Pause" : "Play";
     public string MuteLabel => IsMuted ? "Unmute" : "Mute";
@@ -148,12 +151,6 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void RotateRight()
-    {
-        if (!IsVideo) Rotation = (Rotation + 90) % 360;
-    }
-
-    [RelayCommand]
     private void ToggleFullscreen()
     {
         IsFullscreen = !IsFullscreen;
@@ -166,6 +163,11 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
     private void ToggleSlideshow()
     {
         if (IsVideo) return;
+        if (HasPendingEdits || IsCropping)
+        {
+            StatusText = "Save or discard the current edits before starting a slideshow.";
+            return;
+        }
         if (IsSlideshowRunning) StopSlideshow();
         else StartSlideshow();
     }
@@ -318,11 +320,12 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
                 ? (DurationLabel == "00:00" ? "Video" : DurationLabel)
                 : Metadata?.DimensionsSummary;
             var suffix = string.IsNullOrEmpty(detail) ? "" : $"  —  {detail}";
-            StatusText = $"{name}  —  {_currentIndex + 1}/{_folderMedia.Count}{suffix}";
+            StatusText = $"{name}  —  {_currentIndex + 1}/{_folderMedia.Count}{suffix}" +
+                         (HasPendingEdits ? "  •  Unsaved edits" : "");
         }
         else
         {
-            StatusText = name;
+            StatusText = name + (HasPendingEdits ? "  •  Unsaved edits" : "");
         }
     }
 
@@ -332,7 +335,10 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
         _disposed = true;
         _loadCts?.Cancel();
         _loadCts?.Dispose();
+        _editPreviewCancellation?.Cancel();
+        _editPreviewCancellation?.Dispose();
         StopSlideshow();
+        ReplaceBitmap(null);
 
         if (VideoPlayer is not null)
         {

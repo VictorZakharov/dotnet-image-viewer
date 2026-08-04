@@ -1,0 +1,130 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:ImageViewer.Views"
+             xmlns:models="using:ImageViewer.Models"
+             x:Class="ImageViewer.Views.BatchProcessView"
+             x:CompileBindings="True"
+             Background="#0f1729">
+  <Grid ColumnDefinitions="420,*" ColumnSpacing="14">
+    <Border Background="#141f36" CornerRadius="6" Padding="16">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="12">
+          <TextBlock Text="Output and recipe" Foreground="#f3f7ff"
+                     FontSize="16" FontWeight="SemiBold"/>
+
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
+            <ComboBox x:Name="PresetCombo" SelectionChanged="OnPresetSelected"
+                      PlaceholderText="Choose a saved preset"/>
+            <Button Grid.Column="1" Content="Remove" Click="OnRemovePreset" Padding="10,4"/>
+          </Grid>
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="7">
+            <TextBox x:Name="PresetNameBox" PlaceholderText="Preset name"/>
+            <Button Grid.Column="1" Content="Save preset" Click="OnSavePreset" Padding="10,4"/>
+          </Grid>
+
+          <Border Height="1" Background="#2a3858" Margin="0,3"/>
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+            <TextBlock Text="Output" Foreground="#b3c1dd" VerticalAlignment="Center"/>
+            <ComboBox x:Name="OutputModeCombo" Grid.Column="1" SelectedIndex="0"
+                      SelectionChanged="OnOutputModeChanged">
+              <ComboBoxItem Content="New folder (retain originals)"/>
+              <ComboBoxItem Content="Beside originals (retain originals)"/>
+              <ComboBoxItem Content="Replace originals"/>
+            </ComboBox>
+          </Grid>
+          <Grid x:Name="DestinationPanel" ColumnDefinitions="*,Auto" ColumnSpacing="7">
+            <TextBox x:Name="DestinationBox" PlaceholderText="Output folder"
+                     TextChanged="OnOptionsChanged"/>
+            <Button Grid.Column="1" Content="Browse..." Click="OnBrowseDestination" Padding="10,4"/>
+          </Grid>
+          <Grid x:Name="SuffixPanel" ColumnDefinitions="Auto,*" ColumnSpacing="10" IsVisible="False">
+            <TextBlock Text="Suffix" Foreground="#8fa1c0" VerticalAlignment="Center"/>
+            <TextBox x:Name="SuffixBox" Grid.Column="1" Text="_processed"
+                     TextChanged="OnOptionsChanged"/>
+          </Grid>
+
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+            <StackPanel Spacing="3">
+              <TextBlock Text="If output exists" Foreground="#8fa1c0" FontSize="10"/>
+              <ComboBox x:Name="OverwriteCombo" SelectedIndex="0" SelectionChanged="OnOptionsChanged">
+                <ComboBoxItem Content="Skip"/>
+                <ComboBoxItem Content="Replace"/>
+                <ComboBoxItem Content="Auto-rename"/>
+              </ComboBox>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="3">
+              <TextBlock Text="Quality" Foreground="#8fa1c0" FontSize="10"/>
+              <NumericUpDown x:Name="QualityBox" Width="72" Value="90" Minimum="1" Maximum="100"
+                             ValueChanged="OnOptionsChanged"/>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Spacing="3">
+              <TextBlock Text="Workers" Foreground="#8fa1c0" FontSize="10"/>
+              <NumericUpDown x:Name="ConcurrencyBox" Width="68" Minimum="1" Maximum="8"
+                             ValueChanged="OnOptionsChanged"/>
+            </StackPanel>
+          </Grid>
+          <CheckBox x:Name="PreserveDatesCheck" Content="Preserve created, modified, and accessed file dates"
+                    IsChecked="True" Click="OnOptionsChanged" FontSize="11"/>
+          <CheckBox x:Name="PreserveIccCheck" Content="Preserve ICC color profile during metadata cleanup"
+                    IsChecked="True" Click="OnOptionsChanged" FontSize="11"/>
+
+          <views:BatchOperationEditor x:Name="OperationEditor"/>
+
+          <Border x:Name="DestructiveWarning" Background="#36202a" BorderBrush="#b65468"
+                  BorderThickness="1" CornerRadius="5" Padding="10" IsVisible="False">
+            <TextBlock x:Name="DestructiveWarningText" Foreground="#ffd5dc"
+                       FontSize="11" TextWrapping="Wrap"/>
+          </Border>
+          <TextBlock Text="Files are decoded with orientation normalized first. Compatible EXIF/XMP/IPTC and ICC profiles are retained unless cleanup removes them; output formats may omit metadata they cannot represent. Timestamp restoration is best-effort where the file system supports each date."
+                     Foreground="#7185a5" FontSize="10" TextWrapping="Wrap"/>
+          <Button x:Name="ProcessButton" Content="Process ready images..."
+                  Click="OnProcess" IsEnabled="False"
+                  HorizontalAlignment="Stretch" Padding="16,8"/>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+    <Border Grid.Column="1" Background="#111a2d" CornerRadius="6" Padding="14">
+      <Grid RowDefinitions="Auto,Auto,*" RowSpacing="9">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Spacing="3">
+            <TextBlock Text="Output preview" Foreground="#f3f7ff"
+                       FontSize="16" FontWeight="SemiBold"/>
+            <TextBlock x:Name="PreviewStatusText" Foreground="#8fb8eb" FontSize="11"/>
+          </StackPanel>
+          <ProgressBar x:Name="PreviewProgress" Grid.Column="1" Width="120" Height="6"
+                       IsIndeterminate="True" IsVisible="False" VerticalAlignment="Center"/>
+        </Grid>
+        <Grid Grid.Row="1" ColumnDefinitions="28,*,*,100" Margin="8,0,8,2">
+          <TextBlock Text=""/>
+          <TextBlock Grid.Column="1" Text="Source" Foreground="#7185a5" FontSize="10"/>
+          <TextBlock Grid.Column="2" Text="Output" Foreground="#7185a5" FontSize="10"/>
+          <TextBlock Grid.Column="3" Text="Validation" Foreground="#7185a5" FontSize="10"/>
+        </Grid>
+        <ListBox x:Name="PreviewList" Grid.Row="2" Background="#0a0f1c"
+                 BorderThickness="0">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="models:BatchPreviewItem">
+              <Border BorderBrush="#243049" BorderThickness="0,0,0,1" Padding="8,7">
+                <Grid ColumnDefinitions="28,*,*,100" RowDefinitions="Auto,Auto">
+                  <TextBlock Text="→" Foreground="#67b7ff" FontSize="14"/>
+                  <TextBlock Grid.Column="1" Text="{Binding SourceName}" Foreground="#dce7f7"
+                             TextTrimming="CharacterEllipsis" Margin="0,0,10,0"/>
+                  <TextBlock Grid.Column="2" Text="{Binding TargetName}" Foreground="#d8edff"
+                             TextTrimming="CharacterEllipsis" Margin="0,0,10,0"/>
+                  <TextBlock Grid.Column="3" Text="{Binding StatusLabel}" Foreground="#e8c786"
+                             FontWeight="SemiBold" FontSize="11"/>
+                  <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                             Text="{Binding SourceFolder}" Foreground="#5f7494" FontSize="9"
+                             TextTrimming="CharacterEllipsis" Margin="0,2,10,0"/>
+                  <TextBlock Grid.Row="1" Grid.Column="3" Text="{Binding Message}"
+                             Foreground="#8fa1c0" FontSize="9" TextWrapping="Wrap"/>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

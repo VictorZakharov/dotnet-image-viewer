@@ -1,0 +1,31 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ImageViewer.Views.PendingImageEditsDialog"
+        x:CompileBindings="True"
+        Title="Unsaved image edits"
+        Icon="/Assets/ImageViewer.png"
+        Width="520" Height="250"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="#0f1729">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="24" RowSpacing="16">
+    <StackPanel Spacing="5">
+      <TextBlock Text="Save changes to this image?"
+                 Foreground="#f3f7ff" FontSize="20" FontWeight="SemiBold"/>
+      <TextBlock x:Name="FileNameText" Foreground="#8fb8eb"
+                 FontSize="12" TextTrimming="CharacterEllipsis"/>
+    </StackPanel>
+
+    <Border Grid.Row="1" Background="#162038" CornerRadius="6" Padding="14">
+      <TextBlock Foreground="#b9c8de" FontSize="12" TextWrapping="Wrap"
+                 Text="Rotate and crop changes are only a preview until you save. Discard leaves the original file unchanged."/>
+    </Border>
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal"
+                HorizontalAlignment="Right" Spacing="8">
+      <Button Content="Discard" Click="OnDiscard" Padding="16,6"/>
+      <Button Content="Cancel" Click="OnCancel" Padding="16,6"/>
+      <Button Content="Save" Click="OnSave" Padding="22,6"/>
+    </StackPanel>
+  </Grid>
+</Window>

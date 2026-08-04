@@ -1,0 +1,237 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ImageViewer.Views.SingleImageEditDialog"
+        x:CompileBindings="False"
+        Title="Edit image"
+        Width="560"
+        MaxHeight="760"
+        SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="#0f1729">
+  <Grid RowDefinitions="Auto,*,Auto">
+    <Border Background="#1a2440" Padding="20,16">
+      <StackPanel Spacing="3">
+        <TextBlock x:Name="HeadingText" Text="Edit image"
+                   Foreground="#f3f7ff" FontSize="20" FontWeight="SemiBold"/>
+        <TextBlock x:Name="SourceText" Foreground="#91a7c8" FontSize="11"
+                   TextTrimming="CharacterEllipsis"/>
+      </StackPanel>
+    </Border>
+
+    <ScrollViewer x:Name="EditorScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="20,16" Spacing="13">
+        <TextBlock x:Name="CommandDescriptionText" Foreground="#b9c9e1"
+                   FontSize="12" TextWrapping="Wrap"/>
+
+        <Border Background="#141f36" CornerRadius="6" Padding="14">
+          <StackPanel Spacing="11">
+            <StackPanel x:Name="RotationPanel" Spacing="7" IsVisible="False">
+              <TextBlock x:Name="RotationSummaryText" Foreground="#e7eef9"
+                         FontSize="14" FontWeight="SemiBold"/>
+              <CheckBox x:Name="LosslessJpegCheck"
+                        Content="Use lossless JPEG rotation"
+                        IsVisible="False"
+                        Click="OnOptionsChanged"/>
+            </StackPanel>
+
+            <StackPanel x:Name="ResizePanel" Spacing="8" IsVisible="False">
+              <TextBlock Text="Resize" Foreground="#e7eef9"
+                         FontSize="14" FontWeight="SemiBold"/>
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <StackPanel Spacing="3">
+                  <TextBlock Text="Maximum width" Foreground="#8fa1c0" FontSize="10"/>
+                  <NumericUpDown x:Name="ResizeWidthBox" Minimum="1" Maximum="100000"
+                                 Value="1920" ValueChanged="OnOptionsChanged"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="3">
+                  <TextBlock Text="Maximum height" Foreground="#8fa1c0" FontSize="10"/>
+                  <NumericUpDown x:Name="ResizeHeightBox" Minimum="1" Maximum="100000"
+                                 Value="1080" ValueChanged="OnOptionsChanged"/>
+                </StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <ComboBox x:Name="ResizeModeCombo" SelectedIndex="0"
+                          SelectionChanged="OnOptionsChanged">
+                  <ComboBoxItem Content="Fit inside dimensions"/>
+                  <ComboBoxItem Content="Exact dimensions (stretch)"/>
+                </ComboBox>
+                <CheckBox x:Name="AllowUpscaleCheck" Grid.Column="1"
+                          Content="Allow enlargement" Click="OnOptionsChanged"
+                          VerticalAlignment="Center"/>
+              </Grid>
+            </StackPanel>
+
+            <StackPanel x:Name="CropPanel" Spacing="8" IsVisible="False">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="Crop rectangle" Foreground="#e7eef9"
+                           FontSize="14" FontWeight="SemiBold"/>
+                <TextBlock x:Name="CropBoundsText" Grid.Column="1"
+                           Foreground="#8fa1c0" FontSize="10"
+                           VerticalAlignment="Center"/>
+              </Grid>
+              <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto"
+                    ColumnSpacing="10" RowSpacing="8">
+                <StackPanel Spacing="3">
+                  <TextBlock Text="Left (px)" Foreground="#8fa1c0" FontSize="10"/>
+                  <NumericUpDown x:Name="CropXBox" Minimum="0" Maximum="100000"
+                                 Value="0" ValueChanged="OnOptionsChanged"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="3">
+                  <TextBlock Text="Top (px)" Foreground="#8fa1c0" FontSize="10"/>
+                  <NumericUpDown x:Name="CropYBox" Minimum="0" Maximum="100000"
+                                 Value="0" ValueChanged="OnOptionsChanged"/>
+                </StackPanel>
+                <StackPanel Grid.Row="1" Spacing="3">
+                  <TextBlock Text="Width (px)" Foreground="#8fa1c0" FontSize="10"/>
+                  <NumericUpDown x:Name="CropWidthBox" Minimum="1" Maximum="100000"
+                                 Value="1000" ValueChanged="OnOptionsChanged"/>
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="3">
+                  <TextBlock Text="Height (px)" Foreground="#8fa1c0" FontSize="10"/>
+                  <NumericUpDown x:Name="CropHeightBox" Minimum="1" Maximum="100000"
+                                 Value="1000" ValueChanged="OnOptionsChanged"/>
+                </StackPanel>
+              </Grid>
+            </StackPanel>
+
+            <StackPanel x:Name="ConvertPanel" Spacing="7" IsVisible="False">
+              <TextBlock Text="Output format" Foreground="#e7eef9"
+                         FontSize="14" FontWeight="SemiBold"/>
+              <ComboBox x:Name="FormatCombo" SelectedIndex="0"
+                        SelectionChanged="OnOptionsChanged">
+                <ComboBoxItem Content="JPEG (.jpg)"/>
+                <ComboBoxItem Content="PNG (.png)"/>
+                <ComboBoxItem Content="WebP (.webp)"/>
+                <ComboBoxItem Content="TIFF (.tif)"/>
+              </ComboBox>
+            </StackPanel>
+
+            <StackPanel x:Name="WatermarkPanel" Spacing="8" IsVisible="False">
+              <TextBlock Text="Text watermark" Foreground="#e7eef9"
+                         FontSize="14" FontWeight="SemiBold"/>
+              <TextBox x:Name="WatermarkTextBox" PlaceholderText="Watermark text"
+                       TextChanged="OnOptionsChanged"/>
+              <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                <StackPanel Spacing="3">
+                  <TextBlock Text="Position" Foreground="#8fa1c0" FontSize="10"/>
+                  <ComboBox x:Name="WatermarkPositionCombo" SelectedIndex="4"
+                            SelectionChanged="OnOptionsChanged">
+                    <ComboBoxItem Content="Top left"/>
+                    <ComboBoxItem Content="Top right"/>
+                    <ComboBoxItem Content="Center"/>
+                    <ComboBoxItem Content="Bottom left"/>
+                    <ComboBoxItem Content="Bottom right"/>
+                  </ComboBox>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="3">
+                  <TextBlock Text="Size" Foreground="#8fa1c0" FontSize="10"/>
+                  <NumericUpDown x:Name="WatermarkSizeBox" Width="76"
+                                 Minimum="6" Maximum="300" Value="32"
+                                 ValueChanged="OnOptionsChanged"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Spacing="3">
+                  <TextBlock Text="Opacity %" Foreground="#8fa1c0" FontSize="10"/>
+                  <NumericUpDown x:Name="WatermarkOpacityBox" Width="82"
+                                 Minimum="1" Maximum="100" Value="70"
+                                 ValueChanged="OnOptionsChanged"/>
+                </StackPanel>
+              </Grid>
+            </StackPanel>
+
+            <StackPanel x:Name="MetadataPanel" Spacing="7" IsVisible="False">
+              <TextBlock Text="Metadata cleanup" Foreground="#e7eef9"
+                         FontSize="14" FontWeight="SemiBold"/>
+              <ComboBox x:Name="MetadataModeCombo" SelectedIndex="0"
+                        SelectionChanged="OnOptionsChanged">
+                <ComboBoxItem Content="Remove EXIF, XMP, and IPTC metadata"/>
+                <ComboBoxItem Content="Remove all metadata"/>
+              </ComboBox>
+              <CheckBox x:Name="PreserveIccCheck"
+                        Content="Keep the ICC color profile"
+                        IsChecked="True" Click="OnOptionsChanged"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Background="#141f36" CornerRadius="6" Padding="14">
+          <StackPanel Spacing="9">
+            <TextBlock Text="Output" Foreground="#e7eef9"
+                       FontSize="14" FontWeight="SemiBold"/>
+            <ComboBox x:Name="OutputModeCombo" SelectedIndex="0"
+                      SelectionChanged="OnOutputModeChanged">
+              <ComboBoxItem Content="Create a copy beside the original"/>
+              <ComboBoxItem Content="Replace the original"/>
+            </ComboBox>
+            <Grid x:Name="SuffixPanel" ColumnDefinitions="Auto,*" ColumnSpacing="10">
+              <TextBlock Text="Filename suffix" Foreground="#8fa1c0"
+                         VerticalAlignment="Center"/>
+              <TextBox x:Name="SuffixBox" Grid.Column="1"
+                       TextChanged="OnOptionsChanged"/>
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+              <CheckBox x:Name="PreserveDatesCheck"
+                        Content="Preserve original file dates"
+                        Click="OnOptionsChanged"/>
+              <Grid Grid.Column="1" ColumnDefinitions="Auto,150,30" ColumnSpacing="7"
+                    VerticalAlignment="Center">
+                <TextBlock Text="Quality" Foreground="#8fa1c0"
+                           VerticalAlignment="Center"/>
+                <Slider x:Name="QualitySlider" Grid.Column="1"
+                        Minimum="1" Maximum="100" Value="90"
+                        TickFrequency="1" IsSnapToTickEnabled="True"
+                        ValueChanged="OnQualityChanged"
+                        VerticalAlignment="Center"/>
+                <TextBlock x:Name="QualityValueText" Grid.Column="2" Text="90"
+                           Foreground="#dce8f9" HorizontalAlignment="Right"
+                           VerticalAlignment="Center"/>
+              </Grid>
+            </Grid>
+            <Border x:Name="DestructiveWarning" Background="#36202a"
+                    BorderBrush="#b65468" BorderThickness="1"
+                    CornerRadius="4" Padding="9" IsVisible="False">
+              <TextBlock Foreground="#ffd5dc" FontSize="11" TextWrapping="Wrap"
+                         Text="The original will be replaced only after a complete temporary output has been written. Converting can also replace an existing file with the target extension. This cannot be undone in ImageViewer."/>
+            </Border>
+          </StackPanel>
+        </Border>
+
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+          <TextBlock x:Name="PreviewStatusText" Foreground="#8fb8eb"
+                     FontSize="11" TextWrapping="Wrap"
+                     VerticalAlignment="Center"/>
+          <ProgressBar x:Name="PreviewProgress" Grid.Column="1"
+                       Width="100" Height="5" IsIndeterminate="True"
+                       IsVisible="False" VerticalAlignment="Center"/>
+        </Grid>
+        <Border x:Name="ConversionPreviewPanel" Background="#13243d"
+                BorderBrush="#31577d" BorderThickness="1"
+                CornerRadius="5" Padding="11" IsVisible="False">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+            <StackPanel Spacing="2" VerticalAlignment="Center">
+              <TextBlock Text="Encoded preview" Foreground="#e5edf9"
+                         FontSize="11" FontWeight="SemiBold"/>
+              <TextBlock x:Name="ConversionSizeText" Foreground="#8fb8eb"
+                         FontSize="11"/>
+            </StackPanel>
+            <Button x:Name="CompareConversionButton" Grid.Column="1"
+                    Content="Compare original and converted..."
+                    Click="OnCompareConversion" IsEnabled="False"
+                    Padding="12,5" VerticalAlignment="Center"/>
+          </Grid>
+        </Border>
+        <TextBlock Foreground="#7185a5" FontSize="10" TextWrapping="Wrap"
+                   Text="The image is auto-oriented before editing. Copies are auto-renamed if their generated filename already exists."/>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Border Grid.Row="2" Background="#121c32" Padding="16,12">
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+        <Button x:Name="CancelButton" Content="Cancel" Click="OnCancel"
+                Padding="14,6"/>
+        <Button x:Name="ApplyButton" Content="Create edited copy"
+                Click="OnApply" IsEnabled="False" Padding="16,6"/>
+      </StackPanel>
+    </Border>
+  </Grid>
+</Window>

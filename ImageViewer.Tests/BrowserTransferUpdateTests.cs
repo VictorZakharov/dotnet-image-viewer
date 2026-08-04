@@ -83,6 +83,47 @@ public sealed class BrowserTransferUpdateTests : IDisposable
             actions);
     }
 
+    [Fact]
+    public void ImageEditCopyIsInsertedAndSelectedWithoutResettingGrid()
+    {
+        using var viewModel = CreateViewModel();
+        var source = AddFile(viewModel, "photo.png");
+        viewModel.SelectItem(source);
+        var output = CreateFile("photo_resized.png");
+        var actions = new List<NotifyCollectionChangedAction>();
+        viewModel.FilteredItems.CollectionChanged += (_, args) => actions.Add(args.Action);
+
+        viewModel.ApplyImageEditResult(new SingleImageEditResult(
+            source.Path, output, ReplacedOriginal: false, SingleImageEditKind.Resize));
+
+        Assert.Equal(new[] { "photo.png", "photo_resized.png" },
+            viewModel.Items.Select(item => item.FileName));
+        Assert.Equal(output, viewModel.SelectedPath);
+        Assert.Equal([NotifyCollectionChangedAction.Add], actions);
+    }
+
+    [Fact]
+    public void ImageEditConversionReplacesSourceWithoutResettingGrid()
+    {
+        using var viewModel = CreateViewModel();
+        var source = AddFile(viewModel, "photo.png");
+        viewModel.SelectItem(source);
+        File.Delete(source.Path);
+        var output = CreateFile("photo.jpg");
+        var actions = new List<NotifyCollectionChangedAction>();
+        viewModel.FilteredItems.CollectionChanged += (_, args) => actions.Add(args.Action);
+
+        viewModel.ApplyImageEditResult(new SingleImageEditResult(
+            source.Path, output, ReplacedOriginal: true, SingleImageEditKind.Convert));
+
+        Assert.Equal(["photo.jpg"], viewModel.Items.Select(item => item.FileName));
+        Assert.Equal(output, viewModel.SelectedPath);
+        Assert.DoesNotContain(NotifyCollectionChangedAction.Reset, actions);
+        Assert.Equal(
+            [NotifyCollectionChangedAction.Remove, NotifyCollectionChangedAction.Add],
+            actions);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_root)) Directory.Delete(_root, recursive: true);

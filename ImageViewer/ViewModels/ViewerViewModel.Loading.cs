@@ -29,8 +29,22 @@ public partial class ViewerViewModel
         ShowExifOverlay = settings.ShowExifOverlay;
     }
 
+    public async Task ReloadFolderAndImageAsync(string path)
+    {
+        InvalidateFolderMedia();
+        await LoadAsync(path);
+    }
+
+    public void InvalidateFolderMedia()
+    {
+        _currentFolder = null;
+        _folderMedia.Clear();
+        _currentIndex = -1;
+    }
+
     public async Task LoadAsync(string path)
     {
+        ResetEditSession();
         var loadCts = new CancellationTokenSource();
         var previousLoad = _loadCts;
         _loadCts = loadCts;
@@ -45,7 +59,7 @@ public partial class ViewerViewModel
         var isVideo = MediaFileTypes.IsVideo(path);
         IsVideo = isVideo;
         IsImageLoading = !isVideo;
-        Bitmap = null;
+        ReplaceBitmap(null);
 
         if (isVideo)
             StopSlideshow();
@@ -88,7 +102,7 @@ public partial class ViewerViewModel
                     return;
                 }
 
-                Bitmap = loaded.Bitmap;
+                ReplaceBitmap(loaded.Bitmap);
                 Rotation = loaded.OrientationBaked ? 0 : (Metadata?.OrientationRotation ?? 0);
             }
 

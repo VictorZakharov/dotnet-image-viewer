@@ -1,0 +1,31 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ImageViewer.Views.BatchConfirmationDialog"
+        x:CompileBindings="True"
+        Title="Confirm batch operation"
+        Icon="/Assets/ImageViewer.png"
+        Width="600" Height="400"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="#0f1729">
+  <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="24" RowSpacing="14">
+    <TextBlock x:Name="HeadingText" Foreground="#f3f7ff"
+               FontSize="20" FontWeight="SemiBold"/>
+    <Border Grid.Row="1" Background="#36202a" BorderBrush="#b65468"
+            BorderThickness="1" CornerRadius="6" Padding="12">
+      <TextBlock x:Name="WarningText" Foreground="#ffd5dc"
+                 FontSize="12" TextWrapping="Wrap"/>
+    </Border>
+    <Border Grid.Row="2" Background="#162038" CornerRadius="6" Padding="12">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <TextBlock x:Name="ItemListText" Foreground="#b3c1dd"
+                   FontSize="11" FontFamily="Consolas" TextWrapping="Wrap"/>
+      </ScrollViewer>
+    </Border>
+    <StackPanel Grid.Row="3" Orientation="Horizontal"
+                HorizontalAlignment="Right" Spacing="8">
+      <Button Content="Cancel" Click="OnCancel" Padding="18,6"/>
+      <Button x:Name="ConfirmButton" Click="OnConfirm" Padding="18,6"/>
+    </StackPanel>
+  </Grid>
+</Window>
