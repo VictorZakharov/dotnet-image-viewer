@@ -1,21 +1,160 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
 using ImageViewer.ViewModels;
 
 namespace ImageViewer.Views;
 
 public partial class VideoOverlayView : UserControl
 {
+    private bool _isTimelinePointerPressed;
+    private Track? _timelineTrack;
+
     public VideoOverlayView()
     {
         InitializeComponent();
         AddHandler(InputElement.KeyDownEvent, OnOverlayKeyDown, RoutingStrategies.Tunnel);
+        AddHandler(
+            InputElement.PointerMovedEvent,
+            OnOverlayPointerActivity,
+            RoutingStrategies.Tunnel,
+            handledEventsToo: true);
+        AddHandler(
+            InputElement.PointerPressedEvent,
+            OnOverlayPointerActivity,
+            RoutingStrategies.Tunnel,
+            handledEventsToo: true);
+        // Slider/Thumb class handlers consume drag events. Observe them during
+        // tunneling so a press can hide hover previews without interfering
+        // with the slider's normal seek behavior.
+        TimelineSlider.AddHandler(
+            InputElement.PointerPressedEvent,
+            OnTimelinePointerPressed,
+            RoutingStrategies.Tunnel,
+            handledEventsToo: true);
+        TimelineSlider.AddHandler(
+            InputElement.PointerMovedEvent,
+            OnTimelinePointerMoved,
+            RoutingStrategies.Tunnel,
+            handledEventsToo: true);
+        TimelineSlider.AddHandler(
+            InputElement.PointerReleasedEvent,
+            OnTimelinePointerReleased,
+            RoutingStrategies.Tunnel,
+            handledEventsToo: true);
+        TimelineSlider.AddHandler(
+            InputElement.PointerCaptureLostEvent,
+            OnTimelinePointerCaptureLost,
+            RoutingStrategies.Bubble,
+            handledEventsToo: true);
+        TimelineSlider.PointerExited += OnTimelinePointerExited;
+    }
+
+    private void OnTimelinePointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(TimelineSlider).Properties.IsLeftButtonPressed) return;
+        _isTimelinePointerPressed = true;
+        if (DataContext is ViewerViewModel viewer)
+            viewer.HideTimelinePreview();
+    }
+
+    private void OnTimelinePointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (DataContext is not ViewerViewModel viewer) return;
+        if (_isTimelinePointerPressed ||
+            e.GetCurrentPoint(TimelineSlider).Properties.IsLeftButtonPressed)
+        {
+            viewer.HideTimelinePreview();
+            return;
+        }
+
+        var position = GetTimelinePosition(e);
+        PositionTimelinePreview(e);
+        if (viewer.IsScrubPreviewVisible)
+            viewer.UpdateTimelinePreview(position);
+        else
+            viewer.ShowTimelinePreview(position);
+    }
+
+    private void OnTimelinePointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        _isTimelinePointerPressed = false;
+        if (DataContext is ViewerViewModel viewer)
+            viewer.HideTimelinePreview();
+    }
+
+    private void OnTimelinePointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
+    {
+        _isTimelinePointerPressed = false;
+        if (DataContext is ViewerViewModel viewer)
+            viewer.HideTimelinePreview();
+    }
+
+    private void OnTimelinePointerExited(object? sender, PointerEventArgs e)
+    {
+        if (!_isTimelinePointerPressed && DataContext is ViewerViewModel viewer)
+            viewer.HideTimelinePreview();
+    }
+
+    private void OnOverlayPointerActivity(object? sender, PointerEventArgs e)
+    {
+        if (DataContext is ViewerViewModel viewer)
+            viewer.NotifyVideoControlActivity();
+    }
+
+    private double GetTimelinePosition(PointerEventArgs e)
+    {
+        var minimum = TimelineSlider.Minimum;
+        var range = TimelineSlider.Maximum - minimum;
+        if (range <= 0) return 0;
+
+        _timelineTrack ??= TimelineSlider
+            .GetVisualDescendants()
+            .OfType<Track>()
+            .FirstOrDefault();
+        if (_timelineTrack is { Bounds.Width: > 0 } track)
+        {
+            var point = e.GetPosition(track);
+            // Pressing the thumb itself preserves the current value until it
+            // moves, so its hover preview must do the same.
+            var value = track.Thumb?.Bounds.Contains(point) == true
+                ? TimelineSlider.Value
+                : track.ValueFromPoint(point);
+            return Math.Clamp((value - minimum) / range, 0, 1);
+        }
+
+        var timelinePoint = e.GetPosition(TimelineSlider);
+        var width = TimelineSlider.Bounds.Width;
+        return width <= 0
+            ? Math.Clamp((TimelineSlider.Value - minimum) / range, 0, 1)
+            : Math.Clamp(timelinePoint.X / width, 0, 1);
+    }
+
+    private void PositionTimelinePreview(PointerEventArgs e)
+    {
+        const double previewWidth = 312;
+        const double edgeMargin = 8;
+        var pointerX = e.GetPosition(this).X;
+        var availableWidth = Math.Max(0, Bounds.Width - previewWidth - (edgeMargin * 2));
+        var left = edgeMargin + Math.Clamp(
+            pointerX - (previewWidth / 2) - edgeMargin,
+            0,
+            availableWidth);
+        ScrubPreviewPopup.Margin = new Thickness(left, 0, 0, 84);
     }
 
     private void OnOverlayKeyDown(object? sender, KeyEventArgs e)
     {
         if (DataContext is not ViewerViewModel viewer) return;
+        viewer.NotifyVideoControlActivity();
 
         // LibVLCSharp renders this content in a small owned overlay window.
         // Once a playback control has focus, its keys no longer bubble to the
@@ -77,10 +216,138 @@ public partial class VideoOverlayView : UserControl
             ? mainWindow
             : null;
 
-    private void OnInfoPillClicked(object? sender, PointerPressedEventArgs e)
+    private void OnSubtitleToolsClicked(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || DataContext is not ViewerViewModel vm) return;
+        var tools = vm.VideoTools;
+        tools.Refresh();
+
+        var items = new List<object>
+        {
+            RadioItem("Off", tools.IsSubtitleOff, "subtitle-tracks", () =>
+                tools.SelectSubtitleTrack(-1))
+        };
+
+        if (!tools.HasSubtitleTracks)
+        {
+            items.Add(new MenuItem
+            {
+                Header = "No embedded subtitle tracks",
+                IsEnabled = false
+            });
+        }
+        else
+        {
+            foreach (var track in tools.SubtitleTracks)
+            {
+                var trackId = track.Id;
+                items.Add(RadioItem(track.Label, track.IsSelected, "subtitle-tracks", () =>
+                    tools.SelectSubtitleTrack(trackId)));
+            }
+        }
+
+        if (!string.IsNullOrEmpty(tools.PendingExternalSubtitleLabel))
+        {
+            items.Add(new MenuItem
+            {
+                Header = $"Loading {tools.PendingExternalSubtitleLabel}...",
+                IsEnabled = false,
+                ToggleType = MenuItemToggleType.Radio,
+                IsChecked = true,
+                GroupName = "subtitle-tracks"
+            });
+        }
+
+        items.Add(new Separator());
+        var loadItem = new MenuItem { Header = "Load subtitle file..." };
+        loadItem.Click += async (_, _) => await LoadSubtitleFileAsync(vm);
+        items.Add(loadItem);
+        ShowMenu(button, items);
+    }
+
+    private void OnAudioToolsClicked(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || DataContext is not ViewerViewModel vm) return;
+        var tools = vm.VideoTools;
+        tools.Refresh();
+        var items = tools.AudioTracks
+            .Select(track =>
+            {
+                var trackId = track.Id;
+                return (object)RadioItem(track.Label, track.IsSelected, "audio-tracks", () =>
+                    tools.SelectAudioTrack(trackId));
+            })
+            .ToList();
+        if (items.Count == 0)
+            items.Add(new MenuItem { Header = "No selectable audio tracks", IsEnabled = false });
+        ShowMenu(button, items);
+    }
+
+    private void OnPlaybackSpeedClicked(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || DataContext is not ViewerViewModel vm) return;
+        var tools = vm.VideoTools;
+        var items = VideoPlaybackTools.PlaybackRatePresets
+            .Select(rate =>
+            {
+                var selectedRate = rate;
+                return (object)RadioItem(
+                    VideoPlaybackTools.FormatPlaybackRate(rate),
+                    Math.Abs(rate - tools.PlaybackRate) < 0.001f,
+                    "playback-rates",
+                    () => tools.SelectPlaybackRate(selectedRate));
+            })
+            .ToList();
+        ShowMenu(button, items);
+    }
+
+    private void OnVideoInfoClicked(object? sender, RoutedEventArgs e)
     {
         if (DataContext is ViewerViewModel vm)
             vm.ToggleExifOverlayCommand.Execute(null);
-        e.Handled = true;
+    }
+
+    private async Task LoadSubtitleFileAsync(ViewerViewModel vm)
+    {
+        var topLevel = (TopLevel?)GetMainWindow() ?? TopLevel.GetTopLevel(this);
+        if (topLevel is null) return;
+        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Load subtitle file",
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("Subtitle files")
+                {
+                    Patterns = ["*.srt", "*.ass", "*.ssa", "*.vtt", "*.sub", "*.smi"]
+                }
+            ]
+        });
+        var path = files.FirstOrDefault()?.TryGetLocalPath();
+        if (!string.IsNullOrEmpty(path))
+            vm.LoadExternalSubtitle(path);
+    }
+
+    private static MenuItem RadioItem(
+        string header,
+        bool isChecked,
+        string groupName,
+        Action action)
+    {
+        var item = new MenuItem
+        {
+            Header = header,
+            ToggleType = MenuItemToggleType.Radio,
+            IsChecked = isChecked,
+            GroupName = groupName
+        };
+        item.Click += (_, _) => action();
+        return item;
+    }
+
+    private static void ShowMenu(Control target, IReadOnlyList<object> items)
+    {
+        var flyout = new MenuFlyout { ItemsSource = items };
+        flyout.ShowAt(target);
     }
 }

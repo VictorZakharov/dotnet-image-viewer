@@ -34,7 +34,7 @@ published `.sha256` file before running it.
 - Click and drag to pan when zoomed in
 - Double-click toggles **Fit-to-window** ↔ **Actual size (100%)**
 - `←` / `→` (or `↑` / `↓`) navigate to the previous / next media file in the folder
-- Built-in video playback with seek, play/pause, mute, and volume controls
+- Built-in video playback with seek, play/pause, mute, and volume controls; a matching left tool rail switches embedded audio/subtitle tracks, loads external SRT/ASS/SSA/WebVTT subtitles, selects 0.5x–2x playback speed, and opens video information
 - `Space` toggles video playback; video automatically pauses when returning to the browser
 - A compact left tool rail provides rotate, visual crop, resize, convert, watermark, metadata cleanup, and properties; hover any icon for its label, and fullscreen hides the rail
 - `R` rotates the current image immediately in the viewer; leaving the image offers **Save**, **Discard**, or **Cancel**
