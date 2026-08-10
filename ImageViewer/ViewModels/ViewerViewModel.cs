@@ -105,7 +105,6 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
         player.TimeChanged += OnPlayerTimeChanged;
         player.LengthChanged += OnPlayerLengthChanged;
         player.EncounteredError += OnPlayerEncounteredError;
-        player.SnapshotTaken += OnPlayerSnapshotTaken;
         player.ESAdded += OnPlayerElementaryStreamChanged;
         player.ESDeleted += OnPlayerElementaryStreamChanged;
         player.ESSelected += OnPlayerElementaryStreamChanged;
@@ -128,6 +127,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
             SetPlaybackPositionFromPlayer(0);
             CurrentTimeLabel = "00:00";
             DurationLabel = "00:00";
+            NotifyVideoControlActivity();
 
             var previousMedia = _currentMedia;
             // Browser mode pauses playback. Stop that media before replacing it
@@ -213,7 +213,6 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
     partial void OnPlaybackPositionChanged(double value)
     {
         if (_updatingPlaybackPosition || !IsVideo || VideoPlayer is null) return;
-        if (IsScrubPreviewVisible) return;
         VideoPlayer.Position = (float)Math.Clamp(value, 0, 1);
     }
 
@@ -259,6 +258,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
     private void StopVideo()
     {
         ResetScrubPreview();
+        ResetVideoControls();
         ResetVideoTools();
         if (VideoPlayer is null)
         {
@@ -280,6 +280,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
         IsPlaying = true;
         IsVideoLoading = false;
         PlaybackError = null;
+        NotifyVideoControlActivity();
         ActivateVideoTools();
     });
 
@@ -303,7 +304,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
     {
         var length = VideoPlayer?.Length ?? 0;
         CurrentTimeLabel = FormatDuration(e.Time);
-        if (length > 0 && !IsScrubPreviewVisible)
+        if (length > 0)
             SetPlaybackPositionFromPlayer((double)e.Time / length);
     });
 
@@ -377,6 +378,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
     {
         if (_disposed) return;
         ResetScrubPreview();
+        DisposeVideoControls();
         _disposed = true;
         _loadCts?.Cancel();
         _loadCts?.Dispose();
@@ -396,7 +398,6 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
             player.TimeChanged -= OnPlayerTimeChanged;
             player.LengthChanged -= OnPlayerLengthChanged;
             player.EncounteredError -= OnPlayerEncounteredError;
-            player.SnapshotTaken -= OnPlayerSnapshotTaken;
             player.ESAdded -= OnPlayerElementaryStreamChanged;
             player.ESDeleted -= OnPlayerElementaryStreamChanged;
             player.ESSelected -= OnPlayerElementaryStreamChanged;

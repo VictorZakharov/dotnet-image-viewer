@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
@@ -14,15 +13,25 @@ namespace ImageViewer.Views;
 
 public partial class VideoOverlayView : UserControl
 {
-    private bool _isTimelineScrubbing;
+    private bool _isTimelinePointerPressed;
 
     public VideoOverlayView()
     {
         InitializeComponent();
         AddHandler(InputElement.KeyDownEvent, OnOverlayKeyDown, RoutingStrategies.Tunnel);
-        // Slider/Thumb class handlers consume drag events. Listen during the
-        // tunnel phase (including already-handled events) so every scrub
-        // position reaches the thumbnail pipeline.
+        AddHandler(
+            InputElement.PointerMovedEvent,
+            OnOverlayPointerActivity,
+            RoutingStrategies.Tunnel,
+            handledEventsToo: true);
+        AddHandler(
+            InputElement.PointerPressedEvent,
+            OnOverlayPointerActivity,
+            RoutingStrategies.Tunnel,
+            handledEventsToo: true);
+        // Slider/Thumb class handlers consume drag events. Observe them during
+        // tunneling so a press can hide hover previews without interfering
+        // with the slider's normal seek behavior.
         TimelineSlider.AddHandler(
             InputElement.PointerPressedEvent,
             OnTimelinePointerPressed,
@@ -43,64 +52,71 @@ public partial class VideoOverlayView : UserControl
             OnTimelinePointerCaptureLost,
             RoutingStrategies.Bubble,
             handledEventsToo: true);
-        TimelineSlider.PropertyChanged += OnTimelineSliderPropertyChanged;
+        TimelineSlider.PointerExited += OnTimelinePointerExited;
     }
 
     private void OnTimelinePointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (DataContext is not ViewerViewModel viewer ||
-            !e.GetCurrentPoint(TimelineSlider).Properties.IsLeftButtonPressed)
-        {
-            return;
-        }
-
-        _isTimelineScrubbing = true;
-        var position = UpdateTimelineFromPointer(e);
-        viewer.BeginScrubPreview(position);
+        if (!e.GetCurrentPoint(TimelineSlider).Properties.IsLeftButtonPressed) return;
+        _isTimelinePointerPressed = true;
+        if (DataContext is ViewerViewModel viewer)
+            viewer.HideTimelinePreview();
     }
 
     private void OnTimelinePointerMoved(object? sender, PointerEventArgs e)
     {
-        if (!_isTimelineScrubbing || DataContext is not ViewerViewModel viewer) return;
-        if (!e.GetCurrentPoint(TimelineSlider).Properties.IsLeftButtonPressed)
+        if (DataContext is not ViewerViewModel viewer) return;
+        if (_isTimelinePointerPressed ||
+            e.GetCurrentPoint(TimelineSlider).Properties.IsLeftButtonPressed)
         {
-            FinishTimelineScrub(viewer);
+            viewer.HideTimelinePreview();
             return;
         }
 
-        UpdateTimelineFromPointer(e);
+        var position = GetTimelinePosition(e);
+        PositionTimelinePreview(e);
+        if (viewer.IsScrubPreviewVisible)
+            viewer.UpdateTimelinePreview(position);
+        else
+            viewer.ShowTimelinePreview(position);
     }
 
     private void OnTimelinePointerReleased(object? sender, PointerReleasedEventArgs e)
     {
-        if (!_isTimelineScrubbing || DataContext is not ViewerViewModel viewer) return;
-        UpdateTimelineFromPointer(e);
-        FinishTimelineScrub(viewer);
-    }
-
-    private void OnTimelineSliderPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
-    {
-        if (_isTimelineScrubbing && e.Property == RangeBase.ValueProperty &&
-            DataContext is ViewerViewModel viewer)
-        {
-            viewer.UpdateScrubPreview(TimelineSlider.Value);
-        }
+        _isTimelinePointerPressed = false;
+        if (DataContext is ViewerViewModel viewer)
+            viewer.HideTimelinePreview();
     }
 
     private void OnTimelinePointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
     {
-        if (_isTimelineScrubbing && DataContext is ViewerViewModel viewer)
-            FinishTimelineScrub(viewer);
+        _isTimelinePointerPressed = false;
+        if (DataContext is ViewerViewModel viewer)
+            viewer.HideTimelinePreview();
     }
 
-    private double UpdateTimelineFromPointer(PointerEventArgs e)
+    private void OnTimelinePointerExited(object? sender, PointerEventArgs e)
+    {
+        if (!_isTimelinePointerPressed && DataContext is ViewerViewModel viewer)
+            viewer.HideTimelinePreview();
+    }
+
+    private void OnOverlayPointerActivity(object? sender, PointerEventArgs e)
+    {
+        if (DataContext is ViewerViewModel viewer)
+            viewer.NotifyVideoControlActivity();
+    }
+
+    private double GetTimelinePosition(PointerEventArgs e)
     {
         var timelinePoint = e.GetPosition(TimelineSlider);
         var width = TimelineSlider.Bounds.Width;
-        var position = width <= 0 ? TimelineSlider.Value : Math.Clamp(timelinePoint.X / width, 0, 1);
-        TimelineSlider.Value = position;
+        return width <= 0 ? TimelineSlider.Value : Math.Clamp(timelinePoint.X / width, 0, 1);
+    }
 
-        const double previewWidth = 208;
+    private void PositionTimelinePreview(PointerEventArgs e)
+    {
+        const double previewWidth = 312;
         const double edgeMargin = 8;
         var pointerX = e.GetPosition(this).X;
         var availableWidth = Math.Max(0, Bounds.Width - previewWidth - (edgeMargin * 2));
@@ -109,18 +125,12 @@ public partial class VideoOverlayView : UserControl
             0,
             availableWidth);
         ScrubPreviewPopup.Margin = new Thickness(left, 0, 0, 84);
-        return position;
-    }
-
-    private void FinishTimelineScrub(ViewerViewModel viewer)
-    {
-        _isTimelineScrubbing = false;
-        viewer.EndScrubPreview();
     }
 
     private void OnOverlayKeyDown(object? sender, KeyEventArgs e)
     {
         if (DataContext is not ViewerViewModel viewer) return;
+        viewer.NotifyVideoControlActivity();
 
         // LibVLCSharp renders this content in a small owned overlay window.
         // Once a playback control has focus, its keys no longer bubble to the

@@ -6,7 +6,17 @@
              HorizontalAlignment="Stretch"
              VerticalAlignment="Stretch"
              Background="Transparent">
-  <Grid>
+  <UserControl.Styles>
+    <Style Selector="Border.video-controls">
+      <Setter Property="Opacity" Value="1"/>
+      <Setter Property="RenderTransform" Value="translateY(0px)"/>
+    </Style>
+    <Style Selector="Border.video-controls.hidden">
+      <Setter Property="Opacity" Value="0"/>
+      <Setter Property="RenderTransform" Value="translateY(82px)"/>
+    </Style>
+  </UserControl.Styles>
+  <Grid ClipToBounds="True">
     <Border HorizontalAlignment="Center"
             VerticalAlignment="Center"
             Background="#d90a1226"
@@ -157,12 +167,22 @@
       </ScrollViewer>
     </Border>
 
-    <Border Background="#f20a1226"
+    <Border x:Name="PlaybackControls"
+            Classes="video-controls"
+            Classes.hidden="{Binding !AreVideoControlsVisible}"
+            IsHitTestVisible="{Binding AreVideoControlsVisible}"
+            Background="#f20a1226"
             BorderBrush="#2a3858"
             BorderThickness="0,1,0,0"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Bottom"
             Height="78">
+      <Border.Transitions>
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.18"/>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.22"/>
+        </Transitions>
+      </Border.Transitions>
       <Border.Styles>
         <Style Selector="Button.video-control">
           <Setter Property="Width" Value="38"/>
@@ -205,7 +225,9 @@
                   Command="{Binding TogglePlaybackCommand}"
                   AutomationProperties.Name="{Binding PlayPauseLabel}"
                   ToolTip.Tip="{Binding PlayPauseLabel}">
-            <Grid>
+            <Grid Width="21" Height="21"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center">
               <Path Classes="video-control-icon"
                     IsVisible="{Binding !IsPlaying}"
                     Data="M 8,5 L 19,12 L 8,19 Z"/>
@@ -231,7 +253,9 @@
                   Command="{Binding ToggleMuteCommand}"
                   AutomationProperties.Name="{Binding MuteLabel}"
                   ToolTip.Tip="{Binding MuteLabel}">
-            <Grid>
+            <Grid Width="21" Height="21"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center">
               <Path Classes="video-control-icon volume-control-icon"
                     IsVisible="{Binding !IsMuted}"
                     Data="M 4,10 L 8,10 L 13,6 L 13,18 L 8,14 L 4,14 Z M 16,9 C 18,11 18,13 16,15 M 18.5,6.5 C 22,9.5 22,14.5 18.5,17.5"/>
@@ -254,8 +278,8 @@
     </Border>
 
     <Border x:Name="ScrubPreviewPopup"
-            Width="208"
-            Height="121"
+            Width="312"
+            Height="182"
             Margin="8,0,0,84"
             HorizontalAlignment="Left"
             VerticalAlignment="Bottom"
@@ -263,10 +287,10 @@
             BorderBrush="#526889"
             BorderThickness="1"
             CornerRadius="6"
-            Padding="4"
+            Padding="6"
             IsVisible="{Binding IsScrubPreviewVisible}"
             IsHitTestVisible="False">
-      <Grid Width="198" Height="111">
+      <Grid Width="298" Height="168">
         <Border Background="#ff050810" CornerRadius="3"/>
         <Image Source="{Binding ScrubPreviewBitmap}"
                Stretch="Uniform"
@@ -274,13 +298,13 @@
                VerticalAlignment="Stretch"/>
         <Border HorizontalAlignment="Center"
                 VerticalAlignment="Bottom"
-                Margin="0,0,0,4"
-                Padding="7,2"
+                Margin="0,0,0,6"
+                Padding="10,3"
                 Background="#d9000000"
                 CornerRadius="3">
           <TextBlock Text="{Binding ScrubPreviewTimeLabel}"
                      Foreground="#f2f6fc"
-                     FontSize="11"
+                     FontSize="12"
                      FontWeight="SemiBold"/>
         </Border>
       </Grid>
