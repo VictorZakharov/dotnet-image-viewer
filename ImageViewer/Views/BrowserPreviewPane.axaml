@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:ImageViewer.Controls"
+             xmlns:vm="using:ImageViewer.ViewModels"
+             x:Class="ImageViewer.Views.BrowserPreviewPane"
+             x:DataType="vm:BrowserViewModel"
+             MinWidth="280"
+             Background="#111a2d"
+             IsVisible="{Binding ShowPreviewPane}">
+  <Border BorderBrush="#2a3858" BorderThickness="1,0,0,0">
+    <Grid RowDefinitions="Auto,*,Auto">
+      <Grid Margin="14,10">
+        <TextBlock Text="Preview"
+                   Foreground="#e7eef9"
+                   FontSize="13"
+                   FontWeight="Bold"
+                   VerticalAlignment="Center"/>
+        <Button Content="&#x2715;"
+                AutomationProperties.Name="Close image preview"
+                Command="{Binding TogglePreviewPaneCommand}"
+                HorizontalAlignment="Right"
+                MinHeight="0"
+                Padding="6,2"
+                FontSize="11"/>
+      </Grid>
+
+      <Border Grid.Row="1"
+              Margin="12,0"
+              Background="#070b16"
+              BorderBrush="#243049"
+              BorderThickness="1"
+              CornerRadius="4"
+              ClipToBounds="True">
+        <Grid>
+          <controls:ZoomPanImage Source="{Binding PreviewBitmap}"
+                                 Rotation="{Binding PreviewRotation}"
+                                 IsVisible="{Binding HasPreviewImage}"/>
+
+          <TextBlock Text="{Binding PreviewStatus}"
+                     AutomationProperties.Name="{Binding PreviewStatus}"
+                     Foreground="#7185a5"
+                     FontSize="12"
+                     TextAlignment="Center"
+                     TextWrapping="Wrap"
+                     MaxWidth="240"
+                     Margin="24"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     IsVisible="{Binding !HasPreviewImage}"/>
+
+          <ProgressBar IsIndeterminate="True"
+                       AutomationProperties.Name="Loading image preview"
+                       Height="3"
+                       HorizontalAlignment="Stretch"
+                       VerticalAlignment="Top"
+                       IsVisible="{Binding IsPreviewLoading}"/>
+        </Grid>
+      </Border>
+
+      <Grid Grid.Row="2" Margin="14,10" ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding PreviewFileName}"
+                   ToolTip.Tip="{Binding SelectedPath}"
+                   Foreground="#b3c1dd"
+                   FontSize="11"
+                   TextTrimming="CharacterEllipsis"
+                   VerticalAlignment="Center"/>
+        <TextBlock Grid.Column="1"
+                   Text="Scroll to zoom"
+                   Foreground="#5f7494"
+                   FontSize="10"
+                   Margin="12,0,0,0"
+                   VerticalAlignment="Center"
+                   IsVisible="{Binding HasPreviewImage}"/>
+      </Grid>
+    </Grid>
+  </Border>
+</UserControl>

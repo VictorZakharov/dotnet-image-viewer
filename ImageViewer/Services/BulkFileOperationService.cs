@@ -80,6 +80,12 @@ public sealed class BulkFileOperationService
                     throw new DirectoryNotFoundException("The destination folder does not exist.");
 
                 var samePath = PathsEqual(transfer.SourcePath, destination);
+                if (kind == FileOperationKind.Copy && samePath)
+                {
+                    skipped.Add(transfer.SourcePath);
+                    continue;
+                }
+
                 var replace = false;
                 if (samePath || File.Exists(destination) || Directory.Exists(destination))
                 {
