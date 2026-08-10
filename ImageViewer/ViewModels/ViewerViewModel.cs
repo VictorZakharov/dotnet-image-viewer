@@ -23,14 +23,19 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
 
     [ObservableProperty] private int _rotation;
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowImageTools))]
+    [NotifyPropertyChangedFor(nameof(ShowImageTools), nameof(ShowVideoTools))]
     private bool _isFullscreen;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowImageInfoOverlay))]
     private bool _showExifOverlay;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsImage), nameof(InfoPanelLabel), nameof(ShowImageInfoOverlay), nameof(ShowImageTools))]
+    [NotifyPropertyChangedFor(
+        nameof(IsImage),
+        nameof(InfoPanelLabel),
+        nameof(ShowImageInfoOverlay),
+        nameof(ShowImageTools),
+        nameof(ShowVideoTools))]
     private bool _isVideo;
 
     [ObservableProperty] private MediaPlayer? _videoPlayer;
@@ -80,6 +85,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
     private DispatcherTimer? _slideshowTimer;
     private LibVLC? _libVlc;
     private Media? _currentMedia;
+    private int _videoSessionVersion;
     private bool _updatingPlaybackPosition;
     private bool _disposed;
 
@@ -99,6 +105,9 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
         player.TimeChanged += OnPlayerTimeChanged;
         player.LengthChanged += OnPlayerLengthChanged;
         player.EncounteredError += OnPlayerEncounteredError;
+        player.ESAdded += OnPlayerElementaryStreamChanged;
+        player.ESDeleted += OnPlayerElementaryStreamChanged;
+        player.ESSelected += OnPlayerElementaryStreamChanged;
         player.Volume = (int)Math.Round(Volume);
         player.Mute = IsMuted;
         VideoPlayer = player;
@@ -111,6 +120,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
             EnsureVideoPlayer();
             if (VideoPlayer is null || _libVlc is null) return;
 
+            ResetVideoTools();
             IsVideoLoading = true;
             IsPlaying = false;
             SetPlaybackPositionFromPlayer(0);
@@ -122,13 +132,19 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
             // so VLC creates a fresh video output instead of reusing a black one.
             if (previousMedia is not null)
                 VideoPlayer.Stop();
+            _videoSessionVersion++;
             _currentMedia = new Media(_libVlc, new Uri(path));
+            PrepareVideoTools(VideoPlayer, _currentMedia);
             if (!VideoPlayer.Play(_currentMedia))
+            {
                 PlaybackError = "Could not start video playback.";
+                ResetVideoTools();
+            }
             previousMedia?.Dispose();
         }
         catch
         {
+            ResetVideoTools();
             IsVideoLoading = false;
             throw;
         }
@@ -239,39 +255,47 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
 
     private void StopVideo()
     {
-        if (VideoPlayer is null) return;
+        ResetVideoTools();
+        if (VideoPlayer is null)
+        {
+            _videoSessionVersion++;
+            return;
+        }
         try
         {
             if (VideoPlayer.IsPlaying) VideoPlayer.Stop();
         }
         catch { /* best effort while changing media */ }
+        _videoSessionVersion++;
         IsPlaying = false;
         IsVideoLoading = false;
     }
 
-    private void OnPlayerPlaying(object? sender, EventArgs e) => PostToUi(() =>
+    private void OnPlayerPlaying(object? sender, EventArgs e) => PostVideoEventToUi(() =>
     {
         IsPlaying = true;
         IsVideoLoading = false;
         PlaybackError = null;
+        ActivateVideoTools();
     });
 
-    private void OnPlayerPaused(object? sender, EventArgs e) => PostToUi(() => IsPlaying = false);
+    private void OnPlayerPaused(object? sender, EventArgs e) =>
+        PostVideoEventToUi(() => IsPlaying = false);
 
-    private void OnPlayerStopped(object? sender, EventArgs e) => PostToUi(() =>
+    private void OnPlayerStopped(object? sender, EventArgs e) => PostVideoEventToUi(() =>
     {
         IsPlaying = false;
         IsVideoLoading = false;
     });
 
-    private void OnPlayerEndReached(object? sender, EventArgs e) => PostToUi(() =>
+    private void OnPlayerEndReached(object? sender, EventArgs e) => PostVideoEventToUi(() =>
     {
         IsPlaying = false;
         IsVideoLoading = false;
         SetPlaybackPositionFromPlayer(1);
     });
 
-    private void OnPlayerTimeChanged(object? sender, MediaPlayerTimeChangedEventArgs e) => PostToUi(() =>
+    private void OnPlayerTimeChanged(object? sender, MediaPlayerTimeChangedEventArgs e) => PostVideoEventToUi(() =>
     {
         var length = VideoPlayer?.Length ?? 0;
         CurrentTimeLabel = FormatDuration(e.Time);
@@ -279,13 +303,13 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
             SetPlaybackPositionFromPlayer((double)e.Time / length);
     });
 
-    private void OnPlayerLengthChanged(object? sender, MediaPlayerLengthChangedEventArgs e) => PostToUi(() =>
+    private void OnPlayerLengthChanged(object? sender, MediaPlayerLengthChangedEventArgs e) => PostVideoEventToUi(() =>
     {
         DurationLabel = FormatDuration(e.Length);
         UpdateStatus();
     });
 
-    private void OnPlayerEncounteredError(object? sender, EventArgs e) => PostToUi(() =>
+    private void OnPlayerEncounteredError(object? sender, EventArgs e) => PostVideoEventToUi(() =>
     {
         IsPlaying = false;
         IsVideoLoading = false;
@@ -298,6 +322,16 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
         Dispatcher.UIThread.Post(() =>
         {
             if (!_disposed) action();
+        });
+    }
+
+    private void PostVideoEventToUi(Action action)
+    {
+        var sessionVersion = _videoSessionVersion;
+        PostToUi(() =>
+        {
+            if (sessionVersion == _videoSessionVersion)
+                action();
         });
     }
 
@@ -344,6 +378,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
         _editPreviewCancellation?.Cancel();
         _editPreviewCancellation?.Dispose();
         StopSlideshow();
+        ResetVideoTools();
         ReplaceBitmap(null);
 
         if (VideoPlayer is not null)
@@ -356,6 +391,9 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
             player.TimeChanged -= OnPlayerTimeChanged;
             player.LengthChanged -= OnPlayerLengthChanged;
             player.EncounteredError -= OnPlayerEncounteredError;
+            player.ESAdded -= OnPlayerElementaryStreamChanged;
+            player.ESDeleted -= OnPlayerElementaryStreamChanged;
+            player.ESSelected -= OnPlayerElementaryStreamChanged;
 
             // Notify the view first: VideoView detaches its HWND by calling the
             // still-live player. Doing this after Dispose can crash in native

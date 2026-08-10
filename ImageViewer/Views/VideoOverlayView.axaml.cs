@@ -1,6 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using ImageViewer.ViewModels;
 
 namespace ImageViewer.Views;
@@ -77,10 +82,138 @@ public partial class VideoOverlayView : UserControl
             ? mainWindow
             : null;
 
-    private void OnInfoPillClicked(object? sender, PointerPressedEventArgs e)
+    private void OnSubtitleToolsClicked(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || DataContext is not ViewerViewModel vm) return;
+        var tools = vm.VideoTools;
+        tools.Refresh();
+
+        var items = new List<object>
+        {
+            RadioItem("Off", tools.IsSubtitleOff, "subtitle-tracks", () =>
+                tools.SelectSubtitleTrack(-1))
+        };
+
+        if (!tools.HasSubtitleTracks)
+        {
+            items.Add(new MenuItem
+            {
+                Header = "No embedded subtitle tracks",
+                IsEnabled = false
+            });
+        }
+        else
+        {
+            foreach (var track in tools.SubtitleTracks)
+            {
+                var trackId = track.Id;
+                items.Add(RadioItem(track.Label, track.IsSelected, "subtitle-tracks", () =>
+                    tools.SelectSubtitleTrack(trackId)));
+            }
+        }
+
+        if (!string.IsNullOrEmpty(tools.PendingExternalSubtitleLabel))
+        {
+            items.Add(new MenuItem
+            {
+                Header = $"Loading {tools.PendingExternalSubtitleLabel}...",
+                IsEnabled = false,
+                ToggleType = MenuItemToggleType.Radio,
+                IsChecked = true,
+                GroupName = "subtitle-tracks"
+            });
+        }
+
+        items.Add(new Separator());
+        var loadItem = new MenuItem { Header = "Load subtitle file..." };
+        loadItem.Click += async (_, _) => await LoadSubtitleFileAsync(vm);
+        items.Add(loadItem);
+        ShowMenu(button, items);
+    }
+
+    private void OnAudioToolsClicked(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || DataContext is not ViewerViewModel vm) return;
+        var tools = vm.VideoTools;
+        tools.Refresh();
+        var items = tools.AudioTracks
+            .Select(track =>
+            {
+                var trackId = track.Id;
+                return (object)RadioItem(track.Label, track.IsSelected, "audio-tracks", () =>
+                    tools.SelectAudioTrack(trackId));
+            })
+            .ToList();
+        if (items.Count == 0)
+            items.Add(new MenuItem { Header = "No selectable audio tracks", IsEnabled = false });
+        ShowMenu(button, items);
+    }
+
+    private void OnPlaybackSpeedClicked(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || DataContext is not ViewerViewModel vm) return;
+        var tools = vm.VideoTools;
+        var items = VideoPlaybackTools.PlaybackRatePresets
+            .Select(rate =>
+            {
+                var selectedRate = rate;
+                return (object)RadioItem(
+                    VideoPlaybackTools.FormatPlaybackRate(rate),
+                    Math.Abs(rate - tools.PlaybackRate) < 0.001f,
+                    "playback-rates",
+                    () => tools.SelectPlaybackRate(selectedRate));
+            })
+            .ToList();
+        ShowMenu(button, items);
+    }
+
+    private void OnVideoInfoClicked(object? sender, RoutedEventArgs e)
     {
         if (DataContext is ViewerViewModel vm)
             vm.ToggleExifOverlayCommand.Execute(null);
-        e.Handled = true;
+    }
+
+    private async Task LoadSubtitleFileAsync(ViewerViewModel vm)
+    {
+        var topLevel = (TopLevel?)GetMainWindow() ?? TopLevel.GetTopLevel(this);
+        if (topLevel is null) return;
+        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Load subtitle file",
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("Subtitle files")
+                {
+                    Patterns = ["*.srt", "*.ass", "*.ssa", "*.vtt", "*.sub", "*.smi"]
+                }
+            ]
+        });
+        var path = files.FirstOrDefault()?.TryGetLocalPath();
+        if (!string.IsNullOrEmpty(path))
+            vm.LoadExternalSubtitle(path);
+    }
+
+    private static MenuItem RadioItem(
+        string header,
+        bool isChecked,
+        string groupName,
+        Action action)
+    {
+        var item = new MenuItem
+        {
+            Header = header,
+            ToggleType = MenuItemToggleType.Radio,
+            IsChecked = isChecked,
+            GroupName = groupName
+        };
+        item.Click += (_, _) => action();
+        return item;
+    }
+
+    private static void ShowMenu(Control target, IReadOnlyList<object> items)
+    {
+        var flyout = new MenuFlyout { ItemsSource = items };
+        flyout.ShowAt(target);
     }
 }
