@@ -213,6 +213,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
     partial void OnPlaybackPositionChanged(double value)
     {
         if (_updatingPlaybackPosition || !IsVideo || VideoPlayer is null) return;
+        if (IsScrubPreviewVisible) return;
         VideoPlayer.Position = (float)Math.Clamp(value, 0, 1);
     }
 

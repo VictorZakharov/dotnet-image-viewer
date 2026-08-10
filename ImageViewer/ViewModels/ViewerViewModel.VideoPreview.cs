@@ -11,7 +11,8 @@ namespace ImageViewer.ViewModels;
 public partial class ViewerViewModel
 {
     private const string ScrubSnapshotPrefix = "ImageViewer-scrub-";
-    private static readonly TimeSpan ScrubSnapshotInterval = TimeSpan.FromMilliseconds(120);
+    private static readonly TimeSpan ScrubSnapshotInterval = TimeSpan.FromMilliseconds(40);
+    private static readonly TimeSpan ScrubFrameSettleDelay = TimeSpan.FromMilliseconds(100);
     private static readonly TimeSpan ScrubSnapshotTimeout = TimeSpan.FromSeconds(2);
 
     [ObservableProperty] private Bitmap? _scrubPreviewBitmap;
@@ -22,25 +23,21 @@ public partial class ViewerViewModel
     private string? _pendingScrubSnapshotPath;
     private DateTime _pendingScrubSnapshotStartedAt;
     private double _requestedScrubPosition = -1;
+    private double _preparedScrubPosition;
     private double _pendingScrubPosition;
     private double _capturedScrubPosition = -1;
+    private bool _isScrubFramePreparing;
+    private DateTime _scrubFrameReadyAt;
     private int _scrubPreviewVersion;
     private int _pendingScrubPreviewVersion;
     private int _pendingScrubVideoSessionVersion;
     private long _scrubSnapshotSequence;
     private long _pendingScrubSnapshotSequence;
     private long _displayedScrubSnapshotSequence;
-    private bool _resumePlaybackAfterScrub;
-    private int _scrubPlaybackSessionVersion;
 
     public void BeginScrubPreview(double position)
     {
         if (!IsVideo || VideoPlayer is null) return;
-
-        _resumePlaybackAfterScrub = VideoPlayer.IsPlaying;
-        _scrubPlaybackSessionVersion = _videoSessionVersion;
-        if (_resumePlaybackAfterScrub)
-            VideoPlayer.Pause();
 
         _scrubPreviewVersion++;
         _displayedScrubSnapshotSequence = 0;
@@ -62,12 +59,10 @@ public partial class ViewerViewModel
 
     public void EndScrubPreview()
     {
-        var shouldResume = _resumePlaybackAfterScrub;
-        var playbackSessionVersion = _scrubPlaybackSessionVersion;
+        var finalPosition = _requestedScrubPosition;
         ResetScrubPreview();
-
-        if (shouldResume && playbackSessionVersion == _videoSessionVersion && VideoPlayer is { } player)
-            player.Play();
+        if (finalPosition >= 0 && VideoPlayer is { } player)
+            SeekAndRenderScrubFrame(player, finalPosition);
     }
 
     private void EnsureScrubPreviewTimer()
@@ -99,16 +94,35 @@ public partial class ViewerViewModel
             TryDeleteScrubSnapshot(timedOutPath);
         }
 
-        RequestScrubSnapshot();
+        if (_isScrubFramePreparing)
+        {
+            if (DateTime.UtcNow < _scrubFrameReadyAt) return;
+
+            _isScrubFramePreparing = false;
+            RequestScrubSnapshot(_preparedScrubPosition);
+            return;
+        }
+
+        if (ScrubPreviewBitmap is not null &&
+            Math.Abs(_requestedScrubPosition - _capturedScrubPosition) < 0.0005)
+        {
+            return;
+        }
+
+        var player = VideoPlayer;
+        if (player is null || _requestedScrubPosition < 0) return;
+
+        _preparedScrubPosition = _requestedScrubPosition;
+        if (!SeekAndRenderScrubFrame(player, _preparedScrubPosition)) return;
+        _scrubFrameReadyAt = DateTime.UtcNow + ScrubFrameSettleDelay;
+        _isScrubFramePreparing = true;
     }
 
-    private void RequestScrubSnapshot()
+    private void RequestScrubSnapshot(double position)
     {
         var player = VideoPlayer;
         if (!IsScrubPreviewVisible || player is null || _requestedScrubPosition < 0 ||
-            _pendingScrubSnapshotPath is not null ||
-            (ScrubPreviewBitmap is not null &&
-             Math.Abs(_requestedScrubPosition - _capturedScrubPosition) < 0.0005))
+            _pendingScrubSnapshotPath is not null)
         {
             return;
         }
@@ -118,7 +132,7 @@ public partial class ViewerViewModel
             $"{ScrubSnapshotPrefix}{Guid.NewGuid():N}.png");
         _pendingScrubSnapshotPath = snapshotPath;
         _pendingScrubSnapshotStartedAt = DateTime.UtcNow;
-        _pendingScrubPosition = _requestedScrubPosition;
+        _pendingScrubPosition = position;
         _pendingScrubPreviewVersion = _scrubPreviewVersion;
         _pendingScrubVideoSessionVersion = _videoSessionVersion;
         _pendingScrubSnapshotSequence = ++_scrubSnapshotSequence;
@@ -206,8 +220,6 @@ public partial class ViewerViewModel
                 ReplaceScrubPreviewBitmap(new Bitmap(stream));
                 _displayedScrubSnapshotSequence = sequence;
                 _capturedScrubPosition = position;
-                ScrubPreviewTimeLabel = FormatDuration((long)Math.Round(
-                    Math.Max(0, VideoPlayer?.Length ?? 0) * position));
             }
             catch
             {
@@ -222,13 +234,30 @@ public partial class ViewerViewModel
         IsScrubPreviewVisible = false;
         _requestedScrubPosition = -1;
         _capturedScrubPosition = -1;
-        _resumePlaybackAfterScrub = false;
+        _isScrubFramePreparing = false;
         _scrubPreviewTimer?.Stop();
 
         var pendingPath = _pendingScrubSnapshotPath;
         _pendingScrubSnapshotPath = null;
         TryDeleteScrubSnapshot(pendingPath);
         ReplaceScrubPreviewBitmap(null);
+    }
+
+    private static bool SeekAndRenderScrubFrame(MediaPlayer player, double position)
+    {
+        try
+        {
+            player.Position = (float)Math.Clamp(position, 0, 1);
+            // Paused VLC outputs can otherwise keep returning the last frame.
+            if (!player.IsPlaying)
+                player.NextFrame();
+            return true;
+        }
+        catch
+        {
+            // A preview failure must never interrupt normal seeking.
+            return false;
+        }
     }
 
     private void ReplaceScrubPreviewBitmap(Bitmap? replacement)
