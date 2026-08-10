@@ -85,11 +85,13 @@
                 AutomationProperties.Name="Audio tracks"
                 ToolTip.Tip="Audio track">
           <Path Classes="viewer-tool-icon"
-                Data="M 5,15 L 9,15 L 14,19 L 14,5 L 9,9 L 5,9 Z M 17,9 C 18.7,10.7 18.7,13.3 17,15 M 19.5,6.5 C 22.5,9.5 22.5,14.5 19.5,17.5"/>
+                Data="M 4,13 L 4,11 C 4,6.6 7.6,3 12,3 C 16.4,3 20,6.6 20,11 L 20,13 M 4,13 C 4,11.9 4.9,11 6,11 L 7,11 L 7,19 L 6,19 C 4.9,19 4,18.1 4,17 Z M 20,13 C 20,11.9 19.1,11 18,11 L 17,11 L 17,19 L 18,19 C 19.1,19 20,18.1 20,17 Z"/>
         </Button>
         <Button Classes="viewer-tool"
                 Click="OnPlaybackSpeedClicked"
                 IsEnabled="{Binding VideoTools.CanChangePlaybackSpeed}"
+                HorizontalContentAlignment="Center"
+                VerticalContentAlignment="Center"
                 AutomationProperties.Name="Playback speed"
                 ToolTip.Tip="Playback speed">
           <TextBlock Text="{Binding VideoTools.PlaybackRateLabel}"
@@ -161,32 +163,87 @@
             HorizontalAlignment="Stretch"
             VerticalAlignment="Bottom"
             Height="78">
+      <Border.Styles>
+        <Style Selector="Button.video-control">
+          <Setter Property="Width" Value="38"/>
+          <Setter Property="Height" Value="32"/>
+          <Setter Property="Padding" Value="0"/>
+          <Setter Property="Background" Value="Transparent"/>
+          <Setter Property="BorderThickness" Value="0"/>
+          <Setter Property="CornerRadius" Value="4"/>
+          <Setter Property="HorizontalContentAlignment" Value="Center"/>
+          <Setter Property="VerticalContentAlignment" Value="Center"/>
+          <Setter Property="FocusAdorner" Value="{x:Null}"/>
+        </Style>
+        <Style Selector="Button.video-control:pointerover">
+          <Setter Property="Background" Value="#304565"/>
+        </Style>
+        <Style Selector="Path.video-control-icon">
+          <Setter Property="Width" Value="21"/>
+          <Setter Property="Height" Value="21"/>
+          <Setter Property="Stretch" Value="Uniform"/>
+          <Setter Property="Fill" Value="Transparent"/>
+          <Setter Property="Stroke" Value="#e7eef9"/>
+          <Setter Property="StrokeThickness" Value="1.8"/>
+          <Setter Property="StrokeLineCap" Value="Round"/>
+          <Setter Property="StrokeJoin" Value="Round"/>
+        </Style>
+        <Style Selector="Path.video-control-icon.volume-control-icon">
+          <Setter Property="Stroke" Value="#8fa1c0"/>
+        </Style>
+        <Style Selector="Button.video-control:pointerover Path.video-control-icon">
+          <Setter Property="Stroke" Value="#71bdff"/>
+        </Style>
+      </Border.Styles>
       <Grid Margin="14,8">
         <Grid.RowDefinitions>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto">
-          <Button Grid.Column="0"
-                  Content="{Binding PlayPauseLabel}"
+          <Button Grid.Column="0" Classes="video-control"
                   Command="{Binding TogglePlaybackCommand}"
-                  MinWidth="64" Padding="10,4"/>
+                  AutomationProperties.Name="{Binding PlayPauseLabel}"
+                  ToolTip.Tip="{Binding PlayPauseLabel}">
+            <Grid>
+              <Path Classes="video-control-icon"
+                    IsVisible="{Binding !IsPlaying}"
+                    Data="M 8,5 L 19,12 L 8,19 Z"/>
+              <Path Classes="video-control-icon"
+                    IsVisible="{Binding IsPlaying}"
+                    Data="M 8,5 L 8,19 M 16,5 L 16,19"/>
+            </Grid>
+          </Button>
           <TextBlock Grid.Column="1"
                      Text="{Binding CurrentTimeLabel}"
                      Foreground="#b3c1dd" FontSize="11"
                      Margin="10,0" VerticalAlignment="Center"/>
-          <Slider Grid.Column="2"
+          <Slider x:Name="TimelineSlider"
+                  Grid.Column="2"
                   Minimum="0" Maximum="1"
                   Value="{Binding PlaybackPosition, Mode=TwoWay}"
+                  PointerPressed="OnTimelinePointerPressed"
+                  PointerMoved="OnTimelinePointerMoved"
+                  PointerReleased="OnTimelinePointerReleased"
+                  PointerCaptureLost="OnTimelinePointerCaptureLost"
                   VerticalAlignment="Center"/>
           <TextBlock Grid.Column="3"
                      Text="{Binding DurationLabel}"
                      Foreground="#b3c1dd" FontSize="11"
                      Margin="10,0" VerticalAlignment="Center"/>
-          <Button Grid.Column="4"
-                  Content="{Binding MuteLabel}"
+          <Button Grid.Column="4" Classes="video-control"
                   Command="{Binding ToggleMuteCommand}"
-                  MinWidth="60" Padding="10,4"/>
+                  AutomationProperties.Name="{Binding MuteLabel}"
+                  ToolTip.Tip="{Binding MuteLabel}">
+            <Grid>
+              <Path Classes="video-control-icon volume-control-icon"
+                    IsVisible="{Binding !IsMuted}"
+                    Data="M 4,10 L 8,10 L 13,6 L 13,18 L 8,14 L 4,14 Z M 16,9 C 18,11 18,13 16,15 M 18.5,6.5 C 22,9.5 22,14.5 18.5,17.5"/>
+              <Path Classes="video-control-icon volume-control-icon"
+                    IsVisible="{Binding IsMuted}"
+                    Data="M 4,10 L 8,10 L 13,6 L 13,18 L 8,14 L 4,14 Z M 17,9 L 22,14 M 22,9 L 17,14"/>
+            </Grid>
+          </Button>
           <Slider Grid.Column="5"
                   Minimum="0" Maximum="100" Width="92"
                   Value="{Binding Volume, Mode=TwoWay}"
@@ -197,6 +254,39 @@
                    Foreground="#8fa1c0" FontSize="11"
                    Margin="0,6,0,0"
                    TextTrimming="CharacterEllipsis"/>
+      </Grid>
+    </Border>
+
+    <Border x:Name="ScrubPreviewPopup"
+            Width="208"
+            Height="121"
+            Margin="8,0,0,84"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Bottom"
+            Background="#fa0a1226"
+            BorderBrush="#526889"
+            BorderThickness="1"
+            CornerRadius="6"
+            Padding="4"
+            IsVisible="{Binding IsScrubPreviewVisible}"
+            IsHitTestVisible="False">
+      <Grid Width="198" Height="111">
+        <Border Background="#ff050810" CornerRadius="3"/>
+        <Image Source="{Binding ScrubPreviewBitmap}"
+               Stretch="Uniform"
+               HorizontalAlignment="Stretch"
+               VerticalAlignment="Stretch"/>
+        <Border HorizontalAlignment="Center"
+                VerticalAlignment="Bottom"
+                Margin="0,0,0,4"
+                Padding="7,2"
+                Background="#d9000000"
+                CornerRadius="3">
+          <TextBlock Text="{Binding ScrubPreviewTimeLabel}"
+                     Foreground="#f2f6fc"
+                     FontSize="11"
+                     FontWeight="SemiBold"/>
+        </Border>
       </Grid>
     </Border>
   </Grid>

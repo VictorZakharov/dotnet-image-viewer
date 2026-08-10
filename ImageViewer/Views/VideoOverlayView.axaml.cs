@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -12,10 +13,75 @@ namespace ImageViewer.Views;
 
 public partial class VideoOverlayView : UserControl
 {
+    private bool _isTimelineScrubbing;
+
     public VideoOverlayView()
     {
         InitializeComponent();
         AddHandler(InputElement.KeyDownEvent, OnOverlayKeyDown, RoutingStrategies.Tunnel);
+    }
+
+    private void OnTimelinePointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is not ViewerViewModel viewer ||
+            !e.GetCurrentPoint(TimelineSlider).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        _isTimelineScrubbing = true;
+        var position = UpdateTimelineFromPointer(e);
+        viewer.BeginScrubPreview(position);
+    }
+
+    private void OnTimelinePointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (!_isTimelineScrubbing || DataContext is not ViewerViewModel viewer) return;
+        if (!e.GetCurrentPoint(TimelineSlider).Properties.IsLeftButtonPressed)
+        {
+            FinishTimelineScrub(viewer);
+            return;
+        }
+
+        viewer.UpdateScrubPreview(UpdateTimelineFromPointer(e));
+    }
+
+    private void OnTimelinePointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (!_isTimelineScrubbing || DataContext is not ViewerViewModel viewer) return;
+        viewer.UpdateScrubPreview(UpdateTimelineFromPointer(e));
+        FinishTimelineScrub(viewer);
+    }
+
+    private void OnTimelinePointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
+    {
+        if (_isTimelineScrubbing && DataContext is ViewerViewModel viewer)
+            FinishTimelineScrub(viewer);
+    }
+
+    private double UpdateTimelineFromPointer(PointerEventArgs e)
+    {
+        var timelinePoint = e.GetPosition(TimelineSlider);
+        var width = TimelineSlider.Bounds.Width;
+        var position = width <= 0 ? TimelineSlider.Value : Math.Clamp(timelinePoint.X / width, 0, 1);
+        TimelineSlider.Value = position;
+
+        const double previewWidth = 208;
+        const double edgeMargin = 8;
+        var pointerX = e.GetPosition(this).X;
+        var availableWidth = Math.Max(0, Bounds.Width - previewWidth - (edgeMargin * 2));
+        var left = edgeMargin + Math.Clamp(
+            pointerX - (previewWidth / 2) - edgeMargin,
+            0,
+            availableWidth);
+        ScrubPreviewPopup.Margin = new Thickness(left, 0, 0, 84);
+        return position;
+    }
+
+    private void FinishTimelineScrub(ViewerViewModel viewer)
+    {
+        _isTimelineScrubbing = false;
+        viewer.EndScrubPreview();
     }
 
     private void OnOverlayKeyDown(object? sender, KeyEventArgs e)

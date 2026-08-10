@@ -105,6 +105,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
         player.TimeChanged += OnPlayerTimeChanged;
         player.LengthChanged += OnPlayerLengthChanged;
         player.EncounteredError += OnPlayerEncounteredError;
+        player.SnapshotTaken += OnPlayerSnapshotTaken;
         player.ESAdded += OnPlayerElementaryStreamChanged;
         player.ESDeleted += OnPlayerElementaryStreamChanged;
         player.ESSelected += OnPlayerElementaryStreamChanged;
@@ -120,6 +121,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
             EnsureVideoPlayer();
             if (VideoPlayer is null || _libVlc is null) return;
 
+            ResetScrubPreview();
             ResetVideoTools();
             IsVideoLoading = true;
             IsPlaying = false;
@@ -255,6 +257,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
 
     private void StopVideo()
     {
+        ResetScrubPreview();
         ResetVideoTools();
         if (VideoPlayer is null)
         {
@@ -299,7 +302,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
     {
         var length = VideoPlayer?.Length ?? 0;
         CurrentTimeLabel = FormatDuration(e.Time);
-        if (length > 0)
+        if (length > 0 && !IsScrubPreviewVisible)
             SetPlaybackPositionFromPlayer((double)e.Time / length);
     });
 
@@ -372,6 +375,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         if (_disposed) return;
+        ResetScrubPreview();
         _disposed = true;
         _loadCts?.Cancel();
         _loadCts?.Dispose();
@@ -391,6 +395,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
             player.TimeChanged -= OnPlayerTimeChanged;
             player.LengthChanged -= OnPlayerLengthChanged;
             player.EncounteredError -= OnPlayerEncounteredError;
+            player.SnapshotTaken -= OnPlayerSnapshotTaken;
             player.ESAdded -= OnPlayerElementaryStreamChanged;
             player.ESDeleted -= OnPlayerElementaryStreamChanged;
             player.ESSelected -= OnPlayerElementaryStreamChanged;
