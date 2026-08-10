@@ -10,6 +10,7 @@ public partial class BrowserViewModel
 {
     private readonly SelectionModel<ThumbnailItem> _selection = new();
     private HashSet<ThumbnailItem> _visualSelection = new();
+    private ThumbnailItem? _focusedItem;
 
     [ObservableProperty] private int _selectedCount;
     [ObservableProperty] private int _selectedFileCount;
@@ -121,7 +122,18 @@ public partial class BrowserViewModel
         var clamped = FilteredItems.Count == 0
             ? -1
             : Math.Clamp(index, -1, FilteredItems.Count - 1);
-        if (SelectedIndex != clamped) SelectedIndex = clamped;
+        var focusedItem = ItemAt(clamped);
+        if (SelectedIndex != clamped)
+        {
+            SelectedIndex = clamped;
+            return;
+        }
+
+        // Collection updates can replace the item at the same numeric index.
+        // Refresh dependent panes even though the generated index setter is a no-op.
+        if (ReferenceEquals(_focusedItem, focusedItem)) return;
+        _focusedItem = focusedItem;
+        HandleFocusedItemChanged(clamped);
     }
 
     private ThumbnailItem? ItemAt(int index) =>

@@ -114,6 +114,9 @@ public partial class BrowserView
         bool recordMove = false,
         bool consumeCutClipboard = false)
     {
+        request = BulkFileOperationService.ExcludeNoOpCopies(request);
+        if (request.SourcePaths.Count == 0) return;
+
         await RunFileOperationCoreAsync(
             (resolver, progress, token) => _bulkFileOperations.ExecuteAsync(
                 request, resolver, progress, token),

@@ -57,6 +57,15 @@ public partial class BrowserViewModel
 
     partial void OnSelectedIndexChanged(int value)
     {
+        _focusedItem = SelectedItem;
+        HandleFocusedItemChanged(value);
+    }
+
+    private void HandleFocusedItemChanged(int value)
+    {
+        OnPropertyChanged(nameof(SelectedItem));
+        OnPropertyChanged(nameof(SelectedPath));
+
         if (_renamingItem is not null)
         {
             var newItem = (value >= 0 && value < FilteredItems.Count) ? FilteredItems[value] : null;
@@ -78,6 +87,7 @@ public partial class BrowserViewModel
         }
 
         if (ShowExifPane) LoadCurrentExif();
+        RefreshPreview();
     }
 
     public void BeginEditPath()

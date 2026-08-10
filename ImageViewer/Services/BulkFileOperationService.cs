@@ -16,6 +16,7 @@ public sealed class BulkFileOperationService
         IProgress<FileOperationProgress>? progress,
         CancellationToken cancellationToken)
     {
+        request = ExcludeNoOpCopies(request);
         var sources = request.SourcePaths
             .Distinct(FileSystemPath.Comparer)
             .ToList();
@@ -33,6 +34,23 @@ public sealed class BulkFileOperationService
             resolveCollision,
             progress,
             cancellationToken);
+    }
+
+    public static FileOperationRequest ExcludeNoOpCopies(FileOperationRequest request)
+    {
+        if (request.Kind != FileOperationKind.Copy ||
+            string.IsNullOrEmpty(request.DestinationFolder) ||
+            request.SourcePaths.Count == 0)
+        {
+            return request;
+        }
+
+        var sources = request.SourcePaths
+            .Where(source => !IsCopyOntoItself(source, request.DestinationFolder))
+            .ToList();
+        return sources.Count == request.SourcePaths.Count
+            ? request
+            : request with { SourcePaths = sources };
     }
 
     public Task<FileOperationResult> UndoMovesAsync(
@@ -195,4 +213,18 @@ public sealed class BulkFileOperationService
 
     private static bool PathsEqual(string left, string right) =>
         FileSystemPath.Equals(Path.GetFullPath(left), Path.GetFullPath(right));
+
+    private static bool IsCopyOntoItself(string source, string destinationFolder)
+    {
+        try
+        {
+            var destination = Path.Combine(destinationFolder, Path.GetFileName(source));
+            return PathsEqual(source, destination);
+        }
+        catch
+        {
+            // Preserve invalid paths for normal per-item failure reporting.
+            return false;
+        }
+    }
 }

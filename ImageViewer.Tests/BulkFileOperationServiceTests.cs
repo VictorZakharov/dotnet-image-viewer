@@ -67,6 +67,38 @@ public sealed class BulkFileOperationServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CopyingFileOntoItselfIsNoOpWithoutCollisionPrompt()
+    {
+        var folder = CreateFolder("photos");
+        var source = CreateFile(folder, "photo.jpg", "original");
+        var collisionRequested = false;
+        var request = new FileOperationRequest(
+            FileOperationKind.Copy,
+            new[] { source },
+            folder);
+
+        var prepared = BulkFileOperationService.ExcludeNoOpCopies(request);
+
+        var result = await _service.ExecuteAsync(
+            request,
+            (_, _) =>
+            {
+                collisionRequested = true;
+                return Task.FromResult(FileCollisionChoice.Rename);
+            },
+            progress: null,
+            CancellationToken.None);
+
+        Assert.False(collisionRequested);
+        Assert.Empty(prepared.SourcePaths);
+        Assert.Equal("original", File.ReadAllText(source));
+        Assert.False(File.Exists(Path.Combine(folder, "photo (2).jpg")));
+        Assert.Empty(result.SkippedPaths);
+        Assert.Empty(result.Successful);
+        Assert.Empty(result.Failures);
+    }
+
+    [Fact]
     public async Task MoveCanBeReversedWithItsRecordedDestinations()
     {
         var sourceFolder = CreateFolder("source");

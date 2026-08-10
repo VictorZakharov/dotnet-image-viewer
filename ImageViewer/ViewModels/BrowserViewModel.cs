@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ImageViewer.Collections;
@@ -150,8 +152,18 @@ public partial class BrowserViewModel : ObservableObject, IDisposable
     public event Action<string>? OpenRequested;
 
     public BrowserViewModel(AppSettings settings)
+        : this(settings, ImageLoader.LoadAsync)
+    {
+    }
+
+    internal BrowserViewModel(
+        AppSettings settings,
+        Func<string, CancellationToken, Task<LoadedImage>> previewImageLoader,
+        Func<string, CancellationToken, Task<int>>? previewRotationLoader = null)
     {
         Settings = settings;
+        _previewImageLoader = previewImageLoader;
+        _previewRotationLoader = previewRotationLoader ?? LoadPreviewRotationAsync;
         if (Enum.TryParse(settings.SortMode, true, out SortMode sm)) SortMode = sm;
         SortDescending = settings.SortDescending;
         // Initialize the backing field directly. Going through the generated
@@ -161,6 +173,9 @@ public partial class BrowserViewModel : ObservableObject, IDisposable
         _activeCacheTier = RoundToCacheTier(_thumbnailWidth);
         _smoothScrollingEnabled = settings.SmoothScrollingEnabled;
         ShowExifPane = settings.ShowExifPane;
+        _showPreviewPane = settings.ShowPreviewPane;
+        _previewPaneColumnWidth = new Avalonia.Controls.GridLength(
+            settings.ShowPreviewPane ? DefaultPreviewPaneWidth : 0);
         ShowGridDiagnostics = string.Equals(
             Environment.GetEnvironmentVariable("IMAGEVIEWER_GRID_DIAGNOSTICS"),
             "1",
@@ -315,6 +330,7 @@ public partial class BrowserViewModel : ObservableObject, IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        DisposePreview();
         _folderLoadVersion++;
         _folderLoadCts?.Cancel();
         _folderLoadCts?.Dispose();

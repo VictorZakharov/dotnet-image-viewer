@@ -46,6 +46,7 @@ published `.sha256` file before running it.
 ### Browser mode
 - Explorer-style folder tree with Windows drives or the Linux filesystem root, compact rows, accurate leaf-folder chevrons, lazy-loaded subfolders, and a resizable splitter
 - Thumbnail grid with disk-cached previews (tiered up to 512 px; cache lives in the platform local application-data directory); subfolders stay above media files and show a 2x2 image/video preview mosaic
+- The **Preview** toolbar toggle opens a resizable right pane with the focused image at full resolution; scroll to zoom and drag to pan without leaving the grid
 - A single selection uses a bright blue frame; multi-selection adds visible check badges. Use `Ctrl`-click to toggle items, `Shift`-click for ranges, and `Ctrl+A` to select the current filtered grid
 - Selection survives sort and filter changes, with a toolbar summary showing the selected count and aggregate media size
 - Sort by name, date, or size — click the sort buttons or press `Ctrl+1` / `Ctrl+2` / `Ctrl+3`; click again to toggle direction
@@ -71,7 +72,7 @@ published `.sha256` file before running it.
 ### Other
 - **Windows integration**: the **Explorer...** button registers this portable copy for Open with and Default Apps without changing defaults; supported files also get a lightweight “Browse containing folder in ImageViewer” action
 - **Single-instance**: opening media files in rapid succession from a file manager reuses and focuses the running instance, including while the first window is still starting
-- Window position, size, sort order, smooth-scrolling preference, EXIF overlay state, slideshow delay, and last folder persist between launches
+- Window position, size, sort order, smooth-scrolling preference, browser preview visibility, EXIF overlay state, slideshow delay, and last folder persist between launches
 - Follows the platform light / dark theme setting
 - **Common formats** (JPG, PNG, GIF, BMP, WebP, TIFF, ICO) via Skia
 - **RAW formats** (NEF, CR2, CR3, ARW, DNG, RAF, RW2, ORF, PEF, SRW) via Magick.NET

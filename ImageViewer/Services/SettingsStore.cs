@@ -21,6 +21,7 @@ public sealed class AppSettings
     public int SlideshowDelaySeconds { get; set; } = 5;
     public bool ShowExifOverlay { get; set; }
     public bool ShowExifPane { get; set; }
+    public bool ShowPreviewPane { get; set; }
 }
 
 public static class SettingsStore
