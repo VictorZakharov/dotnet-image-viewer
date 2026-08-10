@@ -18,7 +18,8 @@ public partial class BrowserView
         }
 
         if (GetOwnerWindow() is not { } owner) return;
-        var window = new ResourceMonitorWindow();
+        if (_vm is not { } viewModel) return;
+        var window = new ResourceMonitorWindow(viewModel.ResourceMonitor);
         _resourceMonitorWindow = window;
         window.Closed += (_, _) =>
         {

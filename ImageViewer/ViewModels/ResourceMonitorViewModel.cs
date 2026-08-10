@@ -16,15 +16,21 @@ public partial class ResourceMonitorViewModel : ObservableObject, IDisposable
     private static readonly TimeSpan HistoryWindow = TimeSpan.FromMinutes(5);
 
     private readonly IResourceUsageSampler _sampler;
+    private readonly AppSettings _settings;
+    private readonly bool _enableTimer;
     private readonly List<ResourceUsageSample> _history = [];
     private DispatcherTimer? _timer;
+    private int _windowSessionCount;
     private bool _disposed;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PauseLabel))]
     private bool _isPaused;
 
-    [ObservableProperty] private string _statusText = "Live · updating every second";
+    [ObservableProperty]
+    private bool _showToolbarGraph;
+
+    [ObservableProperty] private string _statusText = "Ready · monitoring starts when opened";
     [ObservableProperty] private string _currentCpuText = "0.0%";
     [ObservableProperty] private string _cpuSummary = "Average 0.0% · Peak 0.0%";
     [ObservableProperty] private string _workingSetText = "0 B";
@@ -44,25 +50,43 @@ public partial class ResourceMonitorViewModel : ObservableObject, IDisposable
     public string PauseLabel => IsPaused ? "Resume" : "Pause";
 
     public ResourceMonitorViewModel()
-        : this(new ProcessResourceSampler(), startTimer: true)
+        : this(new AppSettings())
+    {
+    }
+
+    public ResourceMonitorViewModel(AppSettings settings)
+        : this(settings, new ProcessResourceSampler(), enableTimer: true)
     {
     }
 
     internal ResourceMonitorViewModel(
+        AppSettings settings,
         IResourceUsageSampler sampler,
-        bool startTimer)
+        bool enableTimer)
     {
+        _settings = settings;
         _sampler = sampler;
+        _enableTimer = enableTimer;
+        _showToolbarGraph = settings.ShowToolbarResourceGraph;
         ProcessSummary = $"ImageViewer process {_sampler.ProcessId} · " +
                          $"{_sampler.ProcessorCount} logical processor" +
                          (_sampler.ProcessorCount == 1 ? "" : "s");
         StartedSummary = $"Started {_sampler.StartedAt.ToLocalTime():g}";
-        SampleNow();
+        UpdateSamplingState(captureImmediately: ShowToolbarGraph);
+    }
 
-        if (!startTimer) return;
-        _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-        _timer.Tick += OnTimerTick;
-        _timer.Start();
+    internal void BeginWindowSession()
+    {
+        if (_disposed) return;
+        _windowSessionCount++;
+        UpdateSamplingState(captureImmediately: true);
+    }
+
+    internal void EndWindowSession()
+    {
+        if (_windowSessionCount > 0)
+            _windowSessionCount--;
+        UpdateSamplingState(captureImmediately: false);
     }
 
     internal void SampleNow()
@@ -98,9 +122,7 @@ public partial class ResourceMonitorViewModel : ObservableObject, IDisposable
         }
         else
         {
-            SampleNow();
-            _timer?.Start();
-            StatusText = "Live · updating every second";
+            UpdateSamplingState(captureImmediately: true);
         }
     }
 
@@ -124,9 +146,39 @@ public partial class ResourceMonitorViewModel : ObservableObject, IDisposable
         _sampler.Dispose();
     }
 
+    partial void OnShowToolbarGraphChanged(bool value)
+    {
+        _settings.ShowToolbarResourceGraph = value;
+        UpdateSamplingState(captureImmediately: value);
+    }
+
     private void OnTimerTick(object? sender, EventArgs e)
     {
         if (!IsPaused) SampleNow();
+    }
+
+    private void UpdateSamplingState(bool captureImmediately)
+    {
+        if (_disposed) return;
+        var shouldSample = !IsPaused && (ShowToolbarGraph || _windowSessionCount > 0);
+        if (!shouldSample)
+        {
+            _timer?.Stop();
+            if (!IsPaused && _history.Count > 0)
+                StatusText = "Idle · history is preserved";
+            return;
+        }
+
+        if (captureImmediately || _history.Count == 0)
+            SampleNow();
+
+        if (!_enableTimer) return;
+        if (_timer is null)
+        {
+            _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _timer.Tick += OnTimerTick;
+        }
+        _timer.Start();
     }
 
     private void Publish(ResourceUsageSample current)

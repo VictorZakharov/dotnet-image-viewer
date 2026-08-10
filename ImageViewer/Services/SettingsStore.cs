@@ -22,6 +22,7 @@ public sealed class AppSettings
     public bool ShowExifOverlay { get; set; }
     public bool ShowExifPane { get; set; }
     public bool ShowPreviewPane { get; set; }
+    public bool ShowToolbarResourceGraph { get; set; }
 }
 
 public static class SettingsStore

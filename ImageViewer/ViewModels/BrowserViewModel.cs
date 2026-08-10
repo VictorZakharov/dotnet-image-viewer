@@ -16,6 +16,10 @@ namespace ImageViewer.ViewModels;
 public partial class BrowserViewModel : ObservableObject, IDisposable
 {
     public AppSettings Settings { get; }
+    private ResourceMonitorViewModel? _resourceMonitor;
+    public ResourceMonitorViewModel ResourceMonitor =>
+        _resourceMonitor ??= new ResourceMonitorViewModel(Settings);
+
     public RangeObservableCollection<ThumbnailItem> Items { get; } = new();
     public RangeObservableCollection<ThumbnailItem> FilteredItems { get; } = new();
     public ObservableCollection<FolderTreeItem> DriveTree { get; } = new();
@@ -330,6 +334,8 @@ public partial class BrowserViewModel : ObservableObject, IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        _resourceMonitor?.Dispose();
+        _resourceMonitor = null;
         DisposePreview();
         _folderLoadVersion++;
         _folderLoadCts?.Cancel();

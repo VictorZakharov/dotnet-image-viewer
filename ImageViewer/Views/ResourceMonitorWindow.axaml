@@ -131,9 +131,17 @@
     <Border Grid.Row="3" Background="#17223a" Padding="16,10"
             BorderBrush="#263755" BorderThickness="0,1,0,0">
       <Grid ColumnDefinitions="*,Auto">
-        <TextBlock Text="{Binding StatusText}"
-                   AutomationProperties.Name="{Binding StatusText}"
-                   Foreground="#91a6c8" FontSize="11" VerticalAlignment="Center"/>
+        <StackPanel Spacing="4" VerticalAlignment="Center">
+          <TextBlock Text="{Binding StatusText}"
+                     AutomationProperties.Name="{Binding StatusText}"
+                     Foreground="#91a6c8" FontSize="11"/>
+          <CheckBox Content="Replace the task manager button with a live CPU graph"
+                    AutomationProperties.Name="Show live CPU graph in the browser toolbar"
+                    ToolTip.Tip="Keep a compact live graph in the top toolbar; click it to reopen this window"
+                    IsChecked="{Binding ShowToolbarGraph, Mode=TwoWay}"
+                    Foreground="#c4d1e6"
+                    FontSize="11"/>
+        </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
           <Button Content="Clear history" Command="{Binding ClearHistoryCommand}" Padding="12,5"/>
           <Button Content="{Binding PauseLabel}" Command="{Binding TogglePauseCommand}" Padding="14,5"/>

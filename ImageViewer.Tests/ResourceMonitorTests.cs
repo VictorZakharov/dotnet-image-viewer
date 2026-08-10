@@ -37,7 +37,9 @@ public sealed class ResourceMonitorTests
             Sample(startedAt.AddSeconds(2), 30, 160, 210, 24, 9),
             Sample(startedAt.AddSeconds(3), 5, 120, 180, 22, 7)
         ]);
-        using var viewModel = new ResourceMonitorViewModel(sampler, startTimer: false);
+        using var viewModel = new ResourceMonitorViewModel(
+            new AppSettings(), sampler, enableTimer: false);
+        viewModel.BeginWindowSession();
 
         viewModel.SampleNow();
 
@@ -72,7 +74,9 @@ public sealed class ResourceMonitorTests
         var startedAt = DateTimeOffset.UtcNow;
         using var sampler = new FakeSampler(startedAt, index =>
             Sample(startedAt.AddSeconds(index), index % 100, 64 + index, 80, 16, 4));
-        using var viewModel = new ResourceMonitorViewModel(sampler, startTimer: false);
+        using var viewModel = new ResourceMonitorViewModel(
+            new AppSettings(), sampler, enableTimer: false);
+        viewModel.BeginWindowSession();
 
         for (var index = 1; index < 305; index++)
             viewModel.SampleNow();
@@ -92,12 +96,40 @@ public sealed class ResourceMonitorTests
             Sample(startedAt, 10, 64, 80, 16, 4),
             Sample(startedAt.AddMinutes(5).AddSeconds(1), 20, 65, 81, 17, 5)
         ]);
-        using var viewModel = new ResourceMonitorViewModel(sampler, startTimer: false);
+        using var viewModel = new ResourceMonitorViewModel(
+            new AppSettings(), sampler, enableTimer: false);
+        viewModel.BeginWindowSession();
 
         viewModel.SampleNow();
 
         Assert.Equal([20d], viewModel.CpuHistory);
         Assert.Equal("1 sample · 0s of 5 minutes", viewModel.HistorySummary);
+    }
+
+    [Fact]
+    public void ToolbarGraphOptionUpdatesSettingsAndStartsSampling()
+    {
+        var startedAt = DateTimeOffset.UtcNow;
+        var settings = new AppSettings();
+        using var sampler = new FakeSampler(startedAt,
+        [
+            Sample(startedAt.AddSeconds(1), 12, 64, 80, 16, 4)
+        ]);
+        using var viewModel = new ResourceMonitorViewModel(
+            settings, sampler, enableTimer: false);
+
+        Assert.False(viewModel.ShowToolbarGraph);
+        Assert.Empty(viewModel.CpuHistory);
+
+        viewModel.ShowToolbarGraph = true;
+
+        Assert.True(settings.ShowToolbarResourceGraph);
+        Assert.Equal([12d], viewModel.CpuHistory);
+
+        viewModel.ShowToolbarGraph = false;
+
+        Assert.False(settings.ShowToolbarResourceGraph);
+        Assert.Equal("Idle · history is preserved", viewModel.StatusText);
     }
 
     private static ResourceUsageSample Sample(
