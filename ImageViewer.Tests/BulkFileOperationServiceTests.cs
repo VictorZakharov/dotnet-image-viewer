@@ -72,9 +72,15 @@ public sealed class BulkFileOperationServiceTests : IDisposable
         var folder = CreateFolder("photos");
         var source = CreateFile(folder, "photo.jpg", "original");
         var collisionRequested = false;
+        var request = new FileOperationRequest(
+            FileOperationKind.Copy,
+            new[] { source },
+            folder);
+
+        var prepared = BulkFileOperationService.ExcludeNoOpCopies(request);
 
         var result = await _service.ExecuteAsync(
-            new FileOperationRequest(FileOperationKind.Copy, new[] { source }, folder),
+            request,
             (_, _) =>
             {
                 collisionRequested = true;
@@ -84,9 +90,10 @@ public sealed class BulkFileOperationServiceTests : IDisposable
             CancellationToken.None);
 
         Assert.False(collisionRequested);
+        Assert.Empty(prepared.SourcePaths);
         Assert.Equal("original", File.ReadAllText(source));
         Assert.False(File.Exists(Path.Combine(folder, "photo (2).jpg")));
-        Assert.Equal(new[] { source }, result.SkippedPaths);
+        Assert.Empty(result.SkippedPaths);
         Assert.Empty(result.Successful);
         Assert.Empty(result.Failures);
     }
