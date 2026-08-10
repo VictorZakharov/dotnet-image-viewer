@@ -110,9 +110,7 @@ public sealed partial class DuplicateScanner
     private sealed record HashedFile(
         CandidateFile File,
         string ContentHash,
-        ulong PerceptualHash,
-        int Width,
-        int Height);
+        PerceptualHashResult VisualHash);
 
     private sealed record GroupCandidate(
         DuplicateGroupKind Kind,

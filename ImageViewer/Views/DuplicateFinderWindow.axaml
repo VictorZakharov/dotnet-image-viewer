@@ -16,7 +16,7 @@
           <StackPanel>
             <TextBlock Text="Find duplicate images" Foreground="#f3f7ff"
                        FontSize="21" FontWeight="SemiBold"/>
-            <TextBlock Text="Exact matching is byte-verified. Similar matching uses an adjustable perceptual hash."
+            <TextBlock Text="Exact matching is byte-verified. Similar matching compares structure, color, and aspect ratio."
                        Foreground="#91a6c8" FontSize="11"/>
           </StackPanel>
           <Button Grid.Column="1" Content="Choose folders..." Click="OnChooseFolders"

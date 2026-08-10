@@ -66,7 +66,8 @@ public sealed class DuplicateHashCache
                 && cached.SizeBytes == size
                 && cached.ModifiedUtcTicks == modifiedUtc.Ticks
                 && !string.IsNullOrEmpty(cached.ContentHash)
-                && (!requirePerceptualHash || cached.PerceptualHash is not null))
+                && (!requirePerceptualHash ||
+                    DuplicateImageHasher.TryRestorePerceptualHash(cached, out _)))
             {
                 entry = cached;
                 return true;

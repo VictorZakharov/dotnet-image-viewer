@@ -19,7 +19,7 @@ public sealed class DuplicateGroupViewModel : ObservableObject, IDisposable
         : "VISUALLY SIMILAR";
     public bool IsSimilar => Model.Kind == DuplicateGroupKind.Similar;
     public string SimilarityText => IsSimilar
-        ? $"dHash distance up to {Model.MaximumDistance}; scan threshold {Model.SimilarityThreshold}"
+        ? $"Structure distance up to {Model.MaximumDistance}; scan threshold {Model.SimilarityThreshold}"
         : "SHA-256 plus byte comparison";
     public string GroupSummary =>
         $"{Files.Count} files · {DuplicateDisplay.FormatBytes(ReclaimableBytes)} reclaimable";

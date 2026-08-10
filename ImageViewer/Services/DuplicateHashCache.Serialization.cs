@@ -15,7 +15,10 @@ public sealed class DuplicateHashCacheEntry
     public long SizeBytes { get; set; }
     public long ModifiedUtcTicks { get; set; }
     public string ContentHash { get; set; } = "";
+    public int PerceptualHashVersion { get; set; }
     public ulong? PerceptualHash { get; set; }
+    public ulong? VerticalPerceptualHash { get; set; }
+    public byte[]? ColorSignature { get; set; }
     public int Width { get; set; }
     public int Height { get; set; }
 }

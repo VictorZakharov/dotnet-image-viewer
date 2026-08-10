@@ -38,5 +38,27 @@ public sealed class DuplicateScannerSimilarTests : IDisposable
         Assert.Equal(DuplicateGroupKind.Exact, Assert.Single(result.Groups).Kind);
     }
 
+    [Fact]
+    public async Task DifferentSolidColorsAreNotReportedAsSimilar()
+    {
+        _folder.CreateImage("red.png", MagickColors.Red);
+        _folder.CreateImage("blue.png", MagickColors.Blue);
+
+        var result = await _folder.ScanAsync(DuplicateScanMode.Similar, threshold: 0);
+
+        Assert.Empty(result.Groups);
+    }
+
+    [Fact]
+    public async Task DifferentAspectRatiosAreNotReportedAsSimilar()
+    {
+        _folder.CreateImage("wide.png", MagickColors.CornflowerBlue, 160, 90);
+        _folder.CreateImage("tall.png", MagickColors.CornflowerBlue, 90, 160);
+
+        var result = await _folder.ScanAsync(DuplicateScanMode.Similar, threshold: 20);
+
+        Assert.Empty(result.Groups);
+    }
+
     public void Dispose() => _folder.Dispose();
 }
