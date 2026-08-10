@@ -4,9 +4,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
 using ImageViewer.ViewModels;
 
 namespace ImageViewer.Views;
@@ -14,6 +16,7 @@ namespace ImageViewer.Views;
 public partial class VideoOverlayView : UserControl
 {
     private bool _isTimelinePointerPressed;
+    private Track? _timelineTrack;
 
     public VideoOverlayView()
     {
@@ -109,9 +112,30 @@ public partial class VideoOverlayView : UserControl
 
     private double GetTimelinePosition(PointerEventArgs e)
     {
+        var minimum = TimelineSlider.Minimum;
+        var range = TimelineSlider.Maximum - minimum;
+        if (range <= 0) return 0;
+
+        _timelineTrack ??= TimelineSlider
+            .GetVisualDescendants()
+            .OfType<Track>()
+            .FirstOrDefault();
+        if (_timelineTrack is { Bounds.Width: > 0 } track)
+        {
+            var point = e.GetPosition(track);
+            // Pressing the thumb itself preserves the current value until it
+            // moves, so its hover preview must do the same.
+            var value = track.Thumb?.Bounds.Contains(point) == true
+                ? TimelineSlider.Value
+                : track.ValueFromPoint(point);
+            return Math.Clamp((value - minimum) / range, 0, 1);
+        }
+
         var timelinePoint = e.GetPosition(TimelineSlider);
         var width = TimelineSlider.Bounds.Width;
-        return width <= 0 ? TimelineSlider.Value : Math.Clamp(timelinePoint.X / width, 0, 1);
+        return width <= 0
+            ? Math.Clamp((TimelineSlider.Value - minimum) / range, 0, 1)
+            : Math.Clamp(timelinePoint.X / width, 0, 1);
     }
 
     private void PositionTimelinePreview(PointerEventArgs e)

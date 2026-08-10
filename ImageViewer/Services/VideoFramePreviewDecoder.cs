@@ -29,6 +29,7 @@ internal sealed class VideoFramePreviewDecoder : IDisposable
 {
     private static readonly long FrameSettleTicks =
         (long)(Stopwatch.Frequency * TimeSpan.FromMilliseconds(100).TotalSeconds);
+    private const long MaximumFrameTimeErrorMilliseconds = 500;
 
     private readonly Media _media;
     private readonly MediaPlayer _player;
@@ -234,15 +235,29 @@ internal sealed class VideoFramePreviewDecoder : IDisposable
         double position = 0;
         try
         {
+            long candidateRequestId = 0;
+            double candidatePosition = 0;
             lock (_stateGate)
             {
                 if (!_disposed && _busy && Stopwatch.GetTimestamp() >= _captureNotBefore)
                 {
-                    requestId = _activeRequestId;
-                    position = _activePosition;
-                    _busy = false;
-                    _captureNotBefore = long.MaxValue;
-                    pixels = new byte[_bufferLength];
+                    candidateRequestId = _activeRequestId;
+                    candidatePosition = _activePosition;
+                }
+            }
+
+            if (candidateRequestId != 0 && IsPlaybackClockNearTarget(candidatePosition))
+            {
+                lock (_stateGate)
+                {
+                    if (!_disposed && _busy && candidateRequestId == _activeRequestId)
+                    {
+                        requestId = candidateRequestId;
+                        position = candidatePosition;
+                        _busy = false;
+                        _captureNotBefore = long.MaxValue;
+                        pixels = new byte[_bufferLength];
+                    }
                 }
             }
 
@@ -270,6 +285,23 @@ internal sealed class VideoFramePreviewDecoder : IDisposable
             {
                 // Managed listeners must never unwind through VLC's native callback.
             }
+        }
+    }
+
+    private bool IsPlaybackClockNearTarget(double position)
+    {
+        try
+        {
+            var length = _player.Length;
+            var time = _player.Time;
+            if (length <= 0 || time < 0) return true;
+
+            var targetTime = length * position;
+            return Math.Abs(time - targetTime) <= MaximumFrameTimeErrorMilliseconds;
+        }
+        catch
+        {
+            return false;
         }
     }
 
