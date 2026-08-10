@@ -222,10 +222,6 @@
                   Grid.Column="2"
                   Minimum="0" Maximum="1"
                   Value="{Binding PlaybackPosition, Mode=TwoWay}"
-                  PointerPressed="OnTimelinePointerPressed"
-                  PointerMoved="OnTimelinePointerMoved"
-                  PointerReleased="OnTimelinePointerReleased"
-                  PointerCaptureLost="OnTimelinePointerCaptureLost"
                   VerticalAlignment="Center"/>
           <TextBlock Grid.Column="3"
                      Text="{Binding DurationLabel}"

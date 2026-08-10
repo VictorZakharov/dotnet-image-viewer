@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
@@ -19,6 +20,30 @@ public partial class VideoOverlayView : UserControl
     {
         InitializeComponent();
         AddHandler(InputElement.KeyDownEvent, OnOverlayKeyDown, RoutingStrategies.Tunnel);
+        // Slider/Thumb class handlers consume drag events. Listen during the
+        // tunnel phase (including already-handled events) so every scrub
+        // position reaches the thumbnail pipeline.
+        TimelineSlider.AddHandler(
+            InputElement.PointerPressedEvent,
+            OnTimelinePointerPressed,
+            RoutingStrategies.Tunnel,
+            handledEventsToo: true);
+        TimelineSlider.AddHandler(
+            InputElement.PointerMovedEvent,
+            OnTimelinePointerMoved,
+            RoutingStrategies.Tunnel,
+            handledEventsToo: true);
+        TimelineSlider.AddHandler(
+            InputElement.PointerReleasedEvent,
+            OnTimelinePointerReleased,
+            RoutingStrategies.Tunnel,
+            handledEventsToo: true);
+        TimelineSlider.AddHandler(
+            InputElement.PointerCaptureLostEvent,
+            OnTimelinePointerCaptureLost,
+            RoutingStrategies.Bubble,
+            handledEventsToo: true);
+        TimelineSlider.PropertyChanged += OnTimelineSliderPropertyChanged;
     }
 
     private void OnTimelinePointerPressed(object? sender, PointerPressedEventArgs e)
@@ -43,14 +68,23 @@ public partial class VideoOverlayView : UserControl
             return;
         }
 
-        viewer.UpdateScrubPreview(UpdateTimelineFromPointer(e));
+        UpdateTimelineFromPointer(e);
     }
 
     private void OnTimelinePointerReleased(object? sender, PointerReleasedEventArgs e)
     {
         if (!_isTimelineScrubbing || DataContext is not ViewerViewModel viewer) return;
-        viewer.UpdateScrubPreview(UpdateTimelineFromPointer(e));
+        UpdateTimelineFromPointer(e);
         FinishTimelineScrub(viewer);
+    }
+
+    private void OnTimelineSliderPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (_isTimelineScrubbing && e.Property == RangeBase.ValueProperty &&
+            DataContext is ViewerViewModel viewer)
+        {
+            viewer.UpdateScrubPreview(TimelineSlider.Value);
+        }
     }
 
     private void OnTimelinePointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
