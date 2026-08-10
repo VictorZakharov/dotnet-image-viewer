@@ -3,6 +3,7 @@
              xmlns:vm="using:ImageViewer.ViewModels"
              xmlns:views="using:ImageViewer.Views"
              xmlns:models="using:ImageViewer.Models"
+             xmlns:controls="using:ImageViewer.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
@@ -89,6 +90,53 @@
 
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
                     VerticalAlignment="Center">
+          <Button Content="Task manager..."
+                  AutomationProperties.Name="ImageViewer task manager"
+                  ToolTip.Tip="View current and historical resource usage"
+                  Click="OnTaskManagerClicked"
+                  IsVisible="{Binding !ResourceMonitor.ShowToolbarGraph}"
+                  Padding="10,4"/>
+          <Button AutomationProperties.Name="Live CPU graph; open ImageViewer task manager"
+                  ToolTip.Tip="Live CPU usage · click to open task manager"
+                  Click="OnTaskManagerClicked"
+                  IsVisible="{Binding ResourceMonitor.ShowToolbarGraph}"
+                  Width="122" Height="30"
+                  Padding="0"
+                  HorizontalContentAlignment="Stretch"
+                  VerticalContentAlignment="Stretch">
+            <Grid ClipToBounds="True">
+              <Border Background="#090f1d"
+                      BorderBrush="#314867"
+                      BorderThickness="1"
+                      CornerRadius="3"/>
+              <controls:ResourceHistoryGraph Values="{Binding ResourceMonitor.CpuHistory}"
+                                               Maximum="100"
+                                               Stroke="#67b7ff"
+                                               StrokeThickness="1.5"
+                                               GridStroke="#1d2e48"
+                                               Margin="3"/>
+              <TextBlock Text="CPU"
+                         Foreground="#8fa1c0"
+                         FontSize="8"
+                         FontWeight="SemiBold"
+                         Margin="5,2,0,0"
+                         HorizontalAlignment="Left"
+                         VerticalAlignment="Top"
+                         IsHitTestVisible="False"/>
+              <Border Background="#c9090f1d"
+                      CornerRadius="3"
+                      Padding="4,1"
+                      Margin="0,0,3,2"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Bottom"
+                      IsHitTestVisible="False">
+                <TextBlock Text="{Binding ResourceMonitor.CurrentCpuText}"
+                           Foreground="#d8edff"
+                           FontSize="9"
+                           FontWeight="SemiBold"/>
+              </Border>
+            </Grid>
+          </Button>
           <Button Content="Duplicates..."
                   AutomationProperties.Name="Find duplicate images"
                   ToolTip.Tip="Find exact or visually similar duplicate images"

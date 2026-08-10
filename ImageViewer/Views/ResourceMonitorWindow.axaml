@@ -1,0 +1,153 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:ImageViewer.Controls"
+        xmlns:vm="using:ImageViewer.ViewModels"
+        x:Class="ImageViewer.Views.ResourceMonitorWindow"
+        x:DataType="vm:ResourceMonitorViewModel"
+        Title="ImageViewer task manager"
+        Icon="/Assets/ImageViewer.png"
+        Width="900" Height="680"
+        MinWidth="720" MinHeight="540"
+        WindowStartupLocation="CenterOwner"
+        Background="#0f1729">
+  <Grid RowDefinitions="Auto,Auto,*,Auto">
+    <Border Background="#17223a" Padding="20,15"
+            BorderBrush="#263755" BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="3">
+          <TextBlock Text="Task manager"
+                     Foreground="#f3f7ff"
+                     FontSize="21"
+                     FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding ProcessSummary}"
+                     Foreground="#91a6c8"
+                     FontSize="11"/>
+        </StackPanel>
+        <TextBlock Grid.Column="1"
+                   Text="{Binding StartedSummary}"
+                   Foreground="#7185a5"
+                   FontSize="11"
+                   VerticalAlignment="Center"/>
+      </Grid>
+    </Border>
+
+    <Grid Grid.Row="1" Margin="16,14,16,0"
+          ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
+      <Border Grid.Column="0" Background="#162038" BorderBrush="#2a3b59"
+              BorderThickness="1" CornerRadius="5" Padding="14,11">
+        <StackPanel Spacing="3">
+          <TextBlock Text="CPU" Foreground="#8fa1c0" FontSize="10"/>
+          <TextBlock Text="{Binding CurrentCpuText}" Foreground="#67b7ff"
+                     FontSize="24" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding CpuSummary}" Foreground="#7185a5"
+                     FontSize="10" TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Column="1" Background="#162038" BorderBrush="#2a3b59"
+              BorderThickness="1" CornerRadius="5" Padding="14,11">
+        <StackPanel Spacing="3">
+          <TextBlock Text="WORKING SET" Foreground="#8fa1c0" FontSize="10"/>
+          <TextBlock Text="{Binding WorkingSetText}" Foreground="#5bc78a"
+                     FontSize="24" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding MemorySummary}" Foreground="#7185a5" FontSize="10"/>
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Column="2" Background="#162038" BorderBrush="#2a3b59"
+              BorderThickness="1" CornerRadius="5" Padding="14,11">
+        <StackPanel Spacing="3">
+          <TextBlock Text="MANAGED HEAP" Foreground="#8fa1c0" FontSize="10"/>
+          <TextBlock Text="{Binding ManagedHeapText}" Foreground="#e0a060"
+                     FontSize="24" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding PrivateMemoryText}" Foreground="#7185a5"
+                     FontSize="10" TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Column="3" Background="#162038" BorderBrush="#2a3b59"
+              BorderThickness="1" CornerRadius="5" Padding="14,11">
+        <StackPanel Spacing="3">
+          <TextBlock Text="THREADS" Foreground="#8fa1c0" FontSize="10"/>
+          <TextBlock Text="{Binding ThreadCountText}" Foreground="#d65bbe"
+                     FontSize="24" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding UptimeText}" Foreground="#7185a5"
+                     FontSize="10" TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <Grid Grid.Row="2" Margin="16,12" RowDefinitions="*,*" RowSpacing="12">
+      <Border Background="#111a2d" BorderBrush="#263755"
+              BorderThickness="1" CornerRadius="6" Padding="14,11">
+        <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="CPU history" Foreground="#e7eef9"
+                       FontSize="13" FontWeight="SemiBold"/>
+            <TextBlock Grid.Column="1" Text="{Binding CurrentCpuText}"
+                       Foreground="#67b7ff" FontSize="12" FontWeight="SemiBold"/>
+          </Grid>
+          <Border Grid.Row="1" Background="#090f1d" CornerRadius="3" ClipToBounds="True">
+            <controls:ResourceHistoryGraph Values="{Binding CpuHistory}"
+                                           AutomationProperties.Name="CPU usage history"
+                                           Maximum="100"
+                                           Stroke="#67b7ff"/>
+          </Border>
+          <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto">
+            <TextBlock Text="0%" Foreground="#5f7494" FontSize="9"/>
+            <TextBlock Grid.Column="1" Text="{Binding HistorySummary}"
+                       Foreground="#7185a5" FontSize="9" HorizontalAlignment="Center"/>
+            <TextBlock Grid.Column="2" Text="100%" Foreground="#5f7494" FontSize="9"/>
+          </Grid>
+        </Grid>
+      </Border>
+
+      <Border Grid.Row="1" Background="#111a2d" BorderBrush="#263755"
+              BorderThickness="1" CornerRadius="6" Padding="14,11">
+        <Grid RowDefinitions="Auto,*,Auto" RowSpacing="8">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Working-set memory history" Foreground="#e7eef9"
+                       FontSize="13" FontWeight="SemiBold"/>
+            <TextBlock Grid.Column="1" Text="{Binding WorkingSetText}"
+                       Foreground="#5bc78a" FontSize="12" FontWeight="SemiBold"/>
+          </Grid>
+          <Border Grid.Row="1" Background="#090f1d" CornerRadius="3" ClipToBounds="True">
+            <controls:ResourceHistoryGraph Values="{Binding MemoryHistory}"
+                                           AutomationProperties.Name="Working-set memory history"
+                                           Maximum="{Binding MemoryGraphMaximum}"
+                                           Stroke="#5bc78a"/>
+          </Border>
+          <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto">
+            <TextBlock Text="0 B" Foreground="#5f7494" FontSize="9"/>
+            <TextBlock Grid.Column="1" Text="{Binding HistorySummary}"
+                       Foreground="#7185a5" FontSize="9" HorizontalAlignment="Center"/>
+            <TextBlock Grid.Column="2" Text="{Binding MemoryScaleText}"
+                       Foreground="#5f7494" FontSize="9"/>
+          </Grid>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <Border Grid.Row="3" Background="#17223a" Padding="16,10"
+            BorderBrush="#263755" BorderThickness="0,1,0,0">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="4" VerticalAlignment="Center">
+          <TextBlock Text="{Binding StatusText}"
+                     AutomationProperties.Name="{Binding StatusText}"
+                     Foreground="#91a6c8" FontSize="11"/>
+          <CheckBox Content="Replace the task manager button with a live CPU graph"
+                    AutomationProperties.Name="Show live CPU graph in the browser toolbar"
+                    ToolTip.Tip="Keep a compact live graph in the top toolbar; click it to reopen this window"
+                    IsChecked="{Binding ShowToolbarGraph, Mode=TwoWay}"
+                    Foreground="#c4d1e6"
+                    FontSize="11"/>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+          <Button Content="Clear history" Command="{Binding ClearHistoryCommand}" Padding="12,5"/>
+          <Button Content="{Binding PauseLabel}" Command="{Binding TogglePauseCommand}" Padding="14,5"/>
+          <Button Content="Close" Click="OnClose" Padding="14,5"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>
