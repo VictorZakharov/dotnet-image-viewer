@@ -11,6 +11,11 @@ namespace ImageViewer.Services;
 
 public sealed class DuplicateImageHasher
 {
+    public const int PerceptualHashVersion = 2;
+    internal const int ColorSignatureLength = 4 * 4 * 3;
+    private const int MaximumAverageColorDifference = 32;
+    private const double MaximumAspectRatioScale = 1.15;
+
     public async Task<string> ComputeContentHashAsync(
         string path,
         CancellationToken cancellationToken)
@@ -33,27 +38,110 @@ public sealed class DuplicateImageHasher
         image.AutoOrient();
         var width = checked((int)image.Width);
         var height = checked((int)image.Height);
+        image.BackgroundColor = MagickColors.White;
+        image.Alpha(AlphaOption.Remove);
+
+        using var colorImage = image.Clone();
+        colorImage.ColorSpace = ColorSpace.sRGB;
+        colorImage.Depth = 8;
+        colorImage.Resize(new MagickGeometry(4, 4) { IgnoreAspectRatio = true });
+        var colorSignature = colorImage.ToByteArray(MagickFormat.Rgb);
+        if (colorSignature.Length != ColorSignatureLength)
+            throw new InvalidDataException("Could not create a perceptual color signature.");
+
         image.ColorSpace = ColorSpace.Gray;
         image.Depth = 8;
-        image.Resize(new MagickGeometry(9, 8) { IgnoreAspectRatio = true });
-        image.Alpha(AlphaOption.Off);
+        image.Resize(new MagickGeometry(9, 9) { IgnoreAspectRatio = true });
         var pixels = image.ToByteArray(MagickFormat.Gray);
-        if (pixels.Length < 72)
+        if (pixels.Length < 81)
             throw new InvalidDataException("Could not create a perceptual image hash.");
 
-        ulong hash = 0;
+        ulong horizontalHash = 0;
+        ulong verticalHash = 0;
         for (var row = 0; row < 8; row++)
         {
             var rowOffset = row * 9;
             for (var column = 0; column < 8; column++)
             {
-                hash <<= 1;
+                var offset = rowOffset + column;
+                horizontalHash <<= 1;
                 if (pixels[rowOffset + column] > pixels[rowOffset + column + 1])
-                    hash |= 1;
+                    horizontalHash |= 1;
+
+                verticalHash <<= 1;
+                if (pixels[offset] > pixels[offset + 9])
+                    verticalHash |= 1;
             }
         }
-        return new PerceptualHashResult(hash, width, height);
+        return new PerceptualHashResult(
+            horizontalHash,
+            verticalHash,
+            colorSignature,
+            width,
+            height);
     }, cancellationToken);
+
+    internal static bool TryRestorePerceptualHash(
+        DuplicateHashCacheEntry entry,
+        out PerceptualHashResult result)
+    {
+        if (entry.PerceptualHashVersion == PerceptualHashVersion &&
+            entry.PerceptualHash is { } horizontalHash &&
+            entry.VerticalPerceptualHash is { } verticalHash &&
+            entry.ColorSignature is { Length: ColorSignatureLength } colorSignature &&
+            entry.Width > 0 && entry.Height > 0)
+        {
+            result = new PerceptualHashResult(
+                horizontalHash,
+                verticalHash,
+                colorSignature,
+                entry.Width,
+                entry.Height);
+            return true;
+        }
+
+        result = PerceptualHashResult.Empty;
+        return false;
+    }
+
+    internal static bool AreVisuallyCompatible(
+        PerceptualHashResult left,
+        PerceptualHashResult right,
+        int threshold) =>
+        StructuralDistance(left, right) <= threshold &&
+        AspectRatiosAreCompatible(left, right) &&
+        AverageColorDistance(left.ColorSignature, right.ColorSignature) <=
+            MaximumAverageColorDifference;
+
+    internal static int StructuralDistance(
+        PerceptualHashResult left,
+        PerceptualHashResult right) => Math.Max(
+        Distance(left.HorizontalHash, right.HorizontalHash),
+        Distance(left.VerticalHash, right.VerticalHash));
+
+    internal static int AverageColorDistance(byte[] left, byte[] right)
+    {
+        if (left.Length != ColorSignatureLength || right.Length != ColorSignatureLength)
+            return int.MaxValue;
+
+        var total = 0;
+        for (var index = 0; index < ColorSignatureLength; index++)
+            total += Math.Abs(left[index] - right[index]);
+        return (int)Math.Ceiling(total / (double)ColorSignatureLength);
+    }
+
+    private static bool AspectRatiosAreCompatible(
+        PerceptualHashResult left,
+        PerceptualHashResult right)
+    {
+        if (left.Width <= 0 || left.Height <= 0 || right.Width <= 0 || right.Height <= 0)
+            return false;
+
+        var leftRatio = left.Width / (double)left.Height;
+        var rightRatio = right.Width / (double)right.Height;
+        var scale = Math.Max(leftRatio / rightRatio, rightRatio / leftRatio);
+        return scale <= MaximumAspectRatioScale;
+    }
 
     public async Task<bool> FilesAreEqualAsync(
         string leftPath,
@@ -98,4 +186,17 @@ public sealed class DuplicateImageHasher
         FileOptions.Asynchronous | FileOptions.SequentialScan);
 }
 
-public readonly record struct PerceptualHashResult(ulong Hash, int Width, int Height);
+public readonly record struct PerceptualHashResult(
+    ulong HorizontalHash,
+    ulong VerticalHash,
+    byte[] ColorSignature,
+    int Width,
+    int Height)
+{
+    internal static PerceptualHashResult Empty { get; } = new(
+        0,
+        0,
+        Array.Empty<byte>(),
+        0,
+        0);
+}

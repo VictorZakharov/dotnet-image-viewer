@@ -60,8 +60,12 @@ public sealed partial class DuplicateScanner
         ConcurrentBag<DuplicateScanError> errors)
     {
         var metadata = ExifReader.Read(file.File.Path);
-        var width = file.Width > 0 ? file.Width : metadata.Width ?? 0;
-        var height = file.Height > 0 ? file.Height : metadata.Height ?? 0;
+        var width = file.VisualHash.Width > 0
+            ? file.VisualHash.Width
+            : metadata.Width ?? 0;
+        var height = file.VisualHash.Height > 0
+            ? file.VisualHash.Height
+            : metadata.Height ?? 0;
         if (width == 0 || height == 0)
         {
             try
@@ -81,7 +85,7 @@ public sealed partial class DuplicateScanner
         {
             Path = file.File.Path,
             ContentHash = file.ContentHash,
-            PerceptualHash = file.PerceptualHash,
+            PerceptualHash = file.VisualHash.HorizontalHash,
             SizeBytes = file.File.SizeBytes,
             CreatedUtc = file.File.CreatedUtc,
             ModifiedUtc = file.File.ModifiedUtc,

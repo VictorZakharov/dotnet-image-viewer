@@ -80,25 +80,34 @@ public sealed partial class DuplicateScanner
         CancellationToken cancellationToken)
     {
         var index = new PerceptualHashIndex();
-        var sets = new DisjointSets(files.Count);
+        var neighbors = Enumerable.Range(0, files.Count)
+            .Select(_ => new HashSet<int>())
+            .ToArray();
         var matches = new List<int>();
         for (var fileIndex = 0; fileIndex < files.Count; fileIndex++)
         {
             cancellationToken.ThrowIfCancellationRequested();
             await pause.WaitIfPausedAsync(cancellationToken).ConfigureAwait(false);
             matches.Clear();
-            index.FindWithin(files[fileIndex].PerceptualHash, threshold, matches);
-            foreach (var match in matches) sets.Union(fileIndex, match);
-            index.Add(files[fileIndex].PerceptualHash, fileIndex);
+            index.FindWithin(
+                files[fileIndex].VisualHash.HorizontalHash, threshold, matches);
+            foreach (var match in matches)
+            {
+                if (!DuplicateImageHasher.AreVisuallyCompatible(
+                    files[fileIndex].VisualHash,
+                    files[match].VisualHash,
+                    threshold)) continue;
+                neighbors[fileIndex].Add(match);
+                neighbors[match].Add(fileIndex);
+            }
+            index.Add(files[fileIndex].VisualHash.HorizontalHash, fileIndex);
             progress?.Report(new DuplicateScanProgress(
                 DuplicateScanStage.Comparing,
                 fileIndex + 1, files.Count, files[fileIndex].File.Path));
         }
 
-        var clusters = Enumerable.Range(0, files.Count)
-            .GroupBy(sets.Find)
+        var clusters = PairwiseSimilarityClusterer.Create(neighbors)
             .Select(group => group.Select(indexValue => files[indexValue]).ToList())
-            .Where(group => group.Count > 1)
             .ToList();
         var result = new List<GroupCandidate>(clusters.Count);
         foreach (var cluster in clusters)
@@ -144,8 +153,8 @@ public sealed partial class DuplicateScanner
         var maximum = 0;
         for (var left = 0; left < files.Count; left++)
             for (var right = left + 1; right < files.Count; right++)
-                maximum = Math.Max(maximum, DuplicateImageHasher.Distance(
-                    files[left].PerceptualHash, files[right].PerceptualHash));
+                maximum = Math.Max(maximum, DuplicateImageHasher.StructuralDistance(
+                    files[left].VisualHash, files[right].VisualHash));
         return maximum;
     }
 }

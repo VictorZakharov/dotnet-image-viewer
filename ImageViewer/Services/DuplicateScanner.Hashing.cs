@@ -34,38 +34,35 @@ public sealed partial class DuplicateScanner
                     await pause.WaitIfPausedAsync(token).ConfigureAwait(false);
                     var cacheHit = _cache.TryGet(
                         file.Path, file.Identity, file.SizeBytes, file.ModifiedUtc,
-                        requirePerceptualHash: false, out var cached);
+                        requirePerceptualHash: false, out var cachedEntry);
+                    DuplicateHashCacheEntry? cached = cacheHit ? cachedEntry : null;
                     var contentHash = cacheHit
-                        ? cached.ContentHash
+                        ? cachedEntry.ContentHash
                         : await _hasher.ComputeContentHashAsync(file.Path, token)
                             .ConfigureAwait(false);
-                    ulong perceptualHash = cached?.PerceptualHash ?? 0;
-                    var width = cached?.Width ?? 0;
-                    var height = cached?.Height ?? 0;
+                    var visualHash = PerceptualHashResult.Empty;
+                    var hasVisualHash = cached is not null &&
+                        DuplicateImageHasher.TryRestorePerceptualHash(
+                            cached, out visualHash);
 
-                    if (includePerceptualHash && cached?.PerceptualHash is null)
+                    if (includePerceptualHash && !hasVisualHash)
                     {
                         try
                         {
-                            var visual = await _hasher.ComputePerceptualHashAsync(file.Path, token)
+                            visualHash = await _hasher.ComputePerceptualHashAsync(file.Path, token)
                                 .ConfigureAwait(false);
-                            perceptualHash = visual.Hash;
-                            width = visual.Width;
-                            height = visual.Height;
+                            hasVisualHash = true;
                         }
                         catch
                         {
-                            Cache(file, contentHash, null, width, height);
+                            Cache(file, contentHash, null);
                             throw;
                         }
                     }
 
-                    Cache(
-                        file, contentHash,
-                        includePerceptualHash ? perceptualHash : cached?.PerceptualHash,
-                        width, height);
+                    Cache(file, contentHash, hasVisualHash ? visualHash : null);
                     hashedFiles.Add(new HashedFile(
-                        file, contentHash, perceptualHash, width, height));
+                        file, contentHash, visualHash));
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex)
@@ -101,18 +98,21 @@ public sealed partial class DuplicateScanner
     private void Cache(
         CandidateFile file,
         string contentHash,
-        ulong? perceptualHash,
-        int width,
-        int height) => _cache.Upsert(new DuplicateHashCacheEntry
+        PerceptualHashResult? visualHash) => _cache.Upsert(new DuplicateHashCacheEntry
     {
         Path = file.Path,
         Identity = file.Identity.Value,
         SizeBytes = file.SizeBytes,
         ModifiedUtcTicks = file.ModifiedUtc.Ticks,
         ContentHash = contentHash,
-        PerceptualHash = perceptualHash,
-        Width = width,
-        Height = height
+        PerceptualHashVersion = visualHash is null
+            ? 0
+            : DuplicateImageHasher.PerceptualHashVersion,
+        PerceptualHash = visualHash?.HorizontalHash,
+        VerticalPerceptualHash = visualHash?.VerticalHash,
+        ColorSignature = visualHash?.ColorSignature,
+        Width = visualHash?.Width ?? 0,
+        Height = visualHash?.Height ?? 0
     });
 
     private sealed record HashResult(List<HashedFile> Files, bool IsCanceled);

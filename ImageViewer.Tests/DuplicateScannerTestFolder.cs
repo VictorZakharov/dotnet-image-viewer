@@ -20,10 +20,15 @@ internal sealed class DuplicateScannerTestFolder : IDisposable
         return path;
     }
 
-    public string CreateImage(string name, IMagickColor<byte>? color = null)
+    public string CreateImage(
+        string name,
+        IMagickColor<byte>? color = null,
+        uint width = 96,
+        uint height = 64)
     {
         var path = Path.Combine(Root, name);
-        using var image = new MagickImage(color ?? MagickColors.CornflowerBlue, 96, 64);
+        using var image = new MagickImage(
+            color ?? MagickColors.CornflowerBlue, width, height);
         image.Write(path);
         return path;
     }
