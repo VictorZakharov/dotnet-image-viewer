@@ -89,6 +89,11 @@
 
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
                     VerticalAlignment="Center">
+          <Button Content="Task manager..."
+                  AutomationProperties.Name="ImageViewer task manager"
+                  ToolTip.Tip="View current and historical resource usage"
+                  Click="OnTaskManagerClicked"
+                  Padding="10,4"/>
           <Button Content="Duplicates..."
                   AutomationProperties.Name="Find duplicate images"
                   ToolTip.Tip="Find exact or visually similar duplicate images"

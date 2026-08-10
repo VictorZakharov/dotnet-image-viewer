@@ -70,6 +70,7 @@ published `.sha256` file before running it.
 - Drag-and-drop a file or folder anywhere on the window
 
 ### Other
+- **Task manager...** opens a live monitor for this ImageViewer process with CPU, working-set/private/managed memory, thread count, uptime, and rolling five-minute session history for CPU and memory
 - **Windows integration**: the **Explorer...** button registers this portable copy for Open with and Default Apps without changing defaults; supported files also get a lightweight “Browse containing folder in ImageViewer” action
 - **Single-instance**: opening media files in rapid succession from a file manager reuses and focuses the running instance, including while the first window is still starting
 - Window position, size, sort order, smooth-scrolling preference, browser preview visibility, EXIF overlay state, slideshow delay, and last folder persist between launches
