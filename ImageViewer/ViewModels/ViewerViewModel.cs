@@ -87,6 +87,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
     private Media? _currentMedia;
     private int _videoSessionVersion;
     private bool _updatingPlaybackPosition;
+    private bool _videoAudioStateNeedsReapply;
     private bool _disposed;
 
     private void EnsureVideoPlayer()
@@ -108,8 +109,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
         player.ESAdded += OnPlayerElementaryStreamChanged;
         player.ESDeleted += OnPlayerElementaryStreamChanged;
         player.ESSelected += OnPlayerElementaryStreamChanged;
-        player.Volume = (int)Math.Round(Volume);
-        player.Mute = IsMuted;
+        ApplyVideoAudioState(player);
         VideoPlayer = player;
     }
 
@@ -137,8 +137,10 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
             _videoSessionVersion++;
             _currentMedia = new Media(_libVlc, new Uri(path));
             PrepareVideoTools(VideoPlayer, _currentMedia);
+            _videoAudioStateNeedsReapply = true;
             if (!VideoPlayer.Play(_currentMedia))
             {
+                _videoAudioStateNeedsReapply = false;
                 PlaybackError = "Could not start video playback.";
                 ResetVideoTools();
             }
@@ -227,6 +229,12 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
         if (VideoPlayer is not null) VideoPlayer.Mute = value;
     }
 
+    private void ApplyVideoAudioState(MediaPlayer player)
+    {
+        player.Volume = (int)Math.Round(Math.Clamp(Volume, 0, 100));
+        player.Mute = IsMuted;
+    }
+
     public void StopSlideshow()
     {
         _slideshowTimer?.Stop();
@@ -260,6 +268,7 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
         ResetScrubPreview();
         ResetVideoControls();
         ResetVideoTools();
+        _videoAudioStateNeedsReapply = false;
         if (VideoPlayer is null)
         {
             _videoSessionVersion++;
@@ -277,6 +286,8 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
 
     private void OnPlayerPlaying(object? sender, EventArgs e) => PostVideoEventToUi(() =>
     {
+        if (VideoPlayer is { } player)
+            ApplyVideoAudioState(player);
         IsPlaying = true;
         IsVideoLoading = false;
         PlaybackError = null;
@@ -302,6 +313,15 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
 
     private void OnPlayerTimeChanged(object? sender, MediaPlayerTimeChangedEventArgs e) => PostVideoEventToUi(() =>
     {
+        if (_videoAudioStateNeedsReapply && VideoPlayer is { } player)
+        {
+            // LibVLC creates or reopens its native audio output asynchronously.
+            // Applying mute/volume only during MediaPlayer construction can miss
+            // the live Windows audio session, particularly in Native AOT builds.
+            _videoAudioStateNeedsReapply = false;
+            ApplyVideoAudioState(player);
+        }
+
         var length = VideoPlayer?.Length ?? 0;
         CurrentTimeLabel = FormatDuration(e.Time);
         if (length > 0)
