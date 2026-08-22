@@ -54,6 +54,11 @@ public partial class ViewerViewModel
             return;
         }
 
+        // LibVLC creates and may reopen its native audio output after Play.
+        // Reapply the requested state while that output settles; touching
+        // volume or mute before playback can initialize Windows audio too early.
+        if (VideoPlayer is { } player)
+            ApplyVideoAudioState(player);
         VideoTools.Refresh();
         _remainingVideoTrackRefreshes--;
         if (_remainingVideoTrackRefreshes <= 0)

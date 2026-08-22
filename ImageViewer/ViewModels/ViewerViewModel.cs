@@ -108,8 +108,6 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
         player.ESAdded += OnPlayerElementaryStreamChanged;
         player.ESDeleted += OnPlayerElementaryStreamChanged;
         player.ESSelected += OnPlayerElementaryStreamChanged;
-        player.Volume = (int)Math.Round(Volume);
-        player.Mute = IsMuted;
         VideoPlayer = player;
     }
 
@@ -227,6 +225,12 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
         if (VideoPlayer is not null) VideoPlayer.Mute = value;
     }
 
+    private void ApplyVideoAudioState(MediaPlayer player)
+    {
+        player.Volume = (int)Math.Round(Math.Clamp(Volume, 0, 100));
+        player.Mute = IsMuted;
+    }
+
     public void StopSlideshow()
     {
         _slideshowTimer?.Stop();
@@ -277,6 +281,8 @@ public partial class ViewerViewModel : ObservableObject, IDisposable
 
     private void OnPlayerPlaying(object? sender, EventArgs e) => PostVideoEventToUi(() =>
     {
+        if (VideoPlayer is { } player)
+            ApplyVideoAudioState(player);
         IsPlaying = true;
         IsVideoLoading = false;
         PlaybackError = null;
