@@ -2,7 +2,7 @@
 
 A lightweight, filesystem-first image and video viewer for Windows and Linux. Built on .NET 10 and Avalonia 12.
 
-> **Status**: public preview (`0.2.0`). The viewer, browser, and video playback work on Windows and Linux; Windows Explorer integration remains Windows-specific.
+> **Status**: public preview (`0.3.0`). The viewer, browser, and video playback work on Windows and Linux; Windows Explorer integration remains Windows-specific.
 
 ## Download
 
